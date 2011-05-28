@@ -1,0 +1,247 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{4F9AA5BD-7086-468B-9F65-2FA6736016F1}</ProjectGuid>
+    <RootNamespace>SHIFT</RootNamespace>
+    <Keyword>Win32Proj</Keyword>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</GenerateManifest>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
+    <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
+    <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</GenerateManifest>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <Optimization>Disabled</Optimization>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Source;$(ProjectDir)..\Source\Tools;$(ProjectDir)..\Source\Externals\SDL\include;$(ProjectDir)..\Source\Externals\bullet-2.76\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>Sync</ExceptionHandling>
+      <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>sdlmain.lib;sdl.lib;opengl32.lib;glu32.lib;BulletDynamics.lib;BulletCollision.lib;LinearMath.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)SHIFT.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Source\Externals\SDL\lib;$(ProjectDir)..\Source\Externals\bullet-2.76\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>libcd.lib;libcmtd.lib;msvcrt.lib;msvcmrt.lib;msvcurt.lib;LIBCPMT.LIB;MSVCPRT.LIB;LIBCPMTD.LIB;MSVCPRTD.LIB;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <ProgramDatabaseFile>$(OutDir)SHIFT.pdb</ProgramDatabaseFile>
+      <SubSystem>Windows</SubSystem>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <Optimization>Full</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Source;$(ProjectDir)..\Source\Tools;$(ProjectDir)..\Source\Externals\SDL\include;$(ProjectDir)..\Source\Externals\bullet-2.76\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>WIN32;_NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>sdlmain.lib;sdl.lib;opengl32.lib;glu32.lib;BulletDynamics.lib;BulletCollision.lib;LinearMath.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(ProjectDir)../../Game/SHIFT.exe</OutputFile>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Source\Externals\SDL\lib;$(ProjectDir)..\Source\Externals\bullet-2.76\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreSpecificDefaultLibraries>libcd.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;msvcmrt.lib;msvcurt.lib;LIBCPMT.LIB;MSVCPRT.LIB;LIBCPMTD.LIB;MSVCPRTD.LIB;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Windows</SubSystem>
+      <OptimizeReferences>true</OptimizeReferences>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+      <RandomizedBaseAddress>false</RandomizedBaseAddress>
+      <DataExecutionPrevention>
+      </DataExecutionPrevention>
+      <TargetMachine>MachineX86</TargetMachine>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <None Include="..\..\Game\Shaders\dr_aa_blurh.frag" />
+    <None Include="..\..\Game\Shaders\dr_aa_blurh.vert" />
+    <None Include="..\..\Game\Shaders\dr_aa_blurv.frag" />
+    <None Include="..\..\Game\Shaders\dr_aa_blurv.vert" />
+    <None Include="..\..\Game\Shaders\dr_enviroment.frag" />
+    <None Include="..\..\Game\Shaders\dr_enviroment.vert" />
+    <None Include="..\..\Game\Shaders\dr_fog.frag" />
+    <None Include="..\..\Game\Shaders\dr_fog.vert" />
+    <None Include="..\..\Game\Shaders\dr_foliage_depth_grow.vert" />
+    <None Include="..\..\Game\Shaders\dr_foliage_depth_normal.frag" />
+    <None Include="..\..\Game\Shaders\dr_foliage_depth_shrink.vert" />
+    <None Include="..\..\Game\Shaders\dr_foliage_gbuffers_grow.vert" />
+    <None Include="..\..\Game\Shaders\dr_foliage_gbuffers_normal.frag" />
+    <None Include="..\..\Game\Shaders\dr_foliage_gbuffers_shrink.vert" />
+    <None Include="..\..\Game\Shaders\dr_grass_depth_normal.frag" />
+    <None Include="..\..\Game\Shaders\dr_grass_depth_normal.vert" />
+    <None Include="..\..\Game\Shaders\dr_grass_gbuffers_normal.frag" />
+    <None Include="..\..\Game\Shaders\dr_grass_gbuffers_normal.vert" />
+    <None Include="..\..\Game\Shaders\dr_hdr.frag" />
+    <None Include="..\..\Game\Shaders\dr_hdr.vert" />
+    <None Include="..\..\Game\Shaders\dr_hdr_blurh.frag" />
+    <None Include="..\..\Game\Shaders\dr_hdr_blurh.vert" />
+    <None Include="..\..\Game\Shaders\dr_hdr_blurv.frag" />
+    <None Include="..\..\Game\Shaders\dr_hdr_blurv.vert" />
+    <None Include="..\..\Game\Shaders\dr_hdr_hipass.frag" />
+    <None Include="..\..\Game\Shaders\dr_hdr_hipass.vert" />
+    <None Include="..\..\Game\Shaders\dr_solid_depth_morph.vert" />
+    <None Include="..\..\Game\Shaders\dr_solid_depth_normal.frag" />
+    <None Include="..\..\Game\Shaders\dr_solid_depth_normal.vert" />
+    <None Include="..\..\Game\Shaders\dr_solid_depth_shrink.vert" />
+    <None Include="..\..\Game\Shaders\dr_solid_gbuffers_morph.vert" />
+    <None Include="..\..\Game\Shaders\dr_solid_gbuffers_normal.frag" />
+    <None Include="..\..\Game\Shaders\dr_solid_gbuffers_normal.vert" />
+    <None Include="..\..\Game\Shaders\dr_solid_gbuffers_shrink.vert" />
+    <None Include="..\..\Game\Shaders\dr_ssao.frag" />
+    <None Include="..\..\Game\Shaders\dr_ssao.vert" />
+    <None Include="..\..\Game\Shaders\dr_ssao_blurhblend.frag" />
+    <None Include="..\..\Game\Shaders\dr_ssao_blurhblend.vert" />
+    <None Include="..\..\Game\Shaders\dr_ssao_blurv.frag" />
+    <None Include="..\..\Game\Shaders\dr_ssao_blurv.vert" />
+    <None Include="..\..\Game\Shaders\dr_ssao_debug.frag" />
+    <None Include="..\..\Game\Shaders\dr_ssao_debug.vert" />
+    <None Include="..\..\Game\Shaders\dr_sun.frag" />
+    <None Include="..\..\Game\Shaders\dr_sun.vert" />
+    <None Include="..\..\Game\Shaders\dr_terrain_depth_morph.vert" />
+    <None Include="..\..\Game\Shaders\dr_terrain_depth_normal.frag" />
+    <None Include="..\..\Game\Shaders\dr_terrain_depth_normal.vert" />
+    <None Include="..\..\Game\Shaders\dr_terrain_gbuffers_morph.vert" />
+    <None Include="..\..\Game\Shaders\dr_terrain_gbuffers_normal.frag" />
+    <None Include="..\..\Game\Shaders\dr_terrain_gbuffers_normal.vert" />
+    <None Include="..\Source\_convention.txt" />
+    <None Include="..\Source\_notes.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Source\debug.cpp" />
+    <ClCompile Include="..\Source\loader.cpp" />
+    <ClCompile Include="..\Source\loaderImage.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\loaderShader.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\loaderWorld.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\main.cpp" />
+    <ClCompile Include="..\Source\physics.cpp" />
+    <ClCompile Include="..\Source\renderer.cpp" />
+    <ClCompile Include="..\Source\rendererClip.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\rendererCore.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\rendererDraw.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\rendererGui.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\rendererLoader.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\rendererProcess.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\rendererSort.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\rendererSpecific.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\rendererSun.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\Source\Tools\glee.cc" />
+    <ClCompile Include="..\Source\Tools\random.cc" />
+    <ClCompile Include="..\Source\Tools\sort.cc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Source\debug.h" />
+    <ClInclude Include="..\Source\loader.h" />
+    <ClInclude Include="..\Source\physics.h" />
+    <ClInclude Include="..\Source\renderer.h" />
+    <ClInclude Include="..\Source\rendererClip.h" />
+    <ClInclude Include="..\Source\rendererGui.h" />
+    <ClInclude Include="..\Source\rendererInternals.h" />
+    <ClInclude Include="..\Source\skeleton.h" />
+    <ClInclude Include="..\Source\Tools\glee.h" />
+    <ClInclude Include="..\Source\Tools\macro.h" />
+    <ClInclude Include="..\Source\Tools\random.h" />
+    <ClInclude Include="..\Source\Tools\sort.h" />
+    <ClInclude Include="..\Source\Tools\types.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
