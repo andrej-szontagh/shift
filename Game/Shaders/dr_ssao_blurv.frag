@@ -29,5 +29,8 @@ void main ()
     ao /= sum;
 
     gl_FragColor = vec4 (ao, ao, ao, 1.0);
+
+
+    //gl_FragColor = vec4 (texture2DRect (tex,    gl_TexCoord [0].st).rrr, 1.0);  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 }
 

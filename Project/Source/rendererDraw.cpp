@@ -58,9 +58,6 @@ VOID dr_Draw (
 
                 dr_SetMaterialSolid (material);
 
-                FLOAT_32 param1 = material->gloss1;
-                FLOAT_32 param2 = material->shininess1;
-
                 for (UINT_32 j = 0; j < modelc; j ++) {
                     
                     TContextModel * conmod = &conmat->list [j];
@@ -80,9 +77,6 @@ VOID dr_Draw (
                             // shader
                             M_DR_SET_SHADER_CULLON (dr_program_solid_gbuffers_normal);
 
-                            /// shader attributes MOVE
-                            glMultiTexCoord2f (GL_TEXTURE3, param1, param2);
-
                             // model
                             dr_SetModelSolidNormal (model);
 
@@ -98,7 +92,7 @@ VOID dr_Draw (
 
                             /// shader attributes MOVE
                             glMultiTexCoord3f (GL_TEXTURE2, model->param1, model->param2, model->param3);
-                            glMultiTexCoord3f (GL_TEXTURE3, param1, param2, model->param1);
+                            glMultiTexCoord3f (GL_TEXTURE3, 0.0f, 0.0f, model->param1);
 
                             // model
                             dr_SetModelSolidMorph (model);
@@ -112,9 +106,6 @@ VOID dr_Draw (
 
                             // shader
                             M_DR_SET_SHADER_CULLON (dr_program_solid_gbuffers_shrink);
-
-                            /// shader attributes MOVE
-                            glMultiTexCoord2f (GL_TEXTURE3, param1, param2);
 
                             // model
                             dr_SetModelSolidNormal (model);
@@ -157,16 +148,6 @@ VOID dr_Draw (
                                                                       dr_state_shader = dr_program_terrain_gbuffers_normal;
 
                                 glUseProgram (dr_state_shader);
-
-                                // shader attributes
-                                glMultiTexCoord3f (GL_TEXTURE2, material->gloss1,
-                                                                material->gloss2,
-                                                                material->gloss3);
-
-                                glMultiTexCoord3f (GL_TEXTURE3, material->shininess1, 
-                                                                material->shininess2, 
-                                                                material->shininess3);
-
                                 M_STATE_CULLFACE_SET;
                             }
 
@@ -185,16 +166,6 @@ VOID dr_Draw (
                                                                      dr_state_shader = dr_program_terrain_gbuffers_morph;
 
                                 glUseProgram (dr_state_shader);
-
-                                // shader attributes
-                                glUniform3f     (dr_program_terrain_gbuffers_morph_gloss,       material->gloss1,
-                                                                                                material->gloss2,
-                                                                                                material->gloss3);
-
-                                glUniform3f     (dr_program_terrain_gbuffers_morph_shininess,   material->shininess1, 
-                                                                                                material->shininess2, 
-                                                                                                material->shininess3);
-
                                 M_STATE_CULLFACE_SET;
                             }
 
@@ -469,7 +440,7 @@ VOID dr_DrawDepth (
                 ///
                 ///continue;
 
-                M_STATE_TEX0_SET (material->diffuse1);
+                M_STATE_TEX0_SET (material->diffuse);
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
@@ -517,7 +488,7 @@ VOID dr_DrawDepth (
 
                 //  M_STATE_CLEAR_TEX0;
 
-                M_STATE_TEX0_SET (material->diffuse1);
+                M_STATE_TEX0_SET (material->diffuse);
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
@@ -746,7 +717,7 @@ VOID dr_DrawShadows (
                 ///
                 ///break;
 
-                M_STATE_TEX0_SET (ma->diffuse1);
+                M_STATE_TEX0_SET (ma->diffuse);
 
                 // pick first model
                 register UINT_32 model = dr_object_models [dr_list_objects1 [0]];  dr_model_stamps [model] = dr_stamp;
@@ -806,7 +777,7 @@ VOID dr_DrawShadows (
                 ///
                 ///break;
 
-                M_STATE_TEX0_SET (ma->diffuse1);
+                M_STATE_TEX0_SET (ma->diffuse);
 
                 // pick first model
                 register UINT_32 model = dr_object_models [dr_list_objects1 [0]];  dr_model_stamps [model] = dr_stamp;

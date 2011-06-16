@@ -11,11 +11,17 @@
 
 #ifdef M_DR_BODY
 
-    FLOAT_32    dr_campos   [3] =   {  -61.259949f,       86.954887f,     -163.76936f     };
-    FLOAT_32    dr_camdir   [3] =   {   -0.38013774f,     -0.26364070f,      0.88656020f  };
-    FLOAT_32    dr_cambi    [3] =   {   -0.91907620f,      0.00000000f,     -0.39407989f  };
-    FLOAT_32    dr_camup    [3] =   {   -0.10389550f,      0.96462101f,      0.24230589f  };
+	FLOAT_32    dr_campos   [3] =   { -144.18692f,       -35.554573f,     -128.09940f     };
+    FLOAT_32    dr_camdir   [3] =   {    0.15276398f,     -0.47443116f,     -0.86693615f  };
+    FLOAT_32    dr_cambi    [3] =   {    0.98482728f,      0.00000000f,      0.17353773f  };
+    FLOAT_32    dr_camup    [3] =   {    0.082331710f,     0.88029265f,     -0.46723273f  };
     FLOAT_32    dr_worldup  [3] =   {    0.0f,             1.0f,             0.0f         };
+
+//    FLOAT_32    dr_campos   [3] =   {  -61.259949f,       86.954887f,     -163.76936f     };
+//    FLOAT_32    dr_camdir   [3] =   {   -0.38013774f,     -0.26364070f,      0.88656020f  };
+//    FLOAT_32    dr_cambi    [3] =   {   -0.91907620f,      0.00000000f,     -0.39407989f  };
+//    FLOAT_32    dr_camup    [3] =   {   -0.10389550f,      0.96462101f,      0.24230589f  };
+//    FLOAT_32    dr_worldup  [3] =   {    0.0f,             1.0f,             0.0f         };
 
 //    FLOAT_32    dr_campos   [3] =   {  -95.784744f,       74.410210f,     -115.75385f     };
 //    FLOAT_32    dr_camdir   [3] =   {    0.76815635f,      0.062062062f,     0.63724738f  };
@@ -317,6 +323,11 @@ M_DR_BODY UINT_32               dr_program_grass_depth_normal;
 M_DR_BODY UINT_32               dr_program_grass_depth_normalv;
 M_DR_BODY UINT_32               dr_program_grass_depth_normalf;
 
+/// !!!!!!!!!!!!
+M_DR_BODY UINT_32               dr_program_grass_depth_shadow;
+M_DR_BODY UINT_32               dr_program_grass_depth_shadowv;
+M_DR_BODY UINT_32               dr_program_grass_depth_shadowf;
+
 // AA SHADERS
 
 M_DR_BODY UINT_32               dr_program_aa_blurvert;
@@ -462,7 +473,8 @@ M_DR_BODY UINT_16P              dr_object_tags;
 
 // disappear distances
 
-M_DR_BODY FLOAT_32P             dr_object_disappear;                                    // quadratic dissapearing distances
+M_DR_BODY FLOAT_32P             dr_object_disappear_end;                                // dissapearing distances (end)
+M_DR_BODY FLOAT_32P             dr_object_disappear_start;                              // dissapearing distances (start)
 M_DR_BODY UINT_8P               dr_object_disappear_split;                              // shadow dissapearing split index
 M_DR_BODY FLOAT_32P             dr_object_disappear_shadow;                             // shadow dissapearing distances
 

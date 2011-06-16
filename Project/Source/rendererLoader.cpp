@@ -20,20 +20,21 @@ VOID	dr_Init (
     dr_stamp = 1;
 
     dr_frame = 0;
+	dr_swing = 0.0;
 
     dr_origin [0] = 0.0;
     dr_origin [1] = 0.0;
     dr_origin [2] = 0.0;
 
-    dr_enableautoexposure	= false;
-    dr_enablebloom			= false;
-    dr_enablessao			= false;
-    dr_enablefog			= false;
-    dr_enableaa			    = false;
+    dr_enableautoexposure	= true;
+    dr_enablebloom			= true;
+    dr_enablessao			= true;
+    dr_enablefog			= true;
+    dr_enableaa			    = true;
 
     dr_levelculling = 1;
-    dr_levelbloom	= 1;
-    dr_levelssao	= 1;
+    dr_levelbloom	= 0;
+    dr_levelssao	= 0;
 
     dr_detailculling = M_DR_CULLING_SAMPLES;
 
@@ -484,16 +485,12 @@ VOID	dr_Init (
         glNewList (dr_quads [i], GL_COMPILE);
             glBegin (GL_QUADS);
                     glMultiTexCoord2f (GL_TEXTURE0,  0.0f,		            0.0f);
-                    ///glMultiTexCoord2f (GL_TEXTURE1, -1.0f,		           -1.0f);
                     glVertex3f ( - 1.0f, - 1.0f, 0.0f);
                     glMultiTexCoord2f (GL_TEXTURE0, (FLOAT_32) dr_w [i],	0.0f);
-                    ///glMultiTexCoord2f (GL_TEXTURE1,  1.0f,	               -1.0f);
                     glVertex3f (   1.0f, - 1.0f, 0.0f);
                     glMultiTexCoord2f (GL_TEXTURE0, (FLOAT_32) dr_w [i],	(FLOAT_32) dr_h [i]);
-                    ///glMultiTexCoord2f (GL_TEXTURE1,  1.0f,	                1.0f);
                     glVertex3f (   1.0f,   1.0f, 0.0f);
                     glMultiTexCoord2f (GL_TEXTURE0,  0.0f,					(FLOAT_32) dr_h [i]);
-                    ///glMultiTexCoord2f (GL_TEXTURE1, -1.0f,				    1.0f);
                     glVertex3f ( - 1.0f,   1.0f, 0.0f);
             glEnd ();
         glEndList ();

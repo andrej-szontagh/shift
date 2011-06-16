@@ -28,7 +28,7 @@
 
 FLOAT_64    fps                 = 0;
 UINT_32     frame               = 0;
-UINT_32     frames              = 0;
+UINT_32     frames              = 1;	// to avoid delta corruption
 UINT_32     framen              = 0;
 UINT_32     tstart              = 0;
 UINT_32     frametime           = 0;
@@ -37,8 +37,10 @@ FLOAT_32    delta               = 0;
 
 CHAR        caption [256];
 
-INT_32      width               = 1280; //1280; //800; //640;
-INT_32      height              = 800;  //800;  //600; //400;
+INT_32      width               = 1920;		//1920; //1280; //800; //640;
+INT_32      height              = 1080;		//1080; //800;  //600; //400;
+
+BOOL        fullscreen			= true;
 
 INT_32      debug               = 0;
 
@@ -106,7 +108,7 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
     atexit (quit);
 
-    sprintf (caption, "DEBUG");
+    sprintf (caption, "SHIFTe. Tech-Demo");
 
     SDL_WM_SetCaption (caption, caption);
 
@@ -119,7 +121,9 @@ INT_32 main (INT_32 argc, CHARP argv [])
     SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE,     32);
     SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER,   1);
 
-    screen = SDL_SetVideoMode (width, height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF);   // | SDL_FULLSCREEN);
+	if (fullscreen) 
+		screen = SDL_SetVideoMode (width, height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN); else
+		screen = SDL_SetVideoMode (width, height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF);
 
     bkcolor = SDL_MapRGBA (screen->format, 0, 0, 0, 0);
 
@@ -357,11 +361,15 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
             fps = (frames * 1000.0 / (FLOAT_64) (delta = (FLOAT_32) frametime - frametimeo));   delta /= frames;
 
-            sprintf (caption, "FPS %6.2f", fps);        SDL_WM_SetCaption (caption, caption);
+            sprintf (caption, "FPS %6.2f", fps);        // SDL_WM_SetCaption (caption, caption);
 
             frametimeo = frametime;
             frames = 0;
         }
+
+		M_STATE_TEX0_RECT_CLEAR;
+
+		dr_DrawText (- 0.95f, 0.9f, 0.03f, 0.05f, dr_text, true, caption);
 
         // SWAP BUFFERS
 

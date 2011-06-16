@@ -531,7 +531,7 @@ VOID    dr_Render (FLOAT_32 delta)
     M_STATE_TEX8_CLEAR;
     M_STATE_TEX9_CLEAR;
 
-    M_STATE_TEX0_RECT_SET   (dr_enviroment_material->diffuse1);
+    M_STATE_TEX0_RECT_SET   (dr_enviroment_material->diffuse);
     M_STATE_TEX1_RECT_CLEAR;
     M_STATE_TEX2_RECT_CLEAR;
 
@@ -571,7 +571,7 @@ VOID    dr_Render (FLOAT_32 delta)
     #ifdef M_DEBUG
         debug_EndTimerQuery (0, "Enviroment     : ", dr_debug_profile_enviroment, dr_debug_profile_enviromentg);
     #endif
-/*
+
     //////////////////////////////////////////////
     // SSAO
     //////////////////////////////////////////////
@@ -591,35 +591,26 @@ VOID    dr_Render (FLOAT_32 delta)
 
         glUseProgram  (dr_program_ssao);
 
-        M_STATE_MATRIXMODE_MODELVIEW;  glLoadMatrixf (dr_matrixv);
+        // textures
 
-        glActiveTexture (GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, dr_G2);
+        M_STATE_TEX1_SET (dr_rand);
 
-        glActiveTexture (GL_TEXTURE1);  glEnable (GL_TEXTURE_2D);
-        glBindTexture   (GL_TEXTURE_2D, dr_rand);
-
-        glActiveTexture (GL_TEXTURE2);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, target1);
+        M_STATE_TEX0_RECT_SET   (dr_G2);
+        M_STATE_TEX1_RECT_CLEAR;
+        M_STATE_TEX2_RECT_SET   (target1);
 
         glCallList (dr_quads [0]);
 
-        glActiveTexture (GL_TEXTURE2);	glDisable (GL_TEXTURE_RECTANGLE_ARB);
-        glActiveTexture (GL_TEXTURE1);	glDisable (GL_TEXTURE_2D);
-        glActiveTexture (GL_TEXTURE0);	glDisable (GL_TEXTURE_RECTANGLE_ARB);
-
         // VERTICAL BILATERAL BLUR
-
-        glEnable  (GL_TEXTURE_RECTANGLE_ARB);
 
         glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [dr_levelssao], 0);
         glUseProgram  (dr_program_ssao_blurvert);
 
-        glActiveTexture (GL_TEXTURE0);	glEnable  (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, dr_auxA [dr_levelssao]);
-        
-        glActiveTexture (GL_TEXTURE1);	glEnable  (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, dr_G2);
+        M_STATE_TEX1_CLEAR;
+
+        M_STATE_TEX0_RECT_SET   (dr_auxA [dr_levelssao]);
+        M_STATE_TEX1_RECT_SET   (dr_G2);
+        M_STATE_TEX2_RECT_CLEAR;
 
         glCallList (dr_quads [dr_levelssao]);
 
@@ -644,21 +635,12 @@ VOID    dr_Render (FLOAT_32 delta)
         glUseProgram  (dr_program_ssao_blurhblend);
 
         glViewport (0, 0, dr_width, dr_height);
-        
-        glActiveTexture (GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, dr_auxB [dr_levelssao]);
 
-        glActiveTexture (GL_TEXTURE1);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, target1);
-
-        glActiveTexture (GL_TEXTURE2);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, dr_G2);
+        M_STATE_TEX0_RECT_SET   (dr_auxB [dr_levelssao]);
+        M_STATE_TEX1_RECT_SET   (target1);
+        M_STATE_TEX2_RECT_SET   (dr_G2);
 
         glCallList (dr_quads [0]);
-
-        glActiveTexture (GL_TEXTURE2);	glDisable (GL_TEXTURE_RECTANGLE_ARB);
-        glActiveTexture (GL_TEXTURE1);	glDisable (GL_TEXTURE_RECTANGLE_ARB);
-        glActiveTexture (GL_TEXTURE0);	glDisable (GL_TEXTURE_RECTANGLE_ARB);
 
         #ifdef M_DEBUG
             debug_EndTimer (0, "SSAO           : ");
@@ -725,26 +707,19 @@ VOID    dr_Render (FLOAT_32 delta)
 
         glDepthRange (1.0, 1.0);
 
-        glUseProgram  (dr_program_fog);
+        glUseProgram (dr_program_fog);
         
-        glActiveTexture (GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, dr_G2);
+        // textures
 
-        glActiveTexture (GL_TEXTURE1);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-        glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, target1);
+        M_STATE_TEX0_RECT_SET   (dr_G2);
+        M_STATE_TEX1_RECT_SET   (target1);
+        M_STATE_TEX2_RECT_CLEAR;
 
-        M_STATE_MATRIXMODE_MODELVIEW;   glPushMatrix (); glLoadMatrixf (dr_matrixv);
-
-        glColor3fv (dr_fog.color);
+        glColor3fv (dr_fog_color);
 
         glCallList (dr_quads [0]);
 
         glColor3f (1.0, 1.0, 1.0);
-
-        M_STATE_MATRIXMODE_MODELVIEW;   glPopMatrix (); 
-
-        glActiveTexture (GL_TEXTURE1);	glDisable (GL_TEXTURE_RECTANGLE_ARB);
-        glActiveTexture (GL_TEXTURE0);	glDisable (GL_TEXTURE_RECTANGLE_ARB);
 
         glDepthRange (0.0, 1.0);
 
@@ -752,11 +727,13 @@ VOID    dr_Render (FLOAT_32 delta)
             debug_EndTimer (0, "Fog            : ");
         #endif
 
+        GLuint tmp;
+
         tmp = target1;
               target1 = target2;
                         target2 = tmp;
     }
-*/
+
     //////////////////////////////////////////////
     // BLENDED OBJECTS
     //////////////////////////////////////////////
@@ -811,7 +788,7 @@ VOID    dr_Render (FLOAT_32 delta)
     //////////////////////////////////////////////
     // AA
     //////////////////////////////////////////////
-/*
+
     if (dr_enableaa) {
 
         #ifdef M_DEBUG
@@ -823,8 +800,11 @@ VOID    dr_Render (FLOAT_32 delta)
         glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,   GL_TEXTURE_RECTANGLE_ARB, 0,          0);
         glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, target2,    0);
 
-        glActiveTexture (GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB);    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, target1);
-        glActiveTexture (GL_TEXTURE1);  glEnable (GL_TEXTURE_RECTANGLE_ARB);    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dr_depth);
+        // textures
+
+        M_STATE_TEX0_RECT_SET   (target1);
+        M_STATE_TEX1_RECT_SET   (dr_depth);
+        M_STATE_TEX2_RECT_CLEAR;
 
         glUseProgram  (dr_program_aa_blurhoriz);
 
@@ -832,22 +812,17 @@ VOID    dr_Render (FLOAT_32 delta)
 
         glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, target1, 0);
 
-        glActiveTexture (GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB);    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, target2);
-        glActiveTexture (GL_TEXTURE1);  glEnable (GL_TEXTURE_RECTANGLE_ARB);    glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dr_depth);
-
         glUseProgram  (dr_program_aa_blurvert);
 
         glCallList (dr_quads [0]);
-
-        glActiveTexture (GL_TEXTURE0);  glDisable (GL_TEXTURE_RECTANGLE_ARB);
 
         #ifdef M_DEBUG
             debug_EndTimer (0, "AA             : ");
         #endif
     }
-*/
+
     //////////////////////////////////////////////
-    // MATRICES FOR NON SHADER PROCESSING
+    // MATRICES FOR FIXED PIPELINE PROCESSING
     //////////////////////////////////////////////
 
     M_STATE_MATRIXMODE_PROJECTION;  glLoadIdentity ();
@@ -856,7 +831,7 @@ VOID    dr_Render (FLOAT_32 delta)
     //////////////////////////////////////////////
     // BLOOM
     //////////////////////////////////////////////
-/*
+
     #ifdef M_DEBUG
         debug_StartTimer (0);
     #endif
@@ -872,8 +847,7 @@ VOID    dr_Render (FLOAT_32 delta)
 
         glUseProgram  (dr_program_hdr_hipass);
 
-        /// REMOVE UNIFORM USE TEX COORD !!!!!!!!!!!!!!
-        glUniform1f (glGetUniformLocation (dr_program_hdr_hipass, "scale"), dr_enableautoexposure ? dr_intensityscale : 1.0f);
+        glFogCoordf (dr_enableautoexposure ? dr_intensityscale : 1.0f);
 
         glActiveTexture (GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
 
@@ -934,9 +908,8 @@ VOID    dr_Render (FLOAT_32 delta)
         M_STATE_DEPTHTEST_CLEAR;
 
         glUseProgram  (dr_program_hdr);
-        
-        /// REMOVE UNIFORM USE TEX COORD !!!!!!!!!!!!!!
-        glUniform1f (glGetUniformLocation (dr_program_hdr, "scale"), dr_enableautoexposure ? dr_intensityscale : 1.0f);
+
+        glFogCoordf (dr_enableautoexposure ? dr_intensityscale : 1.0f);
 
         glActiveTexture	(GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB); 
 
@@ -964,11 +937,11 @@ VOID    dr_Render (FLOAT_32 delta)
     #ifdef M_DEBUG
         debug_EndTimer (0, "Bloom          : ");
     #endif
-*/
+
     //////////////////////////////////////////////
     // AUTO-EXPOSURE
     //////////////////////////////////////////////
-/*
+
     if (dr_enableautoexposure) {
 
         #ifdef M_DEBUG
@@ -1000,31 +973,27 @@ VOID    dr_Render (FLOAT_32 delta)
             glDisable (GL_TEXTURE_RECTANGLE_ARB);
         }
 
-        FLOAT_32 intensity		= 0.0;
-        FLOAT_32 intensitymin	= 1.0;
-        FLOAT_32 intensitymax	= 0.0;
+        // EVALUATING INTENSITY
+
+        FLOAT_32 intensity = 0.0;
 
         for (UINT_32 i = 0; i < dr_intensitysize; i ++)	{
-
-            if (dr_intensitydata [i] < intensitymin) intensitymin = dr_intensitydata [i];
-            if (dr_intensitydata [i] > intensitymax) intensitymax = dr_intensitydata [i];
 
             intensity +=  dr_intensitydata [i];
 
         }	intensity /= (dr_intensitysize * 255);
 
-        intensitymin /= 255;
-        intensitymax /= 255;
-
         // TONE MAPPING
 
         dr_intensityscale = dr_intensityscale + (M_DR_HDR_EXPOSURE - intensity) * MIN (M_DR_HDR_EXPOSURE_SPEED * delta, 1.0f);
+
+        dr_intensityscale = MIN (MAX (dr_intensityscale, M_DR_HDR_EXPOSURE_SCALE_MIN), M_DR_HDR_EXPOSURE_SCALE_MAX);
 
         #ifdef M_DEBUG
             debug_EndTimer (0, "Autoexposure   : ");
         #endif
     }
-*/
+
     //////////////////////////////////////////////
     // BACK FRAMEBUFFER
     //////////////////////////////////////////////

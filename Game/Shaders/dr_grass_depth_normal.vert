@@ -1,10 +1,14 @@
 
 uniform vec2 uvscale;
 
+varying float threshold;
+varying float damping;
 varying float factor;
 
 // DISAPPEAR    -> gl_FogCoord
 // SWING        -> gl_MultiTexCoord2.x
+// DAMPING      -> gl_MultiTexCoord3.x
+// THRESHOLD    -> gl_MultiTexCoord3.y
 // TRANSFORM    -> gl_MultiTexCoord4.xyz
 // TRANSFORM    -> gl_MultiTexCoord5.xyzw
 
@@ -32,7 +36,12 @@ void main ()
 
     // FADEING ----------------------------------------------------------------------------------------------------------------------------------------------
     
-            factor          = gl_FogCoord * min (1.0, max (0.0, gl_TexCoord [0].x - 1.0) * 1000000.0);
+            factor          = gl_FogCoord;
+
+    // ALPHA ------------------------------------------------------------------------------------------------------------------------------------------------
+
+			damping         = gl_MultiTexCoord3.x;
+			threshold       = gl_MultiTexCoord3.y;
             
     // ANIMATION --------------------------------------------------------------------------------------------------------------------------------------------
     

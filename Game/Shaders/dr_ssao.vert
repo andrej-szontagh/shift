@@ -12,5 +12,5 @@ void main ()
 
     // vector for viewspace position reconstruction
 
-    view = vec3 (gl_MultiTexCoord1.xy * vec2 (farw, farh), - farplane);
+    view = vec3 (gl_Vertex.xy * vec2 (farw, farh), - farplane);
 }

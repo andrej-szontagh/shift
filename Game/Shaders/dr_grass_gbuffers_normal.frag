@@ -1,9 +1,6 @@
 
 uniform sampler2D tex_diffuse;
 
-varying float shininess;
-varying float gloss;
-
 varying float depth;
 
 varying vec3 normal;
@@ -23,7 +20,7 @@ void main ()
     
             //gl_FragData [0] = vec4 (diffuse.rgb, floor (max (1.0, shininess)) + fract (gloss * pow (dot (diffuse.rgb, vec3 (0.333, 0.333, 0.333)), 3.0))));
             
-            gl_FragData [0] = vec4 (diffuse.rgb, 0.0);
+            gl_FragData [0] = vec4 (diffuse.rgb, 100.001);
     
     // G2 ---------------------------------------------------------------------------------------------------------------------------------------------------
 

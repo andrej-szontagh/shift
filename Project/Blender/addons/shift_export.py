@@ -35,14 +35,18 @@ bl_info = {
 import io
 import os
 import bpy
+import sys
 import math
 import time
+import cmath
 import struct
+import shutil
 import ctypes
 import random
 import mathutils
 
 from math       import radians
+from ctypes     import *
 from mathutils  import *
 from bpy.props  import *
 
@@ -458,7 +462,7 @@ def processExportMesh (mesh, filepath):
     # export properties
     if mat:
         
-        if   'Basic'        in mat.name:
+        if   'Solid'        in mat.name:
             
             export_tangents = True
             export_normals  = True
@@ -472,7 +476,7 @@ def processExportMesh (mesh, filepath):
             try:        mesh ['morph_uv'];  export_uv2 = True
             except:     pass
             
-        elif 'Layered'      in mat.name:
+        elif 'Terrain'      in mat.name:
             
             export_tangents = True
             export_normals  = True
@@ -1295,15 +1299,6 @@ def processExportInstances (psystem, filepath):
     
     # active scene
     scene = bpy.context.scene
-    
-    # opening new binary file
-    stream = io.open (filepath, mode = 'wb')
-
-    # write count of instances
-    stream.write (struct.pack ('H', len (psystem.particles)))
-
-    # global matrix
-    scenematrix = mathutils.Matrix.Rotation (radians (- 90), 4, 'X')
 
     minco = [ 99999999,  99999999,  99999999]
     maxco = [-99999999, -99999999, -99999999]
@@ -1317,93 +1312,116 @@ def processExportInstances (psystem, filepath):
         if v.co [1] > maxco [1]:    maxco [1] = v.co [1]
         if v.co [2] > maxco [2]:    maxco [2] = v.co [2]
 
-    points = [mathutils.Vector ((minco [0], minco [1], minco [2])),
-              mathutils.Vector ((maxco [0], minco [1], minco [2])),
-              mathutils.Vector ((minco [0], maxco [1], minco [2])),
-              mathutils.Vector ((maxco [0], maxco [1], minco [2])),
-              mathutils.Vector ((minco [0], minco [1], maxco [2])),
-              mathutils.Vector ((maxco [0], minco [1], maxco [2])),
-              mathutils.Vector ((minco [0], maxco [1], maxco [2])),
-              mathutils.Vector ((maxco [0], maxco [1], maxco [2]))]
+    # data
+    pointstype = ctypes.c_float * 24;   points = pointstype ()
+
+    points [ 0] = minco [0]; points [ 1] = minco [1]; points [ 2] = minco [2];
+    points [ 3] = maxco [0]; points [ 4] = minco [1]; points [ 5] = minco [2];
+    points [ 6] = minco [0]; points [ 7] = maxco [1]; points [ 8] = minco [2];
+    points [ 9] = maxco [0]; points [10] = maxco [1]; points [11] = minco [2];    
+    points [12] = minco [0]; points [13] = minco [1]; points [14] = maxco [2];
+    points [15] = maxco [0]; points [16] = minco [1]; points [17] = maxco [2];
+    points [18] = minco [0]; points [19] = maxco [1]; points [20] = maxco [2];
+    points [21] = maxco [0]; points [22] = maxco [1]; points [23] = maxco [2];
     
     minco [:] = []
-    maxco [:] = []
+    maxco [:] = []    
 
-    minco = [ 99999999,  99999999,  99999999]
-    maxco = [-99999999, -99999999, -99999999]
+    # toolkit dll
+    toolkit = windll.LoadLibrary (sys.path [0] + '\shift_toolkit.dll')
 
+    # copy of current setting
+    settings = psystem.settings;    psystem.settings = psystem.settings.copy ()
+
+    # set new count
+    try:    psystem.settings.count      = settings ["count"]
+    except: pass
+    
+    # set 100% of particles
+    psystem.settings.draw_percentage    = 100.0
+
+    # edit mode
+    bpy.ops.particle.particle_edit_toggle ()
+    bpy.ops.particle.particle_edit_toggle ()
+
+    # data
+    datatype = ctypes.c_float * (len (psystem.particles) * 7);  data  = datatype ()
+
+    # data
+    datatype = ctypes.c_uint  *  len (psystem.particles);       datak = datatype ()
+
+    i = 0;  j = 0
     for p in psystem.particles:
-        
-        # transformation values ..
-                
-        scale       = (p.hair [0].co - p.hair [1].co).length * (len (p.hair) - 1) * 0.5
-        translation =  p.hair [0].co
 
-        # build matrix for instance
-        matrix = mathutils.Matrix ();   matrix.identity ()
+        data [i] = ctypes.c_float (p.prev_location [0]);    i += 1;
+        data [i] = ctypes.c_float (p.prev_location [1]);    i += 1;
+        data [i] = ctypes.c_float (p.prev_location [2]);    i += 1;
+        data [i] = ctypes.c_float (p.location [0]);         i += 1;
+        data [i] = ctypes.c_float (p.location [1]);         i += 1;
+        data [i] = ctypes.c_float (p.location [2]);         i += 1;
+        data [i] = ctypes.c_float (p.size);                 i += 1;
         
-        # random rotations
-        matrix = mathutils.Matrix.Rotation (random.random () * scene.shift_ex_instances_randomx, 4, 'X') * matrix
-        matrix = mathutils.Matrix.Rotation (random.random () * scene.shift_ex_instances_randomy, 4, 'Y') * matrix
-        matrix = mathutils.Matrix.Rotation (random.random () * scene.shift_ex_instances_randomz, 4, 'Z') * matrix
-        
-        # scale
-        matrix = mathutils.Matrix.Scale (scale, 4) * matrix
-        
-        # hack ..
-        matrix = mathutils.Matrix.Rotation (radians (90), 4, 'Y') * matrix
+        datak [j] = ctypes.c_uint (len (p.hair_keys)); j += 1
 
-        # rotation
-        rotmatrix = p.rotation.to_matrix ();    rotmatrix.resize_4x4 ();    matrix = rotmatrix * matrix
-        
-        # translation
-        matrix = mathutils.Matrix.Translation (translation) * matrix
-        
-        # rotate world matrix to match up vector with y axis
-        matrix = scenematrix * matrix
-
-        # transformation values ..
-                
-        rotation    =  matrix.to_euler ('XYZ')
-        
-        # collect whole system boundary
-        for point in points :
-
-            pointn = point * matrix
-            
-            if pointn [0] < minco [0]:  minco [0] = pointn [0]
-            if pointn [1] < minco [1]:  minco [1] = pointn [1]
-            if pointn [2] < minco [2]:  minco [2] = pointn [2]
-            if pointn [0] > maxco [0]:  maxco [0] = pointn [0]
-            if pointn [1] > maxco [1]:  maxco [1] = pointn [1]
-            if pointn [2] > maxco [2]:  maxco [2] = pointn [2]
-
-        # position  
-        stream.write (struct.pack ('f',   translation.x))
-        stream.write (struct.pack ('f',   translation.z))
-        stream.write (struct.pack ('f', - translation.y))
-        stream.write (struct.pack ('f', - rotation.x))
-        stream.write (struct.pack ('f', - rotation.y))
-        stream.write (struct.pack ('f', - rotation.z))
-        stream.write (struct.pack ('f',   scale))            
-
-    # boundary
-    stream.write (struct.pack ('f', minco [0]))
-    stream.write (struct.pack ('f', minco [1]))
-    stream.write (struct.pack ('f', minco [2]))
-
-    stream.write (struct.pack ('f', maxco [0]))
-    stream.write (struct.pack ('f', maxco [1]))
-    stream.write (struct.pack ('f', maxco [2]))
+    # restore settings
+    psystem.settings = settings;
     
-    # closing file
-    stream.close ()
+    if (scene.shift_ex_instances_over):
 
-    # clean up
-    points [:] = []
+        subx = ctypes.c_uint (scene.shift_ex_subdivisionx)
+        suby = ctypes.c_uint (scene.shift_ex_subdivisiony)
+        subz = ctypes.c_uint (scene.shift_ex_subdivisionz)
+
+        rotx = ctypes.c_float (scene.shift_ex_instances_randomx)
+        roty = ctypes.c_float (scene.shift_ex_instances_randomy)
+        rotz = ctypes.c_float (scene.shift_ex_instances_randomz)
+
+        rad = ctypes.c_float (scene.shift_ex_randomrad)
+
+        cancell = ctypes.c_float (scene.shift_ex_cancellation)
+        
+        rotorder = scene.shift_ex_rotorder
+        
+    else:
+        
+        try:    subx = ctypes.c_uint (psystem.settings ['subdivision_x'])
+        except: subx = ctypes.c_uint (scene.shift_ex_subdivisionx)
+        try:    suby = ctypes.c_uint (psystem.settings ['subdivision_y'])
+        except: suby = ctypes.c_uint (scene.shift_ex_subdivisiony)
+        try:    subz = ctypes.c_uint (psystem.settings ['subdivision_z'])
+        except: subz = ctypes.c_uint (scene.shift_ex_subdivisionz)
+
+        try:    rotx = ctypes.c_float (psystem.settings ['rand_rot_x'] * cmath.pi / 180.0)
+        except: rotx = ctypes.c_float (scene.shift_ex_instances_randomx)
+        try:    roty = ctypes.c_float (psystem.settings ['rand_rot_y'] * cmath.pi / 180.0)
+        except: roty = ctypes.c_float (scene.shift_ex_instances_randomy)
+        try:    rotz = ctypes.c_float (psystem.settings ['rand_rot_z'] * cmath.pi / 180.0)
+        except: rotz = ctypes.c_float (scene.shift_ex_instances_randomz)
     
-    minco [:] = []
-    maxco [:] = []
+        try:    rad = ctypes.c_float (psystem.settings ['rand_radius'])
+        except: rad = ctypes.c_float (scene.shift_ex_randomrad)
+
+        try:    rotorder = str (psystem.settings ['rand_rot_order']).upper ()
+        except: rotorder = scene.shift_ex_rotorder
+
+        try:    cancell = ctypes.c_float (psystem.settings ['cancell'])
+        except: cancell = ctypes.c_float (scene.shift_ex_cancellation)
+
+
+    if   (rotorder == "XYZ"):  order = ctypes.c_uint (1)
+    elif (rotorder == "YXZ"):  order = ctypes.c_uint (2)
+    elif (rotorder == "ZYX"):  order = ctypes.c_uint (3)
+    elif (rotorder == "XZY"):  order = ctypes.c_uint (4)
+    elif (rotorder == "YZX"):  order = ctypes.c_uint (5)
+    elif (rotorder == "ZXY"):  order = ctypes.c_uint (6)
+    
+    else : order = ctypes.c_uint (1)
+    
+    # PROCESS
+    toolkit.processSaveInstances (ctypes.c_char_p (filepath.encode ('ascii')), len (psystem.particles), data, datak, points, subx, suby, subz, rotx, roty, rotz, rad, order, cancell)
+
+    del data
+    del datak
     
     return True
 
@@ -1426,6 +1444,7 @@ def processExportScene (filepath):
     #------------------------------------------------------------------------------------
 
     # final lists
+    instanced  = []
     materials  = []
     textures   = []
     objects    = []
@@ -1492,13 +1511,11 @@ def processExportScene (filepath):
                 except: pass
                 
                 # adding occlusion mesh
-                try:    meshes.append (((obj ['occlusion'], bpy.data.meshes [obj ['occlusion']])))
-                except:
-                    try:    meshes.append (((obj.data ['occlusion'], bpy.data.meshes [obj.data ['occlusion']])))
-                    except: pass            
+                try:    meshes.append (((obj.data ['occlusion'], bpy.data.meshes [obj.data ['occlusion']])))
+                except: pass            
 
                 # append object
-                objects.append ((obj.name, obj))
+                objects.append ((obj.name, obj, None))
 
             # collect all particle systems meshes
             for p in obj.particle_systems:
@@ -1512,8 +1529,11 @@ def processExportScene (filepath):
                         # if mesh have material ..
                         if mesh.materials [0]:
                         
+                            # append instances
+                            instanced.append ((obj.name + '_' + p.name, p))
+                            
                             # append object
-                            objects.append ((obj.name + '_' + p.name, p))
+                            objects.append ((obj.name + '_' + p.name, obj, len (instanced) - 1))
                             
                             # adding particle mesh
                             meshes.append ((mesh.name, mesh))
@@ -1561,25 +1581,49 @@ def processExportScene (filepath):
     
     prevname = None;    l = len (materials)
     
-    i = 0;
+    i = 0
     while (i < l):
         name = materials [i][0]
         if (name == prevname):
-            del materials [i];  l -= 1;
+            del materials [i];  l -= 1
             continue
         prevname = name;        i += 1
 
     # collecting textures
     for name, mat in materials:
-        for tex in mat.texture_slots:
-            if tex:
-                textures.append (tex)
+
+        try:    tex = bpy.data.textures [mat ['tex_diffuse']];      textures.append ((tex.name, tex))
+        except: pass;
+        try:    tex = bpy.data.textures [mat ['tex_composite']];    textures.append ((tex.name, tex))
+        except: pass;
+        try:    tex = bpy.data.textures [mat ['tex_weights1']];     textures.append ((tex.name, tex))
+        except: pass;
+        try:    tex = bpy.data.textures [mat ['tex_weights2']];     textures.append ((tex.name, tex))
+        except: pass;
+        try:    tex = bpy.data.textures [mat ['tex_weights3']];     textures.append ((tex.name, tex))
+        except: pass;
+        try:    tex = bpy.data.textures [mat ['tex_weights4']];     textures.append ((tex.name, tex))
+        except: pass;
+
+    # removing duplicate textures
+    textures.sort (key = lambda textures: textures [0])
+
+    prevname = None;    l = len (textures)
+    
+    i = 0
+    while (i < l):
+        name = textures [i][0]
+        if (name == prevname):
+            del textures [i];   l -= 1
+            continue
+        prevname = name;        i += 1
 
     # writing header
     stream.write (struct.pack ('i', len (objects)))
     stream.write (struct.pack ('i', len (meshes)))
     stream.write (struct.pack ('i', len (materials)))
     stream.write (struct.pack ('i', len (textures)))
+    stream.write (struct.pack ('i', len (instanced)))
 
     # world params
     
@@ -1598,30 +1642,30 @@ def processExportScene (filepath):
     print ('Textures :')
     print ('')        
     
-    for i, tex in enumerate (textures):
+    for i, (name, tex) in enumerate (textures):
 
         # saving index
-        tex.texture.id_data ["tmp_index"] = i
+        tex.id_data ["tmp_index"] = i
 
-        image = tex.texture.image;
+        image = tex.image;
 
-        filename = os.path.basename (image.filepath)
+        filename = os.path.basename (bpy.path.abspath (image.filepath))
 
         # file name
         stream.write (struct.pack ('i',     len (filename) + 1))
         stream.write (struct.pack ('%isB' % len (filename), filename.encode ('ascii'), 0))
 
-        if   tex.texture.extension == 'REPEAT':
+        if   tex.extension == 'REPEAT':
 
             stream.write (struct.pack ('i', 0))     # wraps
             stream.write (struct.pack ('i', 0))     # wrapt
             
-        elif tex.texture.extension == 'EXTEND':
+        elif tex.extension == 'EXTEND':
 
             stream.write (struct.pack ('i', 1))     # wraps
             stream.write (struct.pack ('i', 1))     # wrapt
             
-        elif tex.texture.extension == 'CLIP':
+        elif tex.extension == 'CLIP':
 
             stream.write (struct.pack ('i', 2))     # wraps
             stream.write (struct.pack ('i', 2))     # wrapt
@@ -1632,7 +1676,7 @@ def processExportScene (filepath):
             stream.write (struct.pack ('i', 0))     # wrapt
 
         # anisotrophy        
-        try:    stream.write (struct.pack ('i', tex.texture.id_data ["anisotrophy"]))
+        try:    stream.write (struct.pack ('i', tex.id_data ["anisotrophy"]))
         except: stream.write (struct.pack ('i', 1))
 
         print (image.filepath)
@@ -1655,177 +1699,97 @@ def processExportScene (filepath):
         stream.write (struct.pack ('%isB' % len (name), name.encode ('ascii'), 0))
         
         # material type 
-        if   ("Basic"         in name):
+        if   ("Solid"         in name):
             stream.write (struct.pack ('i', 1))       # type
-
-            try:    stream.write (struct.pack ('f', mat ['gloss']))
-            except:
-                stream.write (struct.pack ('f', 1.0))
-                print ('ERROR | Material : ', name, ' custom property \'gloss\' not set')
-
-            try:    stream.write (struct.pack ('f', mat ['shininess']))
-            except:
-                stream.write (struct.pack ('f', 10.0))
-                print ('ERROR | Material : ', name, ' custom property \'shininess\' not set')
                 
-            specular = - 1
-            diffuse = - 1
-            normal = - 1
+            diffuse     = - 1
+            composite   = - 1
 
-            for tex in mat.texture_slots:
-                if tex:
-                    if (tex.use_map_specular):          specular = tex.texture.id_data ["tmp_index"];
-                    if (tex.use_map_color_diffuse):     diffuse = tex.texture.id_data ["tmp_index"];
-                    if (tex.use_map_normal):            normal = tex.texture.id_data ["tmp_index"];
+            try:    diffuse     = bpy.data.textures [mat ['tex_diffuse'  ]].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_diffuse\' not set or invalid')
+            try:    composite   = bpy.data.textures [mat ['tex_composite']].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_composite\' not set or invalid')
 
-            stream.write (struct.pack ('i', normal))
             stream.write (struct.pack ('i', diffuse))
-            stream.write (struct.pack ('i', specular))
+            stream.write (struct.pack ('i', composite))
             
-        elif ("Layered"       in name):
+        elif ("Terrain"       in name):
             stream.write (struct.pack ('i', 2))       # type
 
-            try:    stream.write (struct.pack ('f', mat ['gloss1']))
-            except:
-                stream.write (struct.pack ('f', 1.0))
-                print ('ERROR | Material : ', name, ' custom property \'gloss1\' not set')
-            try:    stream.write (struct.pack ('f', mat ['gloss2']))
-            except:
-                stream.write (struct.pack ('f', 1.0))
-                print ('ERROR | Material : ', name, ' custom property \'gloss2\' not set')
-            try:    stream.write (struct.pack ('f', mat ['gloss3']))
-            except:
-                stream.write (struct.pack ('f', 1.0))
-                print ('ERROR | Material : ', name, ' custom property \'gloss3\' not set')
-            try:    stream.write (struct.pack ('f', mat ['shininess1']))
-            except:
-                stream.write (struct.pack ('f', 10.0))
-                print ('ERROR | Material : ', name, ' custom property \'shininess1\' not set')
-            try:    stream.write (struct.pack ('f', mat ['shininess2']))
-            except:
-                stream.write (struct.pack ('f', 10.0))
-                print ('ERROR | Material : ', name, ' custom property \'shininess2\' not set')
-            try:    stream.write (struct.pack ('f', mat ['shininess3']))
-            except:
-                stream.write (struct.pack ('f', 10.0))
-                print ('ERROR | Material : ', name, ' custom property \'shininess3\' not set')
+            diffuse     = - 1
+            composite   = - 1
+            
+            weights1    = - 1
+            weights2    = - 1
+            weights3    = - 1
+            weights4    = - 1
 
-            specular1 = - 1;    specular2 = - 1;    specular3 = - 1;
-            diffuse1 = - 1;     diffuse2 = - 1;     diffuse3 = - 1;
-            normal1 = - 1;      normal2 = - 1;      normal3 = - 1;
+            try:    diffuse     = bpy.data.textures [mat ['tex_diffuse'    ]].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_diffuse\' not set or invalid')
+            try:    composite   = bpy.data.textures [mat ['tex_composite'  ]].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_composite\' not set or invalid')
+            try:    weights1    = bpy.data.textures [mat ['tex_weights1'   ]].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_weights1\' not set or invalid')
+            try:    weights2    = bpy.data.textures [mat ['tex_weights2'   ]].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_weights2\' not set or invalid')
+            try:    weights3    = bpy.data.textures [mat ['tex_weights3'   ]].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_weights3\' not set or invalid')
+            try:    weights4    = bpy.data.textures [mat ['tex_weights4'   ]].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_weights4\' not set or invalid')
 
-            for tex in mat.texture_slots:
-                if tex:
-                    if (tex.use_map_specular):
-                        if   (specular1 < 0):       specular1 = tex.texture.id_data ["tmp_index"];
-                        elif (specular2 < 0):       specular2 = tex.texture.id_data ["tmp_index"];
-                        elif (specular3 < 0):       specular3 = tex.texture.id_data ["tmp_index"];
-                    if (tex.use_map_color_diffuse):
-                        if   (diffuse1 < 0):        diffuse1 = tex.texture.id_data ["tmp_index"];
-                        elif (diffuse2 < 0):        diffuse2 = tex.texture.id_data ["tmp_index"];
-                        elif (diffuse3 < 0):        diffuse3 = tex.texture.id_data ["tmp_index"];                    
-                    if (tex.use_map_normal):
-                        if   (normal1 < 0):         normal1 = tex.texture.id_data ["tmp_index"];
-                        elif (normal2 < 0):         normal2 = tex.texture.id_data ["tmp_index"];
-                        elif (normal3 < 0):         normal3 = tex.texture.id_data ["tmp_index"];
-                        
-                    if (tex.use_map_translucency):  mask = tex.texture.id_data ["tmp_index"];
-
-            stream.write (struct.pack ('i', mask))
-            stream.write (struct.pack ('i', normal1))
-            stream.write (struct.pack ('i', normal2))
-            stream.write (struct.pack ('i', normal3))
-            stream.write (struct.pack ('i', diffuse1))
-            stream.write (struct.pack ('i', diffuse2))
-            stream.write (struct.pack ('i', diffuse3))
-            stream.write (struct.pack ('i', specular1))
-            stream.write (struct.pack ('i', specular2))
-            stream.write (struct.pack ('i', specular3))
+            stream.write (struct.pack ('i', diffuse))
+            stream.write (struct.pack ('i', composite))
+            
+            stream.write (struct.pack ('i', weights1))
+            stream.write (struct.pack ('i', weights2))
+            stream.write (struct.pack ('i', weights3))
+            stream.write (struct.pack ('i', weights4))
             
         elif ("Enviroment"    in name):
             stream.write (struct.pack ('i', 3))       # type
 
-            diffuse = - 1;
+            diffuse     = - 1;
 
-            for tex in mat.texture_slots:
-                if tex:
-                    if (tex.use_map_color_diffuse):
-                        diffuse = tex.texture.id_data ["tmp_index"];
-
+            try:    diffuse     = bpy.data.textures [mat ['tex_diffuse']].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_diffuse\' not set or invalid')
+            
             stream.write (struct.pack ('i', diffuse))
             
         elif ("Foliage"          in name):
             stream.write (struct.pack ('i', 4))       # type
-            
-            try:    stream.write (struct.pack ('f', mat ['gloss']))
-            except:
-                stream.write (struct.pack ('f', 1.0))
-                print ('ERROR | Material : ', name, ' custom property \'gloss\' not set')
+                        
+            diffuse     = - 1
+            composite   = - 1
 
-            try:    stream.write (struct.pack ('f', mat ['shininess']))
-            except:
-                stream.write (struct.pack ('f', 10.0))
-                print ('ERROR | Material : ', name, ' custom property \'shininess\' not set')
-            
-            specular = - 1
-            diffuse = - 1
-            normal = - 1
+            try:    diffuse     = bpy.data.textures [mat ['tex_diffuse'  ]].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_diffuse\' not set or invalid')
+            try:    normal      = bpy.data.textures [mat ['tex_composite']].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_composite\' not set or invalid')
 
-            for tex in mat.texture_slots:
-                if tex:
-                    if (tex.use_map_specular):          specular = tex.texture.id_data ["tmp_index"];
-                    if (tex.use_map_color_diffuse):     diffuse = tex.texture.id_data ["tmp_index"];
-                    if (tex.use_map_normal):            normal = tex.texture.id_data ["tmp_index"];
-
-            stream.write (struct.pack ('i', normal))
             stream.write (struct.pack ('i', diffuse))
-            stream.write (struct.pack ('i', specular))
+            stream.write (struct.pack ('i', composite))
             
         elif ("Grass"         in name):
             stream.write (struct.pack ('i', 5))       # type
-
-            # gloss
-            try:    stream.write (struct.pack ('f', mat ['gloss']))
-            except:
-                stream.write (struct.pack ('f', 1.0))
-                print ('ERROR | Material : ', name, ' custom property \'gloss\' not set')
-
-            # shininess
-            try:    stream.write (struct.pack ('f', mat ['shininess']))
-            except:
-                stream.write (struct.pack ('f', 10.0))
-                print ('ERROR | Material : ', name, ' custom property \'shininess\' not set')
-
-            try: mat ['range1']
-            except: print ('ERROR | Material : ', name, ' custom property \'range1\' not set')
-
-            try: mat ['range2']
-            except: print ('ERROR | Material : ', name, ' custom property \'range2\' not set')
-
-            try: mat ['range3']
-            except: print ('ERROR | Material : ', name, ' custom property \'range3\' not set')
-
-            try:
-                if not ((mat ['range1'] < mat ['range2']) and (mat ['range2'] < mat ['range3'])):   raise
                 
-            except: print ('ERROR | Material : ', name, ' custom property rule (range1 < range2 < range3) broken')
+            diffuse     = - 1
+
+            try:    diffuse     = bpy.data.textures [mat ['tex_diffuse']].id_data ['tmp_index']
+            except: print ('ERROR | Material : ', name, ' custom property \'tex_diffuse\' not set or invalid')
+
+            threshold   = 0.1
             
-            # range1
-            stream.write (struct.pack ('f', mat ['range1']))
+            try:    threshold   = mat ['threshold']
+            except: print ('ERROR | Material : ', name, ' custom property \'threshold\' not set or invalid')
 
-            # range2
-            stream.write (struct.pack ('f', mat ['range2']))
+            damping     = 0.9
             
-            # range3
-            stream.write (struct.pack ('f', mat ['range3']))
-                
-            diffuse = - 1
-
-            for tex in mat.texture_slots:
-                if tex:
-                    if (tex.use_map_color_diffuse):     diffuse = tex.texture.id_data ["tmp_index"];
-
-            stream.write (struct.pack ('i', diffuse))
+            try:    damping     = mat ['damping']
+            except: print ('ERROR | Material : ', name, ' custom property \'damping\' not set or invalid')
+            
+            stream.write (struct.pack ('i', diffuse))            
+            stream.write (struct.pack ('f', damping))
+            stream.write (struct.pack ('f', threshold))
             
         print ('Material : %-20s' % name)
     print ('')
@@ -1850,42 +1814,44 @@ def processExportScene (filepath):
         stream.write (struct.pack ('i',     len (name) + 1))
         stream.write (struct.pack ('%isB' % len (name), name.encode ('ascii'), 0))
 
-        morphing = False
-
-        # params
-        try:        stream.write (struct.pack ('f', mesh ['morph_position']));  morphing = True
-        except:     stream.write (struct.pack ('f', 0.0))
-        try:        stream.write (struct.pack ('f', mesh ['morph_normal']));  morphing = True
-        except:     stream.write (struct.pack ('f', 0.0))
-        try:        stream.write (struct.pack ('f', mesh ['morph_uv']));  morphing = True
-        except:     stream.write (struct.pack ('f', 0.0))
-
         occlusion = False
 
-        try:    bpy.data.meshes [mesh ['occlusion']];  occlusion = True
-        except:     pass
+        # occlusion mesh index
+        try:    stream.write (struct.pack ('H', bpy.data.meshes [mesh ['occlusion']]['tmp_index']));   occlusion = True
+        except: stream.write (struct.pack ('H', 0xffff))
+
+        shader = 0
+
+        # params
+        try:        stream.write (struct.pack ('f', mesh ['morph_position']));  shader = 2
+        except:     stream.write (struct.pack ('f', 0.0))
+        try:        stream.write (struct.pack ('f', mesh ['morph_normal']));  shader = 2
+        except:     stream.write (struct.pack ('f', 0.0))
+        try:        stream.write (struct.pack ('f', mesh ['morph_uv']));  shader = 2
+        except:     stream.write (struct.pack ('f', 0.0))
         
-        occluder = False
+        dlist = False
 
         try:
-            if   mesh ['occluder'] == 1:  occluder = True
-            elif mesh ['occluder'] == 0:  occluder = False
+            if   mesh ['display_list'] == 1:  dlist = True
+            elif mesh ['display_list'] == 0:  dlist = False
         except:     pass
-        
-        display_list = False
 
+        # shader
         try:
-            if   mesh ['display_list'] == 1:  display_list = True
-            elif mesh ['display_list'] == 0:  display_list = False
+            if   mesh ['shader'] == 'normal':   shader = 0
+            elif mesh ['shader'] == 'grow':     shader = 1
+            elif mesh ['shader'] == 'morph':    shader = 2
+            elif mesh ['shader'] == 'shrink':   shader = 3
         except:     pass
+
+        stream.write (struct.pack ('B', shader))
         
         # flags
         flags = 0
         
-        if display_list:    flags = flags | 1
-        if morphing:        flags = flags | 2
-        if occluder:        flags = flags | 4
-        if occlusion:       flags = flags | 8
+        if dlist:       flags = flags | 0x0001
+        if occlusion:   flags = flags | 0x0002
 
         stream.write (struct.pack ('H', flags))
 
@@ -1893,16 +1859,37 @@ def processExportScene (filepath):
     print ('')
                             
     #------------------------------------------------------------------------------------
+    # WRITING INSTANCED OBJECTS
+    #------------------------------------------------------------------------------------
+
+    for name, psys in instanced:
+
+        # object name
+        stream.write (struct.pack ('i',     len (name) + 1))
+        stream.write (struct.pack ('%isB' % len (name), name.encode ('ascii'), 0))
+    
+    #------------------------------------------------------------------------------------
     # WRITING OBJECTS
     #------------------------------------------------------------------------------------
 
     scenematrix = mathutils.Matrix.Scale (bpy.context.scene.shift_ex_scene_scale, 4) * mathutils.Matrix.Rotation (radians (- 90), 4, 'X');
     
-    for name, obj in objects:
+    for name, obj, pindex in objects:
 
-        if   type (obj) == bpy.types.Object:                mesh = obj.data
-        elif type (obj) == bpy.types.ParticleSystem:        mesh = obj.settings.dupli_object.data
+        # instances object
+        if pindex != None:
 
+            stream.write (struct.pack ('i', pindex))
+            
+            mesh = instanced [pindex][1].settings.dupli_object.data
+
+        # single object
+        else:
+
+            stream.write (struct.pack ('i', -1))
+            
+            mesh = obj.data
+        
         # object name
         stream.write (struct.pack ('i',     len (name) + 1))
         stream.write (struct.pack ('%isB' % len (name), name.encode ('ascii'), 0))
@@ -1913,14 +1900,6 @@ def processExportScene (filepath):
         # material index
         stream.write (struct.pack ('H', mesh.materials [0]['tmp_index']))
 
-        occlusion = False
-
-        # occlusion mesh index
-        try:    stream.write (struct.pack ('H', bpy.data.meshes [obj ['occlusion']]['tmp_index']));     occlusion = True
-        except:
-            try:    stream.write (struct.pack ('H', bpy.data.meshes [mesh ['occlusion']]['tmp_index']));   occlusion = True
-            except: stream.write (struct.pack ('H', 0xffff))
-
         # disappear distance
         try:    disappear = obj ['disappear']
         except:
@@ -1928,6 +1907,14 @@ def processExportScene (filepath):
             except: disappear = 1000000.0
 
         stream.write (struct.pack ('f', disappear))
+        
+        # disappear start
+        try:    disappear_start = obj ['disappear_start']
+        except:
+            try:    disappear_start = mesh ['disappear_start']
+            except: disappear_start = 0.0
+
+        stream.write (struct.pack ('f', disappear_start))
         
         # shadow disappear distance
         try:    stream.write (struct.pack ('f', obj ['disappear_shadow']))
@@ -1942,22 +1929,23 @@ def processExportScene (filepath):
         try:
             if   obj ['occluder'] == 1:  occluder = True
             elif obj ['occluder'] == 0:  occluder = False
-        except:     pass
-                
+        except:
+            try:
+                if   obj.data ['occluder'] == 1:  occluder = True
+                elif obj.data ['occluder'] == 0:  occluder = False
+            except:     pass
+                        
         flags = 0
         
-        if occlusion:   flags = flags | 8
-        if occluder:    flags = flags | 4
+        if occluder:    flags = flags | 1
 
         stream.write (struct.pack ('H', flags))
             
         # detail
+                
         lod1 = 0xffff;  lod1_distance = disappear
         lod2 = 0xffff;  lod2_distance = disappear
         lod3 = 0xffff;  lod3_distance = disappear
-
-        try:    lod_start = mesh ['lod_start']
-        except: lod_start = 0.0
         
         try:
             lod1 = mesh ['lod1']
@@ -1999,7 +1987,6 @@ def processExportScene (filepath):
             else:
             
                 stream.write (struct.pack ('I', 1))
-                stream.write (struct.pack ('f', lod_start))
                 stream.write (struct.pack ('H', lod1))
                 stream.write (struct.pack ('f', lod1_distance))
                 stream.write (struct.pack ('H', lod2))
@@ -2009,11 +1996,9 @@ def processExportScene (filepath):
             
         else:   stream.write (struct.pack ('I', 0))
 
-        if type (obj) == bpy.types.Object:
-                
-            # is not instances object
-            stream.write (struct.pack ('I', 0))
-            
+        # single transform
+        if pindex == None:
+                        
             # rotate world matrix to match up vector with y axis
             matrix = scenematrix * obj.matrix_world
 
@@ -2022,12 +2007,7 @@ def processExportScene (filepath):
                 v = matrix [i]
                 for j in range (4):
                     stream.write (struct.pack ('f', v [j]))
-        
-        elif type (obj) == bpy.types.ParticleSystem:
-
-            # this is instances object
-            stream.write (struct.pack ('I', 1))
-                                    
+                                            
     #------------------------------------------------------------------------------------
     # WRITING ENVIROMENT    
     #------------------------------------------------------------------------------------
@@ -2092,13 +2072,17 @@ def processExportScene (filepath):
 
     # removing temporary properties
     for tex in textures:
-        del tex.texture.id_data ["tmp_index"]
+        try:    del tex.texture.id_data     ["tmp_index"]
+        except: pass
     for name, mat in materials:
-        del mat.id_data         ["tmp_index"]
+        try:    del mat.id_data             ["tmp_index"]
+        except: pass
     for name, msh in meshes:
-        del msh.id_data         ["tmp_index"]
+        try:    del msh.id_data             ["tmp_index"]
+        except: pass
 
     # cleanup
+    instanced [:] = []
     materials [:] = []
     textures  [:] = []
     meshes    [:] = []
@@ -2288,20 +2272,24 @@ class ExporterOpInstances (bpy.types.Operator):
                 
                 if len (bpy.context.selected_objects) == 1:
 
-                    obj = bpy.context.object
+                    obj = bpy.context.selected_objects [0]
 
                     if (obj.type == 'MESH'):
 
-                        for p in obj.particle_systems:
+                        for i, p in enumerate (obj.particle_systems):
+
+                            obj.particle_systems.active_index = i
 
                             # generated name stitched with full path
                             filename = obj.name + '_' + p.name + '.inst';  filepath = path + filename
+
+                            start_time = time.clock ()
                             
                             # export
                             processExportInstances (p, filepath)
                             
                             # log
-                            print ('\t' + filename)
+                            print ('\t' + filename + ' (%.4f sec.)' % (time.clock () - start_time))
                         
                     else:   print ('ERROR | Invalid object type.'); return {"CANCELLED"}
                     
@@ -2317,16 +2305,20 @@ class ExporterOpInstances (bpy.types.Operator):
 
                         if (obj.type == 'MESH'):
                             
-                            for p in obj.particle_systems:
+                            for i, p in enumerate (obj.particle_systems):
+
+                                obj.particle_systems.active_index = i
 
                                 # generated name stitched with full path
                                 filename = obj.name + '_' + p.name + '.inst';  filepath = path + filename
                                 
+                                start_time = time.clock ()
+                            
                                 # export
                                 processExportInstances (p, filepath)
 
                                 # log
-                                print ('\t' + filename)
+                                print ('\t' + filename + ' (%.4f sec.)' % (time.clock () - start_time))
                                 
                     # elapsed time
                     print ('')
@@ -2355,11 +2347,13 @@ class ExporterOpInstances (bpy.types.Operator):
 
                         if obj.particle_systems.active :
                         
+                            start_time = time.clock ()
+                            
                             # export
                             processExportInstances (obj.particle_systems.active, filepath)
 
                             # log
-                            print ('\t' + filepath)
+                            print ('\t' + filename + ' (%.4f sec.)' % (time.clock () - start_time))
 
                         else:   print ('ERROR | Missing particle system.'); return {"CANCELLED"}
                         
@@ -2394,6 +2388,185 @@ class ExporterOpInstancesClear (bpy.types.Operator):
 
             for f in files:
                 if f.rpartition ('.')[2] == 'inst' :
+
+                    try:        print (f);   os.remove (path + f)
+                    except:     print ('ERROR | Unable to remove file : ', f)
+            break
+
+        return {"FINISHED"}
+    
+class ExporterOpTextures (bpy.types.Operator):
+     
+    bl_idname       = "object.shift_export_textures_operator"
+    bl_label        = "SHIFT - Export"
+    bl_description  = "Export all textures from unhidden objects from all scenes first layer (like scene exporter)"
+    
+    def execute (self, context):
+
+        path = bpy.context.scene.shift_ex_textures_filepath
+
+        if path != '':
+
+            # cut off file name
+            if path [len (path) - 1] != '\\':
+            
+                path = os.path.abspath (bpy.context.scene.shift_ex_instances_filepath).rpartition ('\\')[0] + '\\'
+            
+            # log
+            print ('\nSHIFT textures export starting... \n\t', path)
+            print ('')
+
+            start_time = time.clock ()
+
+            # list of materials
+            materials = []
+                            
+            # take all objects
+            object_list = bpy.data.objects
+
+            # collecting objects and its meshes
+            for obj in object_list:
+
+                # skip objects that are not in first layer
+                if not obj.layers [0]: continue
+                
+                # skip hidden objects
+                if obj.hide: continue
+
+                # skip objects with 'no_export' custom property
+                try:
+                    if obj      ['no_export'] == 1: continue
+                    if obj.data ['no_export'] == 1: continue
+                except: pass        
+                            
+                if obj.type == 'MESH':
+
+                    mesh = obj.data;
+
+                    # if mesh have material ..
+                    if mesh.materials [0]:
+
+                        mat = mesh.materials [0];   materials.append ((mat.name, mat));
+
+                        # adding lod1
+                        try:
+                            m = bpy.data.meshes [mesh ['lod1']];
+                            if (m.materials [0]):
+                                mat = m.materials [0];   materials.append ((mat.name, mat));
+                        except: pass
+
+                        # adding lod2
+                        try:
+                            m = bpy.data.meshes [mesh ['lod2']];
+                            if (m.materials [0]):
+                                mat = m.materials [0];   materials.append ((mat.name, mat));
+                        except: pass
+                        
+                        # adding lod3
+                        try:
+                            m = bpy.data.meshes [mesh ['lod3']];
+                            if (m.materials [0]):
+                                mat = m.materials [0];   materials.append ((mat.name, mat));
+                        except: pass
+                        
+                        # adding occlusion
+                        try:
+                            m = bpy.data.meshes [obj.data ['occlusion']];
+                            if (m.materials [0]):
+                                mat = m.materials [0];   materials.append ((mat.name, mat));
+                        except: pass            
+
+                    # collect all particle systems meshes
+                    for p in obj.particle_systems:
+                        
+                        if p.settings.dupli_object:
+                            if (p.settings.dupli_object.type == 'MESH'):
+
+                                # mesh
+                                mesh = p.settings.dupli_object.data
+
+                                # if mesh have material ..
+                                if mesh.materials [0]:
+
+                                    mat = mesh.materials [0];   materials.append ((mat.name, mat))                                        
+            
+            # removing duplicate materials
+            materials.sort (key = lambda materials: materials [0])
+            
+            prevname = None;    l = len (materials)
+            
+            i = 0
+            while (i < l):
+                name = materials [i][0]
+                if (name == prevname):
+                    del materials [i];  l -= 1
+                    continue
+                prevname = name;        i += 1
+
+            # copy textures to destination path
+            for name, mat in materials:
+
+                try:    tex = bpy.data.textures [mat ['tex_diffuse']]
+                except: tex = None;
+                if (tex):
+                    shutil.copy2 (bpy.path.abspath (tex.image.filepath), path + tex.image.filepath.rpartition ('\\')[1]);    print (tex.image.filepath)
+                try:    tex = bpy.data.textures [mat ['tex_composite']]
+                except: tex = None;
+                if (tex):
+                    shutil.copy2 (bpy.path.abspath (tex.image.filepath), path + tex.image.filepath.rpartition ('\\')[1]);    print (tex.image.filepath)
+                try:    tex = bpy.data.textures [mat ['tex_weights1']]
+                except: tex = None;
+                if (tex):
+                    shutil.copy2 (bpy.path.abspath (tex.image.filepath), path + tex.image.filepath.rpartition ('\\')[1]);    print (tex.image.filepath)
+                try:    tex = bpy.data.textures [mat ['tex_weights2']]
+                except: tex = None;
+                if (tex):
+                    shutil.copy2 (bpy.path.abspath (tex.image.filepath), path + tex.image.filepath.rpartition ('\\')[1]);    print (tex.image.filepath)
+                try:    tex = bpy.data.textures [mat ['tex_weights3']]
+                except: tex = None;
+                if (tex):
+                    shutil.copy2 (bpy.path.abspath (tex.image.filepath), path + tex.image.filepath.rpartition ('\\')[1]);    print (tex.image.filepath)
+                try:    tex = bpy.data.textures [mat ['tex_weights4']]
+                except: tex = None;
+                if (tex):
+                    shutil.copy2 (bpy.path.abspath (tex.image.filepath), path + tex.image.filepath.rpartition ('\\')[1]);    print (tex.image.filepath)
+                            
+            # elapsed time
+            print ('')
+            print ('\nexport finished in %.4f sec.' % (time.clock () - start_time))
+                        
+            return {"FINISHED"}
+        
+        else:
+            return {"CANCELLED"}
+
+class ExporterOpTexturesClear (bpy.types.Operator):
+
+    bl_idname       = "object.shift_export_textures_clear_operator"
+    bl_label        = "SHIFT - Export"
+    bl_description  = "Removes all *.tga and *.dds files from destination directory"
+    
+    def execute (self, context):
+
+        path = bpy.context.scene.shift_ex_textures_filepath
+
+        # cut off file name
+        if path [len (path) - 1] != '\\':
+        
+            path = os.path.abspath (bpy.context.scene.shift_ex_textures_filepath).rpartition ('\\')[0] + '\\'
+
+        print ('\nDELETING FILES : ')
+        print ('\t' + path)
+        
+        for root, dirs, files in os.walk (path):
+
+            for f in files:
+                if f.rpartition ('.')[2] == 'tga' :
+
+                    try:        print (f);   os.remove (path + f)
+                    except:     print ('ERROR | Unable to remove file : ', f)
+                    
+                elif f.rpartition ('.')[2] == 'dds' :
 
                     try:        print (f);   os.remove (path + f)
                     except:     print ('ERROR | Unable to remove file : ', f)
@@ -2458,11 +2631,8 @@ class ExporterPanel (bpy.types.Panel):
         
         box = layout.box ()
 
-        if bpy.context.scene.shift_ex_instances_auto:               
-            if len (bpy.context.selected_objects) == 1:
-                box.label           ('File :   ' +  bpy.context.selected_objects [0].data.name + '.inst')
-            else:
-                box.label           ('File :   *.inst')
+        if bpy.context.scene.shift_ex_instances_auto:
+            box.label           ('File :   *.inst')
         else:
             box.label           ('File :   ' + bpy.context.scene.shift_ex_mesh_filepath.rpartition ('\\')[2])
             
@@ -2477,24 +2647,65 @@ class ExporterPanel (bpy.types.Panel):
         split.operator      ('object.shift_export_instances_clear_operator', 'Clear')
         
         box.prop            (context.scene, 'shift_ex_instances_filepath')
-        box_ = box.box      ()
-        col  = box_.column  (align = True)
-        split = col.split   (align = False, percentage = 0.6)
-        split.label         ('Random Rotation X :')
-        split.prop          (context.scene, 'shift_ex_instances_randomx')
-        split = col.split   (align = False, percentage = 0.6)
-        split.label         ('Random Rotation Y :')
-        split.prop          (context.scene, 'shift_ex_instances_randomy')
-        split = col.split   (align = False, percentage = 0.6)
-        split.label         ('Random Rotation Z :')
-        split.prop          (context.scene, 'shift_ex_instances_randomz')
+
+        _box = box.box ()
+        (_box.box ()).prop  (context.scene, 'shift_ex_rotorder')
+        split = (_box).split   (align = True, percentage = 0.6)
+        col = split.column  (align = False)
+        col.label           ('Random Rotation X :')
+        col.label           ('Random Rotation Y :')
+        col.label           ('Random Rotation Z :')
+        col = split.column  (align = True)
+        col.prop            (context.scene, 'shift_ex_instances_randomx')
+        col.prop            (context.scene, 'shift_ex_instances_randomy')
+        col.prop            (context.scene, 'shift_ex_instances_randomz')
+
+        _box = box.box ()
+        split = _box.split  (align = True, percentage = 0.5)
+        col = split.column  (align = False)
+        col.label           ('Subdivision X :')
+        col.label           ('Subdivision Y :')
+        col.label           ('Subdivision Z :')
+        col = split.column  (align = True)
+        col.prop            (context.scene, 'shift_ex_subdivisionx')
+        col.prop            (context.scene, 'shift_ex_subdivisiony')
+        col.prop            (context.scene, 'shift_ex_subdivisionz')
+
+        _box = _box.box ()
+
+        split = _box.split  (align = True, percentage = 0.5)
+        split.label         ('Random Radius : ')
+        split.prop          (context.scene, 'shift_ex_randomrad')
+        split = _box.split  (align = True, percentage = 0.5)
+        split.label         ('Cancellation Radius : ')
+        split.prop          (context.scene, 'shift_ex_cancellation')
+        
         box = box.box ()
+        box.prop            (context.scene, 'shift_ex_instances_over')
         box.prop            (context.scene, 'shift_ex_instances_auto')
+
+        layout.separator ()
+        
+        box = layout.box ()
+            
+        box = box.box ()
+        split = box.split   (align = True, percentage = 0.4)
+        split.operator      ('object.shift_export_textures_operator', 'Export')
+        row = split.row ()
+        row.alignment = 'LEFT'
+        row.label           ('Textures')
+        
+        split = box.split   (align = True, percentage = 0.9)
+        split.operator      ('object.shift_export_textures_clear_operator', 'Clear')
+        
+        box.prop            (context.scene, 'shift_ex_textures_filepath')
+
         
 def register ():
 
     bpy.utils.register_module (__name__)
 
+    # ----------------------------------------------------------
     bpy.types.Scene.shift_ex_scene_scale = FloatProperty (
         name        = "Scene scale",
         description = "Scale all geometry by constant factor",
@@ -2509,6 +2720,7 @@ def register ():
         default     = "",
         subtype     = 'FILE_PATH')
     
+    # ----------------------------------------------------------
     bpy.types.Scene.shift_ex_mesh_filepath = StringProperty (
         name        = "",
         description = "File name with full path or destination directory",
@@ -2525,6 +2737,7 @@ def register ():
         description = "Generate file name from name of datablock",
         default     = True)    
     
+    # ----------------------------------------------------------
     bpy.types.Scene.shift_ex_instances_filepath = StringProperty (
         name        = "",
         description = "File name with full path or destination directory",
@@ -2536,6 +2749,11 @@ def register ():
         description = "Generate file name from name of datablock",
         default     = True)
 
+    bpy.types.Scene.shift_ex_instances_over = BoolProperty (
+        name        = "Override settings",
+        description = "Override specific generating options in particle system settings (custom properties)",
+        default     = False)
+    
     bpy.types.Scene.shift_ex_instances_randomx = FloatProperty (
         name        = "",
         description = "Random rotation of dupli object in X axis.",
@@ -2543,7 +2761,7 @@ def register ():
         min         = 0.0,
         max         = math.pi,
         step        = 1.0,
-        default     = 1.0)
+        default     = 0.0)
 
     bpy.types.Scene.shift_ex_instances_randomy = FloatProperty (
         name        = "",
@@ -2562,24 +2780,70 @@ def register ():
         max         = math.pi,
         step        = 1.0,
         default     = 0.0)
+
+    bpy.types.Scene.shift_ex_subdivisionx = IntProperty (
+        name        = "",
+        description = "Subdivision level",
+        min         = 1,
+        max         = 16,
+        step        = 1,
+        default     = 1)
+    bpy.types.Scene.shift_ex_subdivisiony = IntProperty (
+        name        = "",
+        description = "Subdivision level",
+        min         = 1,
+        max         = 16,
+        step        = 1,
+        default     = 1)    
+    bpy.types.Scene.shift_ex_subdivisionz = IntProperty (
+        name        = "",
+        description = "Subdivision level",
+        min         = 1,
+        max         = 16,
+        step        = 1,
+        default     = 1)
+
+    bpy.types.Scene.shift_ex_randomrad = FloatProperty (
+        name        = "",
+        description = "Random radius of jittering used in subdivision process.",
+        subtype     = 'DISTANCE',
+        min         = 0.0,
+        max         = 1000.0,
+        step        = 0.1,
+        default     = 0.0)
+    
+    bpy.types.Scene.shift_ex_cancellation = FloatProperty (
+        name        = "",
+        description = "Cancellation radius, all other instances in this radius are removed.",
+        subtype     = 'DISTANCE',
+        min         = 0.0,
+        max         = 10.0,
+        step        = 0.001,
+        default     = 0.0)
+    
+    bpy.types.Scene.shift_ex_rotorder = EnumProperty(
+        name="Rot. Order",
+        description="Random rotations order by axis",
+        items=[("XYZ","XYZ","Random rotations order by axis"),
+               ("YXZ","YXZ","Random rotations order by axis"),
+               ("ZYX","ZYX","Random rotations order by axis"),
+               ("XZY","XZY","Random rotations order by axis"),
+               ("YZX","YZX","Random rotations order by axis"),
+               ("ZXY","ZXY","Random rotations order by axis"),
+              ],
+        default='XYZ')
+    
+    # ----------------------------------------------------------
+    bpy.types.Scene.shift_ex_textures_filepath = StringProperty (
+        name        = "",
+        description = "Destination directory",
+        default     = "",
+        subtype     = 'FILE_PATH')
     
 def unregister ():
 
     bpy.utils.unregister_module (__name__)
 
-    del bpy.types.Scene.shift_ex_scene_filepath
-    del bpy.types.Scene.shift_ex_scene_scale
-    
-    del bpy.types.Scene.shift_ex_mesh_filepath
-    del bpy.types.Scene.shift_ex_mesh_skip
-    del bpy.types.Scene.shift_ex_mesh_auto
-    
-    del bpy.types.Scene.shift_ex_instances_filepath
-    del bpy.types.Scene.shift_ex_instances_auto
-    del bpy.types.Scene.shift_ex_instances_randomx
-    del bpy.types.Scene.shift_ex_instances_randomy
-    del bpy.types.Scene.shift_ex_instances_randomz
-             
 if __name__ == "__main__":
     
     register ()

@@ -90,6 +90,8 @@
 // MACRO
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+#define PI  3.1415926535897932384626433832795
+
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
@@ -114,6 +116,18 @@
 	v [1] = - v [1]; \
 	v [2] = - v [2];
 
+#define pTRANSFORM_ROW4x4p3(dest, src, mat) { \
+    dest [0] = mat[ 0]*src[0] + mat[ 1]*src[1] + mat[ 2]*src[2] + mat[ 3]; \
+    dest [1] = mat[ 4]*src[0] + mat[ 5]*src[1] + mat[ 6]*src[2] + mat[ 7]; \
+    dest [2] = mat[ 8]*src[0] + mat[ 9]*src[1] + mat[10]*src[2] + mat[11]; \
+}
+
+#define pTRANSFORM_COL4x4p3(dest, src, mat) { \
+    dest [0] = mat[ 0]*src[0] + mat[ 4]*src[1] + mat[ 8]*src[2] + mat[12]; \
+    dest [1] = mat[ 1]*src[0] + mat[ 5]*src[1] + mat[ 9]*src[2] + mat[13]; \
+    dest [2] = mat[ 2]*src[0] + mat[ 6]*src[1] + mat[10]*src[2] + mat[14]; \
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // EXPORT FUNCTIONS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -121,20 +135,31 @@
 extern "C"
 {
 
-    DECLDIR VOID    _stdcall processTexUnveilUpdate     ();
+    DECLDIR UINT_32 _stdcall processSaveInstances           (CHARP filename, UINT_32 count, FLOAT_32P data, UINT_32P datak, FLOAT_32P bbox, UINT_32 divx, UINT_32 divy, UINT_32 divz, FLOAT_32 rotx, FLOAT_32 roty, FLOAT_32 rotz, FLOAT_32 randrad, UINT_32 rotorder, FLOAT_32 cancell);
 
-    DECLDIR UINT_32 _stdcall processBitCount            (UINT_32 bits);
+    DECLDIR UINT_32 _stdcall processDecompose               (CHARP composite, CHARP destination);
 
-    DECLDIR INT_32  _stdcall processTexSplitBegin       (CHARPP files, CHARP errfile, UINT_32 count, UINT_32 overlap, UINT_32 kernel_a, UINT_32 kernel_s, FLOAT_32 texel_tolerancy, FLOAT_32 face_tolerancy);
-    DECLDIR INT_32  _stdcall processTexSplitEnd         (UINT_32 save, UINT_32 err);
+    DECLDIR UINT_32 _stdcall processWeightsGenerate         (CHARPP files, CHARP filename);
 
-    DECLDIR UINT_32 _stdcall processTexSplitTriangle    (FLOAT_32 u1, FLOAT_32 v1, 
-                                                         FLOAT_32 u2, FLOAT_32 v2, 
-                                                         FLOAT_32 u3, FLOAT_32 v3);
+    DECLDIR UINT_32 _stdcall processGenerateComposite       (CHARP filename, CHARP translation, CHARP  diffuse, CHARP  normal, CHARP  gloss, CHARP  shininess, FLOAT_32  factord, FLOAT_32  factorn, FLOAT_32  factorg, FLOAT_32  factors);
+    DECLDIR UINT_32 _stdcall processGenerateCompositeAtlas  (CHARP filename, CHARP translation, CHARPP diffuse, CHARPP normal, CHARPP gloss, CHARPP shininess, FLOAT_32P factord, FLOAT_32P factorn, FLOAT_32P factorg, FLOAT_32P factors, UINT_32 mode, UINT_32 count);
 
-    DECLDIR UINT_32 _stdcall processTexMaskTriangle     (FLOAT_32 u1, FLOAT_32 v1, 
-                                                         FLOAT_32 u2, FLOAT_32 v2, 
-                                                         FLOAT_32 u3, FLOAT_32 v3);
+
+
+    DECLDIR VOID    _stdcall processTexUnveilUpdate         ();
+
+    DECLDIR UINT_32 _stdcall processBitCount                (UINT_32 bits);
+
+    DECLDIR INT_32  _stdcall processTexSplitBegin           (CHARPP files, CHARP errfile, UINT_32 count, UINT_32 overlap, UINT_32 kernel_a, UINT_32 kernel_s, FLOAT_32 texel_tolerancy, FLOAT_32 face_tolerancy);
+    DECLDIR INT_32  _stdcall processTexSplitEnd             (UINT_32 save, UINT_32 err);
+
+    DECLDIR UINT_32 _stdcall processTexSplitTriangle        (FLOAT_32 u1, FLOAT_32 v1, 
+                                                             FLOAT_32 u2, FLOAT_32 v2, 
+                                                             FLOAT_32 u3, FLOAT_32 v3);
+
+    DECLDIR UINT_32 _stdcall processTexMaskTriangle         (FLOAT_32 u1, FLOAT_32 v1, 
+                                                             FLOAT_32 u2, FLOAT_32 v2, 
+                                                             FLOAT_32 u3, FLOAT_32 v3);
 
     DECLDIR VOID    _stdcall processTexUnveilTexelTriangle  (FLOAT_32 u1, FLOAT_32 v1, 
                                                              FLOAT_32 u2, FLOAT_32 v2, 
@@ -148,9 +173,9 @@ extern "C"
                                                              FLOAT_32 u2, FLOAT_32 v2, 
                                                              FLOAT_32 u3, FLOAT_32 v3, UINT_32 threshold);
 
-    DECLDIR INT_32  _stdcall processTexSplitGenerate    (CHARPP filesin, CHARP fileout, UINT_8P indices, UINT_32 count);
+    DECLDIR INT_32  _stdcall processTexSplitGenerate        (CHARPP filesin, CHARP fileout, UINT_8P indices, UINT_32 count);
 
-    DECLDIR UINT_32 _stdcall processParticlesCut        (UINT_32P indices, FLOAT_32P points, FLOAT_32P faces, UINT_32 pcount, UINT_32 fcount);
+    DECLDIR UINT_32 _stdcall processParticlesCut            (UINT_32P indices, FLOAT_32P points, FLOAT_32P faces, UINT_32 pcount, UINT_32 fcount);
 }
 
 #endif

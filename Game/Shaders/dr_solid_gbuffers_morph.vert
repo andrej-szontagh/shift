@@ -3,11 +3,7 @@ uniform vec2 uvscale;
 
 uniform float planefar;
 
-varying float shininess;
-varying float gloss;
 varying float depth;
-
-varying vec3 normal;
 
 varying mat3 tbni;
 
@@ -16,8 +12,6 @@ varying mat3 tbni;
 // SCALECO      -> gl_MultiTexCoord2.x
 // SCALENO      -> gl_MultiTexCoord2.y
 // SCALEUV      -> gl_MultiTexCoord2.z
-// GLOSS        -> gl_MultiTexCoord3.x          /// TO UNIFORM !!
-// SHININESS    -> gl_MultiTexCoord3.y          /// TO UNIFORM !!
 // MODELMATRIX  -> gl_MultiTexCoord4.xyzw
 // MODELMATRIX  -> gl_MultiTexCoord5.xyzw
 // MODELMATRIX  -> gl_MultiTexCoord6.xyzw
@@ -71,18 +65,10 @@ void main ()
     // UV ---------------------------------------------------------------------------------------------------------------------------------------------------
 
             gl_TexCoord [0] = vec4 (t, 0.0, 0.0);
-
-    // GLOSS ------------------------------------------------------------------------------------------------------------------------------------------------
-                
-            gloss           = min (0.999999, gl_MultiTexCoord3.x * 0.5);    // we scale to maximum value 2.0
     
-    // SHININESS --------------------------------------------------------------------------------------------------------------------------------------------
-                            
-            shininess       = gl_MultiTexCoord3.y * 0.1;                    // we leave more accurancy to gloss value, step is 10.0
-
     // TBN MATRIX -------------------------------------------------------------------------------------------------------------------------------------------
     
-                 normal     = normalize (mat3 (matrix) *        n);
+            vec3 normal     = normalize (mat3 (matrix) *        gl_Normal);
             vec3 tangent    = normalize (mat3 (matrix) * (2.0 * gl_SecondaryColor.xyz - 1.0));
             vec3 binormal   = cross     (tangent, normal);
 

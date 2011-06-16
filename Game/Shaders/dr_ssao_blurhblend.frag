@@ -30,4 +30,9 @@ void main ()
     ao /= sum;
 
     gl_FragColor = texture2DRect (tex_raw, gl_TexCoord [0].st) * vec4 (ao, ao, ao, 1.0);
+
+
+    //gl_FragColor = vec4 (texture2DRect (tex_vblur, gl_TexCoord [0].pq).rrr, 1.0);  // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    //gl_FragColor = vec4 (ao, ao, ao, 1.0); // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 }

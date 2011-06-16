@@ -614,15 +614,9 @@ def generate (obj):
     ## EMCODING INTO UV LAYERS
     ##----------------------------------------------------------------------------
 
-    # check
-    if (maxl_vertex == 0.0) or (maxl_normal == 0.0) or (maxl_uv == 0.0) :
-
-        print ("ERROR | Mesh : ", mesh_src.name, " and ", mesh_dst.name, " have equal position/normal/uv coords, nothing to morph")
-        return
-
-    maxl_vertex_inv = 1.0 / maxl_vertex
-    maxl_normal_inv = 1.0 / maxl_normal
-    maxl_uv_inv     = 1.0 / maxl_uv
+    maxl_vertex_inv = 1.0 / max (maxl_vertex,   0.0000000001)
+    maxl_normal_inv = 1.0 / max (maxl_normal,   0.0000000001)
+    maxl_uv_inv     = 1.0 / max (maxl_uv,       0.0000000001)
 
     # new properties
     

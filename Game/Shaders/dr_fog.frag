@@ -25,9 +25,10 @@ void main ()
     vec4 worldpos   = gl_ModelViewMatrixInverse * vec4 (viewpos, 1.0);
 
     // FACTOR
-    float factor    = max (0.0, min (1.0, - 0.08 * worldpos.y));
+    float factor    = max (0.0, min (1.0, - 0.008 * worldpos.y));
     
           factor    = log10 (1.0 + factor) / log10 (2.0);
+          factor   *= log10 (1.0 + depth)  / log10 (2.0);
 
     gl_FragColor    = factor * gl_Color + (1.0 - factor) * gl_FragColor;
 }

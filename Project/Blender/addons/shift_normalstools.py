@@ -78,7 +78,7 @@ def processStitch ():
     for obj in selected:
 
         # saving normals
-        datao.append ([(v.co [0], v.co [1], v.co [2], v.normal [0], v.normal [1], v.normal [2]) for v in obj.data.vertices])
+        datao.append ([[v.co [0], v.co [1], v.co [2], v.normal [0], v.normal [1], v.normal [2]] for v in obj.data.vertices])
             
     # transform
     for obj in selected :
@@ -198,18 +198,23 @@ def processStitch ():
                             
                             if (v.co - vv.co).length < limit:
                                 if v.normal.angle (vv.normal) < angle:
-                                
-                                    v.normal += vv.normal;  vv.normal += v.normal
 
+                                    tmpx = datao [i][vi][3]
+                                    tmpy = datao [i][vi][4]
+                                    tmpz = datao [i][vi][5]
+                                
+                                    datao [i][vi][3] += datao [j][vj][3]
+                                    datao [i][vi][4] += datao [j][vj][4]
+                                    datao [i][vi][5] += datao [j][vj][5]
+
+                                    #print ('READ THIS SUCKER : ', tmpx, tmpy, tmpz, ' + ', vv.normal [0], vv.normal [1], vv.normal [2], ' -> ', v.normal [0], v.normal [1], v.normal [2])
+
+                                    datao [j][vj][3] += tmpx
+                                    datao [j][vj][4] += tmpy
+                                    datao [j][vj][5] += tmpz
+                                    
         # log
         print (i + 1, "Object : '", obj.name, "'")
-
-    # normalizing normals
-    for obj in selected:
-
-        for v in obj.data.vertices:
-
-            v.normal = v.normal.normalize ()
 
     # deselect 
     bpy.ops.object.select_all (action = 'DESELECT')
@@ -223,6 +228,11 @@ def processStitch ():
             v.co [1] = datao [i][v.index][1]
             v.co [2] = datao [i][v.index][2]
 
+            # set new normal
+            v.normal = mathutils.Vector ((datao [i][v.index][3], datao [i][v.index][4], datao [i][v.index][5]))
+
+            # NOTE: Normals are automaticly normalized
+            
         obj.select = True
 
     # log            
@@ -363,6 +373,172 @@ def processSmooth ():
     print ('Smoothing finished in %.4f sec.' % (time.clock () - start_time))
 
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
+#### PROCESS SAVE
+####------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def processSave ():
+
+    start_time = time.clock ()
+
+    # shortcut
+    scene = bpy.context.scene
+    
+    # shortcut
+    selected = bpy.context.selected_objects
+
+    # anything selected ?
+    if len (selected) == 0: return
+
+    # log
+    print ('\nSaving normals starting... \n\n\tObjects (', len (selected), ') :')
+    print ('')
+
+    # adding index for later identification
+    for i, obj in enumerate (selected):
+
+        # is it mesh ?
+        if obj and obj.type == 'MESH':
+
+            # set active object
+            scene.objects.active = obj; mesh = obj.data            
+                
+            layer = mesh.vertex_colors.new (name = "normals")
+
+            mesh.vertex_colors.active = layer
+
+            for j, col in enumerate (layer.data) :
+
+                f = mesh.faces [j]
+
+                v = mesh.vertices [f.vertices [0]]
+                col.color1 [0] = 0.5 + 0.5 * v.normal [0]
+                col.color1 [1] = 0.5 + 0.5 * v.normal [1]
+                col.color1 [2] = 0.5 + 0.5 * v.normal [2]
+                
+                v = mesh.vertices [f.vertices [1]]
+                col.color2 [0] = 0.5 + 0.5 * v.normal [0]
+                col.color2 [1] = 0.5 + 0.5 * v.normal [1]
+                col.color2 [2] = 0.5 + 0.5 * v.normal [2]
+
+                v = mesh.vertices [f.vertices [2]]
+                col.color3 [0] = 0.5 + 0.5 * v.normal [0]
+                col.color3 [1] = 0.5 + 0.5 * v.normal [1]
+                col.color3 [2] = 0.5 + 0.5 * v.normal [2]                
+
+            # log
+            print (i + 1, "Object : '", obj.name, "'")
+            
+        else:
+            
+            # log
+            print (i + 1, "Object : '", obj.name, "' is not a mesh")
+
+    # deselect all
+    bpy.ops.object.select_all (action = 'DESELECT')
+
+    # restoring selections
+    for obj in selected:    obj.select = True
+    
+    # log
+    print ('')
+    print ('Saving normals finished in %.4f sec.' % (time.clock () - start_time))
+
+####------------------------------------------------------------------------------------------------------------------------------------------------------
+#### PROCESS LOAD
+####------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def processLoad ():
+
+    start_time = time.clock ()
+
+    # shortcut
+    scene = bpy.context.scene
+    
+    # shortcut
+    selected = bpy.context.selected_objects
+
+    # anything selected ?
+    if len (selected) == 0: return
+
+    # log
+    print ('\nLoading normals starting... \n\n\tObjects (', len (selected), ') :')
+    print ('')
+
+    # adding index for later identification
+    for i, obj in enumerate (selected):
+
+        # is it mesh ?
+        if obj and obj.type == 'MESH':
+
+            # set active object
+            scene.objects.active = obj
+
+            # trick to make blender update normals after this operation
+            bpy.ops.object.editmode_toggle ()
+            bpy.ops.object.editmode_toggle ()
+
+            mesh = obj.data
+                
+            try :   layer = obj.data.vertex_colors ["normals"].data
+            except:
+
+                # log
+                print (i + 1, "Object : '", obj.name, "' is missing vertex color layer : 'normals'")
+                continue
+
+            tags = [True for v in mesh.vertices]
+
+            for j, col in enumerate (layer) :
+
+                f = mesh.faces [j]
+
+                j1 = f.vertices [0]
+                j2 = f.vertices [1]
+                j3 = f.vertices [2]
+                
+                if tags [j1] :
+                    v = mesh.vertices [j1]
+                    v.normal [0] = 2.0 * col.color1 [0] - 1.0
+                    v.normal [1] = 2.0 * col.color1 [1] - 1.0
+                    v.normal [2] = 2.0 * col.color1 [2] - 1.0
+                    tags [j1] = False
+                
+                if tags [j2] :
+                    v = mesh.vertices [j2]
+                    v.normal [0] = 2.0 * col.color2 [0] - 1.0
+                    v.normal [1] = 2.0 * col.color2 [1] - 1.0
+                    v.normal [2] = 2.0 * col.color2 [2] - 1.0
+                    tags [j2] = False
+                
+                if tags [j3] :
+                    v = mesh.vertices [j3]
+                    v.normal [0] = 2.0 * col.color3 [0] - 1.0
+                    v.normal [1] = 2.0 * col.color3 [1] - 1.0
+                    v.normal [2] = 2.0 * col.color3 [2] - 1.0
+                    tags [j3] = False
+                    
+            # clean up
+            tags [:] = []
+
+            # log
+            print (i + 1, "Object : '", obj.name, "'")
+            
+        else:
+            
+            # log
+            print (i + 1, "Object : '", obj.name, "' is not a mesh")
+
+    # deselect all
+    bpy.ops.object.select_all (action = 'DESELECT')
+
+    # restoring selections
+    for obj in selected:    obj.select = True
+    
+    # log
+    print ('')
+    print ('Loading normals finished in %.4f sec.' % (time.clock () - start_time))
+    
+####------------------------------------------------------------------------------------------------------------------------------------------------------
 #### INTEGRATION AND GUI
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -394,6 +570,34 @@ class NormalsToolsSmoothOp (bpy.types.Operator):
 
         return {'FINISHED'}
     
+class NormalsToolsSaveOp (bpy.types.Operator):
+
+    bl_idname       = "object.normalstools_save_operator"
+    bl_label        = "SHIFT - Normals Tools"
+    bl_description  = "Save vertex normals into new vertex color layer"
+    bl_register     = True
+    bl_undo         = True
+    
+    def execute (self, context):
+
+        processSave ()
+
+        return {'FINISHED'}
+    
+class NormalsToolsLoadOp (bpy.types.Operator):
+
+    bl_idname       = "object.normalstools_load_operator"
+    bl_label        = "SHIFT - Normals Tools"
+    bl_description  = "Load vertex normals from active vertex color layer"
+    bl_register     = True
+    bl_undo         = True
+    
+    def execute (self, context):
+
+        processLoad ()
+
+        return {'FINISHED'}
+    
 class NormalsToolsPanel (bpy.types.Panel):
      
     bl_idname   = "object.normalstools_stitch_panel"
@@ -409,6 +613,9 @@ class NormalsToolsPanel (bpy.types.Panel):
             
         layout = self.layout
         
+        box = layout.box()
+        box.operator       ('object.normalstools_save_operator', 'Save')
+        box.operator       ('object.normalstools_load_operator', 'Load')
         box = layout.box()
         box.operator       ('object.normalstools_stitch_operator', 'Stitch')
         
@@ -461,11 +668,7 @@ def register ():
 def unregister ():
 
     bpy.utils.unregister_module (__name__)
-    
-    del bpy.types.Scene.shift_nt_iterations
-    del bpy.types.Scene.shift_nt_mlimit
-    del bpy.types.Scene.shift_nt_alimit
-     
+         
 if __name__ == "__main__":
     
     register ()

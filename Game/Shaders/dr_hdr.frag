@@ -30,7 +30,7 @@ uniform sampler2DRect base;
 #endif
 
 uniform float bloom;
-uniform float scale;
+varying float scale;
 
 void main ()
 {

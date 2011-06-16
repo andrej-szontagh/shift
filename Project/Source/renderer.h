@@ -8,8 +8,10 @@
 
 #if 1
 
-#define M_DR_HDR_BLOOM                  1.0f                // bloom factor
+#define M_DR_HDR_BLOOM                  0.5f                // bloom factor
 #define M_DR_HDR_EXPOSURE               0.5f                // exposure balanced level
+#define M_DR_HDR_EXPOSURE_SCALE_MIN     0.5f                // exposure scale minimum boundary
+#define M_DR_HDR_EXPOSURE_SCALE_MAX     2.0f                // exposure scale maximum boundary
 #define M_DR_HDR_EXPOSURE_SPEED         0.001f              // speed of exposure adaptation
 
 #define M_DR_SUN_SPLITS                 5                   // number of splits (shadowmaps)
@@ -113,10 +115,10 @@ INLINEF VOID dr_SetDetail (UINT_32 ID, FLOAT_32 dist)
     register TDetail * detail = &dr_object_details [ID];
 
     if (detail->lodbase != 0xffff) {
-        if (dist < detail->lod1_distance) {             dr_object_models [ID] = detail->lodbase; dr_object_morph1 [ID] = detail->start;         dr_object_morph2 [ID] = 1.0f / (detail->lod1_distance - detail->start);         } else {
-            if (dist < detail->lod2_distance) {         dr_object_models [ID] = detail->lod1;    dr_object_morph1 [ID] = detail->lod1_distance; dr_object_morph2 [ID] = 1.0f / (detail->lod2_distance - detail->lod1_distance); } else {
-                if (dist < detail->lod3_distance) {     dr_object_models [ID] = detail->lod2;    dr_object_morph1 [ID] = detail->lod2_distance; dr_object_morph2 [ID] = 1.0f / (detail->lod3_distance - detail->lod2_distance); } else {
-                                                        dr_object_models [ID] = detail->lod3;    dr_object_morph1 [ID] = detail->lod3_distance; dr_object_morph2 [ID] = 1.0f / (detail->end           - detail->lod3_distance);
+        if (dist < detail->lod1_distance) {             dr_object_models [ID] = detail->lodbase; dr_object_morph1 [ID] = dr_object_disappear_start [ID];	dr_object_morph2 [ID] = 1.0f / (detail->lod1_distance			- dr_object_disappear_start [ID]);	} else {
+            if (dist < detail->lod2_distance) {         dr_object_models [ID] = detail->lod1;    dr_object_morph1 [ID] = detail->lod1_distance;				dr_object_morph2 [ID] = 1.0f / (detail->lod2_distance			- detail->lod1_distance);			} else {
+                if (dist < detail->lod3_distance) {     dr_object_models [ID] = detail->lod2;    dr_object_morph1 [ID] = detail->lod2_distance;				dr_object_morph2 [ID] = 1.0f / (detail->lod3_distance			- detail->lod2_distance);			} else {
+                                                        dr_object_models [ID] = detail->lod3;    dr_object_morph1 [ID] = detail->lod3_distance;				dr_object_morph2 [ID] = 1.0f / (dr_object_disappear_end [ID]	- detail->lod3_distance);
                 }
             }
         }
@@ -136,9 +138,11 @@ INLINEF VOID dr_SetDetail (UINT_32 ID, FLOAT_32 dist)
                                                 \
     } else {                                    \
                                                 \
-        register FLOAT_32P center    = &dr_object_centers   [ID * 3];   \
-        register FLOAT_32  disappear =  dr_object_disappear [ID];       \
-                                                                        \
+        register FLOAT_32P center    = &dr_object_centers		[ID * 3];   \
+        register FLOAT_32  disappear =  dr_object_disappear_end [ID];       \
+																			\
+		disappear *= disappear;		\
+                                    \
         register FLOAT_32 vx = dr_campos [0] - center [0];  if ((vx *= vx) > disappear) continue;   \
         register FLOAT_32 vy = dr_campos [1] - center [1];  if ((vy *= vy) > disappear) continue;   \
         register FLOAT_32 vz = dr_campos [2] - center [2];  if ((vz *= vz) > disappear) continue;   \

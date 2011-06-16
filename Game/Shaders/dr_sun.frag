@@ -51,7 +51,7 @@ void main ()
     if (slope > 0.0) {
     
         // DECODE DEPTH
-        float depth      = (G2.z + G2.w) * 0.00001525902;    // 1.0 / 65535.0  
+        float depth      = (G2.z + G2.w) * 0.00001525902;    // 1.0 / 65535.0
     
         // VIEW POSITION
         vec3 viewpos     = depth * view;
@@ -78,12 +78,15 @@ void main ()
         float s1;
         float s2;
         
-        float disc  = (1.0 + 3.0 * (1.0 - slope));
+        float disc  = (1.0 + pow ((1.0 - slope), 3.0));  //(1.0 + 3.0 * (1.0 - slope));
                 
         float rand  = texture2D (tex_rand, 200.0 * worldpos.xy).x * 1.57;
         
         float cosa  = cos (rand) * disc;
         float sina  = sin (rand) * disc;
+
+        // try manual depth bias calculation
+        // http://www.gamedev.net/topic/556521-glsl-manual-shadow-map-biasscale/
         
         if ((depth > depthmin [0]) && (depth < depthmin [1])) {
 
@@ -264,11 +267,10 @@ void main ()
         
         // little trick to hide some self-shadowing
         // remove shadow on steep slopes
-
-        // !!!        
-        shadow = 1.0;
         
-        shadow = mix (shadow * slope, slope, max (0.0, min (1.0, 15.0 * slope - 5.0)));
+        // shadow = mix (shadow * slope, slope, max (0.0, min (1.0, 15.0 * slope - 5.0)));
+
+        shadow *= slope;
                         
         if (shadow > 0.0) {
 

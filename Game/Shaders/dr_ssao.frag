@@ -7,8 +7,8 @@ uniform float randscale;
 
 varying vec3 view;
 
-#define RADIUS      500.0
-#define RADIUSMAX   100.0
+#define RADIUS      100.0
+#define RADIUSMAX   200.0
 #define SAMPLES     16
 #define SAMPLESINV  0.0625
 #define STRENGTH    20.0
@@ -32,8 +32,6 @@ void main ()
             
     // these are the random vectors inside a unit sphere (no unit vectors)
     
-    // ATI :
-
     vec2 sphere [SAMPLES];
 
     sphere [ 0] = vec2 (0.23703703, 0.12592593);
@@ -151,5 +149,9 @@ void main ()
     // output the result
     occlusion = clamp (1.0 - STRENGTH * SAMPLESINV * occlusion * (1.0 - shade) / sum, 0.0, 1.0);
     
+    // quadratic ..
+    // occlusion *= occlusion;
+
+    // out
     gl_FragColor = vec4 (occlusion, occlusion, occlusion, shade);
 }

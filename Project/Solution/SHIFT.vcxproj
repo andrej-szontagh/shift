@@ -42,7 +42,7 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Debug\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">..\..\Game\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Release\</IntDir>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</GenerateManifest>
@@ -50,7 +50,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Source;$(ProjectDir)..\Source\Tools;$(ProjectDir)..\Source\Externals\SDL\include;$(ProjectDir)..\Source\Externals\bullet-2.76\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Source;$(ProjectDir)..\Source\Tools;$(ProjectDir)..\Externals\SDL\include;$(ProjectDir)..\Externals\bullet-2.76\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>Sync</ExceptionHandling>
@@ -65,7 +65,7 @@
     <Link>
       <AdditionalDependencies>sdlmain.lib;sdl.lib;opengl32.lib;glu32.lib;BulletDynamics.lib;BulletCollision.lib;LinearMath.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)SHIFT.exe</OutputFile>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\Source\Externals\SDL\lib;$(ProjectDir)..\Source\Externals\bullet-2.76\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Externals\SDL\lib;$(ProjectDir)..\Externals\bullet-2.76\lib\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <IgnoreSpecificDefaultLibraries>libcd.lib;libcmtd.lib;msvcrt.lib;msvcmrt.lib;msvcurt.lib;LIBCPMT.LIB;MSVCPRT.LIB;LIBCPMTD.LIB;MSVCPRTD.LIB;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -84,7 +84,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\Source;$(ProjectDir)..\Source\Tools;$(ProjectDir)..\Source\Externals\SDL\include;$(ProjectDir)..\Source\Externals\bullet-2.76\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\Source;$(ProjectDir)..\Source\Tools;$(ProjectDir)..\Externals\SDL\include;$(ProjectDir)..\Externals\bullet-2.76\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>
       </ExceptionHandling>
@@ -100,7 +100,7 @@
     <Link>
       <AdditionalDependencies>sdlmain.lib;sdl.lib;opengl32.lib;glu32.lib;BulletDynamics.lib;BulletCollision.lib;LinearMath.lib;wininet.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(ProjectDir)../../Game/SHIFT.exe</OutputFile>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\Source\Externals\SDL\lib;$(ProjectDir)..\Source\Externals\bullet-2.76\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\Externals\SDL\lib;$(ProjectDir)..\Externals\bullet-2.76\lib\Release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>libcd.lib;libcmt.lib;libcmtd.lib;msvcrtd.lib;msvcmrt.lib;msvcurt.lib;LIBCPMT.LIB;MSVCPRT.LIB;LIBCPMTD.LIB;MSVCPRTD.LIB;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Windows</SubSystem>

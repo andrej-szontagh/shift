@@ -219,7 +219,7 @@ def processSetObject ():
 
             for s in obj.particle_systems:
                 
-                s.settings.dupli_object = scene.objects [scene.shift_pat_object];   s.settings.render_type = 'OBJECT'
+                s.settings.dupli_object = bpy.data.objects [scene.shift_pat_object];   s.settings.render_type = 'OBJECT'
                                         
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 #### PROCESS SET DISPLAY
@@ -267,6 +267,61 @@ def processSetDisplay ():
                     s.settings.draw_method = 'PATH';    s.settings.draw_size = scene.shift_pat_pathsize
                     
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
+#### PROCESS COPY SYSTEM
+####------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def processCopySystem ():
+
+    # shortcut
+    scene = bpy.context.scene
+
+    # shortcut
+    selected = bpy.context.selected_objects
+
+    # source object
+    source = bpy.context.object
+
+    # source particle system
+    system = source.particle_systems.active
+    
+    # source particle system settings
+    settings = system.settings
+
+    for obj in selected:
+
+        if obj != source and obj.type == 'MESH':
+
+            scene.objects.active = obj
+
+            bpy.ops.object.particle_system_add ()
+            
+            obj.particle_systems.active.name = system.name
+
+            obj.particle_systems.active.settings = settings
+                    
+####------------------------------------------------------------------------------------------------------------------------------------------------------
+#### PROCESS REMOVE ALL
+####------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def processRemoveAll ():
+
+    # shortcut
+    scene = bpy.context.scene
+
+    # shortcut
+    selected = bpy.context.selected_objects
+    
+    for obj in selected:
+
+        if obj.type == 'MESH':
+
+            scene.objects.active = obj
+            
+            for p in obj.particle_systems:
+
+                bpy.ops.object.particle_system_remove ()
+                            
+####------------------------------------------------------------------------------------------------------------------------------------------------------
 #### INTEGRATION AND GUI
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
     
@@ -312,6 +367,34 @@ class ParticleToolsSetDisplayOp (bpy.types.Operator):
 
         return {'FINISHED'}
     
+class ParticleToolsCopyToSelected (bpy.types.Operator):
+
+    bl_idname       = "object.particletools_copy_to_selected_operator"
+    bl_label        = "SHIFT - Particle Tools"
+    bl_description  = "Copy active particle system from active object to all other selected objects"
+    bl_register     = True
+    bl_undo         = True
+    
+    def execute (self, context):
+
+        processCopySystem ()
+
+        return {'FINISHED'}
+    
+class ParticleToolsRemoveAll (bpy.types.Operator):
+
+    bl_idname       = "object.particletools_remove_all_operator"
+    bl_label        = "SHIFT - Particle Tools"
+    bl_description  = "Remove all particle systems from selected objects"
+    bl_register     = True
+    bl_undo         = True
+    
+    def execute (self, context):
+
+        processRemoveAll ()
+
+        return {'FINISHED'}
+    
 class ParticleToolsPanel (bpy.types.Panel):
      
     bl_idname   = "object.particletools_panel"
@@ -327,6 +410,10 @@ class ParticleToolsPanel (bpy.types.Panel):
             
         layout = self.layout
         
+        box = layout.box    ()
+        box.operator        ('object.particletools_remove_all_operator', 'Remove All Particle Sytems')
+        box = layout.box    ()
+        box.operator        ('object.particletools_copy_to_selected_operator', 'Copy To Selected')
         box = layout.box    ()
         split = box.split   (align = True, percentage = 0.7)
         split.operator      ('object.particletools_convert_operator', 'Convert To Mesh')

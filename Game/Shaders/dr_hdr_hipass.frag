@@ -1,7 +1,7 @@
 
 uniform sampler2DRect tex;
 
-uniform float scale;
+varying float scale;
 
 void main ()
 {

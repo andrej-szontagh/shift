@@ -12,8 +12,6 @@ varying vec3 normal;
 varying mat3 tbni;
 
 // UV1          -> gl_MultiTexCoord0
-// GLOSS        -> gl_MultiTexCoord3.x
-// SHININESS    -> gl_MultiTexCoord3.y
 // MODELMATRIX  -> gl_MultiTexCoord4.xyzw
 // MODELMATRIX  -> gl_MultiTexCoord5.xyzw
 // MODELMATRIX  -> gl_MultiTexCoord6.xyzw

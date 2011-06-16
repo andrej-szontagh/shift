@@ -81,24 +81,19 @@ struct TMaterial
 
     CHARP       name;                           // material name
 
-    FLOAT_32    gloss1;                         // gloss shader parameter of layer1
-    FLOAT_32    gloss2;                         // gloss shader parameter of layer2
-    FLOAT_32    gloss3;                         // gloss shader parameter of layer3
+    UINT_32     diffuse;                        // diffuse texture id
+    UINT_32     composite;                      // composite texture id
 
-    FLOAT_32    shininess1;                     // shininess shader parameter of layer1
-    FLOAT_32    shininess2;                     // shininess shader parameter of layer2
-    FLOAT_32    shininess3;                     // shininess shader parameter of layer3
-
-    UINT_32     mask;                           // mask texture id
-    UINT_32     normal1;                        // normal texture id of layer1
-    UINT_32     normal2;                        // normal texture id of layer2
-    UINT_32     normal3;                        // normal texture id of layer3
-    UINT_32     diffuse1;                       // diffuse texture id of layer1
-    UINT_32     diffuse2;                       // diffuse texture id of layer2
-    UINT_32     diffuse3;                       // diffuse texture id of layer3
+    UINT_32     weights1;                       // weights 1 texture id
+    UINT_32     weights2;                       // weights 2 texture id
+    UINT_32     weights3;                       // weights 3 texture id
+    UINT_32     weights4;                       // weights 4 texture id
 
     UINT_32     width;                          // width of rectangular texture (shader parameter)
     UINT_32     height;                         // height of rectangular texture (shader parameter)
+
+	FLOAT_32    damping;						// scale of dissolve effect to match with object dissapear
+	FLOAT_32    threshold;						// threshold for alpha tested texturing
 };
 
 struct TModel
@@ -196,8 +191,6 @@ struct TDetail
     UINT_16     lod2;                           // LOD model ID
     UINT_16     lod3;                           // LOD model ID
 
-    FLOAT_32    end;                            // distance when LOD morphing ends
-    FLOAT_32    start;                          // distance when LOD morphing starts
     FLOAT_32    lod1_distance;                  // distance when LOD switches to lod1
     FLOAT_32    lod2_distance;                  // distance when LOD switches to lod2
     FLOAT_32    lod3_distance;                  // distance when LOD switches to lod3

@@ -21,8 +21,8 @@ INLINEF VOID dr_LoadShaderSolid ()
                     &dr_program_solid_gbuffers_normalf);
 
     glUseProgram    (dr_program_solid_gbuffers_normal);
-    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_normal, "tex_normal"),     0);
-    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_normal, "tex_diffuse"),    1);
+    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_normal, "tex_diffuse"),    0);
+    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_normal, "tex_composite"),  1);
     glUniform2f     (glGetUniformLocation (dr_program_solid_gbuffers_normal, "uvscale"),        10.0f/32767.0f, 10.0f/32767.0f);
     glUniform1f     (glGetUniformLocation (dr_program_solid_gbuffers_normal, "planefar"),       dr_planefar);
 
@@ -43,8 +43,8 @@ INLINEF VOID dr_LoadShaderSolid ()
                     &dr_program_solid_gbuffers_morphf);
 
     glUseProgram    (dr_program_solid_gbuffers_morph);
-    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_morph, "tex_normal"),      0);
-    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_morph, "tex_diffuse"),     1);
+    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_morph, "tex_diffuse"),     0);
+    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_morph, "tex_composite"),   1);
     glUniform2f     (glGetUniformLocation (dr_program_solid_gbuffers_morph, "uvscale"),         10.0f/32767.0f, 10.0f/32767.0f);
     glUniform1f     (glGetUniformLocation (dr_program_solid_gbuffers_morph, "planefar"),        dr_planefar);
 
@@ -65,8 +65,8 @@ INLINEF VOID dr_LoadShaderSolid ()
                     &dr_program_solid_gbuffers_shrinkf);
 
     glUseProgram    (dr_program_solid_gbuffers_shrink);
-    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_shrink, "tex_normal"),     0);
-    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_shrink, "tex_diffuse"),    1);
+    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_shrink, "tex_diffuse"),    0);
+    glUniform1i     (glGetUniformLocation (dr_program_solid_gbuffers_shrink, "tex_composite"),  1);
     glUniform2f     (glGetUniformLocation (dr_program_solid_gbuffers_shrink, "uvscale"),        10.0f/32767.0f, 10.0f/32767.0f);
     glUniform1f     (glGetUniformLocation (dr_program_solid_gbuffers_shrink, "planefar"),       dr_planefar);
 
@@ -80,8 +80,8 @@ INLINEF VOID dr_LoadShaderSolid ()
 
 INLINEF VOID dr_SetMaterialSolid (TMaterial *material)
 {
-    M_STATE_TEX0_SET (material->normal1);
-    M_STATE_TEX1_SET (material->diffuse1);
+    M_STATE_TEX0_SET (material->diffuse);
+    M_STATE_TEX1_SET (material->composite);
     M_STATE_TEX2_CLEAR;
     M_STATE_TEX3_CLEAR;
     M_STATE_TEX4_CLEAR;
@@ -231,13 +231,12 @@ INLINEF VOID dr_LoadShaderTerrain ()
                     &dr_program_terrain_gbuffers_normalf);
 
     glUseProgram    (dr_program_terrain_gbuffers_normal);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_normal1"),     0);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_normal2"),     1);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_normal3"),     2);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_diffuse1"),    3);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_diffuse2"),    4);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_diffuse3"),    5);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_mask"),        6);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_diffuse"),     0);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_composite"),   1);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_weights1"),    2);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_weights2"),    3);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_weights3"),    4);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "tex_weights4"),    5);
     glUniform2f     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "uv1scale"),        1.0f,           1.0f);
     glUniform2f     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "uv2scale"),        10.0f/32767.0f, 10.0f/32767.0f);
     glUniform1f     (glGetUniformLocation (dr_program_terrain_gbuffers_normal, "planefar"),        dr_planefar);
@@ -259,13 +258,12 @@ INLINEF VOID dr_LoadShaderTerrain ()
                     &dr_program_terrain_gbuffers_morphf);
 
     glUseProgram    (dr_program_terrain_gbuffers_morph);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_normal1"),     0);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_normal2"),     1);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_normal3"),     2);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_diffuse1"),    3);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_diffuse2"),    4);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_diffuse3"),    5);
-    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_mask"),        6);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_diffuse"),     0);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_composite"),   1);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_weights1"),    2);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_weights2"),    3);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_weights3"),    4);
+    glUniform1i     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "tex_weights4"),    5);
     glUniform2f     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "uv1scale"),        1.0f,           1.0f);
     glUniform2f     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "uv2scale"),        10.0f/32767.0f, 10.0f/32767.0f);
     glUniform1f     (glGetUniformLocation (dr_program_terrain_gbuffers_morph, "planefar"),        dr_planefar);
@@ -283,13 +281,12 @@ INLINEF VOID dr_LoadShaderTerrain ()
 
 INLINEF VOID dr_SetMaterialTerrain (TMaterial *material)
 {
-    M_STATE_TEX0_SET (material->normal1);
-    M_STATE_TEX1_SET (material->normal2);
-    M_STATE_TEX2_SET (material->normal3);
-    M_STATE_TEX3_SET (material->diffuse1);
-    M_STATE_TEX4_SET (material->diffuse2);
-    M_STATE_TEX5_SET (material->diffuse3);
-    M_STATE_TEX6_SET (material->mask);
+    M_STATE_TEX0_SET (material->diffuse);
+    M_STATE_TEX1_SET (material->composite);
+    M_STATE_TEX2_SET (material->weights1);
+    M_STATE_TEX3_SET (material->weights2);
+    M_STATE_TEX4_SET (material->weights3);
+    M_STATE_TEX5_SET (material->weights4);
 }
 
 INLINEF VOID dr_SetModelTerrainNormal (TModel *model)
@@ -392,8 +389,8 @@ INLINEF VOID dr_LoadShaderFoliage ()
                     &dr_program_foliage_gbuffers_growf);
 
     glUseProgram    (dr_program_foliage_gbuffers_grow);
-    glUniform1i     (glGetUniformLocation (dr_program_foliage_gbuffers_grow, "tex_normal"),         0);
-    glUniform1i     (glGetUniformLocation (dr_program_foliage_gbuffers_grow, "tex_diffuse"),        1);
+    glUniform1i     (glGetUniformLocation (dr_program_foliage_gbuffers_grow, "tex_diffuse"),        0);
+    glUniform1i     (glGetUniformLocation (dr_program_foliage_gbuffers_grow, "tex_composite"),      1);
     glUniform2f     (glGetUniformLocation (dr_program_foliage_gbuffers_grow, "uvscale"),            10.0f/32767.0f, 10.0f/32767.0f);
     glUniform1f     (glGetUniformLocation (dr_program_foliage_gbuffers_grow, "planefar"),           dr_planefar);
 
@@ -418,8 +415,8 @@ INLINEF VOID dr_LoadShaderFoliage ()
                     &dr_program_foliage_gbuffers_shrinkf);
 
     glUseProgram    (dr_program_foliage_gbuffers_shrink);
-    glUniform1i     (glGetUniformLocation (dr_program_foliage_gbuffers_shrink, "tex_normal"),       0);
-    glUniform1i     (glGetUniformLocation (dr_program_foliage_gbuffers_shrink, "tex_diffuse"),      1);
+    glUniform1i     (glGetUniformLocation (dr_program_foliage_gbuffers_shrink, "tex_diffuse"),      0);
+    glUniform1i     (glGetUniformLocation (dr_program_foliage_gbuffers_shrink, "tex_compoaite"),    1);
     glUniform2f     (glGetUniformLocation (dr_program_foliage_gbuffers_shrink, "uvscale"),          10.0f/32767.0f, 10.0f/32767.0f);
     glUniform1f     (glGetUniformLocation (dr_program_foliage_gbuffers_shrink, "planefar"),         dr_planefar);
 
@@ -437,8 +434,8 @@ INLINEF VOID dr_LoadShaderFoliage ()
 
 INLINEF VOID dr_SetMaterialFoliage (TMaterial *material)
 {
-    M_STATE_TEX0_SET (material->normal1);
-    M_STATE_TEX1_SET (material->diffuse1);
+    M_STATE_TEX0_SET (material->diffuse);
+    M_STATE_TEX1_SET (material->composite);
     M_STATE_TEX2_CLEAR;
     M_STATE_TEX3_CLEAR;
     M_STATE_TEX4_CLEAR;
@@ -447,8 +444,6 @@ INLINEF VOID dr_SetMaterialFoliage (TMaterial *material)
     M_STATE_TEX7_CLEAR;
     M_STATE_TEX8_CLEAR;
     M_STATE_TEX9_CLEAR;
-
-    glMultiTexCoord2f (GL_TEXTURE2, material->gloss1, material->shininess1);
 }
 
 INLINEF VOID dr_SetModelFoliageNormal (TModel *model)
@@ -568,7 +563,7 @@ INLINEF VOID dr_LoadShaderGrass ()
 
 INLINEF VOID dr_SetMaterialGrass (TMaterial *material)
 {
-    M_STATE_TEX0_SET (material->diffuse1);
+    M_STATE_TEX0_SET (material->diffuse);
     M_STATE_TEX1_CLEAR;
     M_STATE_TEX2_CLEAR;
     M_STATE_TEX3_CLEAR;
@@ -579,7 +574,8 @@ INLINEF VOID dr_SetMaterialGrass (TMaterial *material)
     M_STATE_TEX8_CLEAR;
     M_STATE_TEX9_CLEAR;
 
-    glMultiTexCoord2f (GL_TEXTURE3, material->gloss1, material->shininess1);
+    // set params
+    glMultiTexCoord2f (GL_TEXTURE3, material->damping, material->threshold);
 }
 
 INLINEF VOID dr_SetModelGrassNormal (TModel *model)
@@ -636,4 +632,37 @@ INLINEF VOID dr_DrawGrassNormal (
         // draw ..
         glCallList (list);
     }
+
+/*
+	UINT_32 c = dr_object_instances [ID];
+
+	///
+	UINT_32 distances [65535];
+
+    for (UINT_32 i = 0; i < c; i ++) {
+
+		FLOAT_32 v [3] = {	transform [0] - dr_campos [0], 
+							transform [1] - dr_campos [1],
+							transform [2] - dr_campos [2]	};	transform += 7;
+
+		distances [i] = (UINT_32) (10.0 * vDOT3 (v, v));
+	}
+
+	transform = dr_object_instances_transforms [ID];
+
+    UINT_32P indices = so_RadixSort (&dr_radix1, distances, dr_object_instances [ID]);
+
+    // instances loop
+    for (UINT_32 i = 0; i < c; i ++) {
+
+		UINT_32 index = indices [i] * 7;
+
+        // transform ..
+        glMultiTexCoord3fv (GL_TEXTURE4, &(transform [index]));
+        glMultiTexCoord4fv (GL_TEXTURE5, &(transform [index + 3]));
+
+        // draw ..
+        glCallList (list);
+    }
+*/
 }

@@ -7,7 +7,9 @@
 
 INT_32 lo_LoadWorld (CHARP filename)
 {
-    UINT_32 i, j;
+    INT_32 i, j;
+
+    CHAR fname [255];   UINT_32 length;
 
     FILE * f = fopen (filename, "rb");
 
@@ -17,98 +19,13 @@ INT_32 lo_LoadWorld (CHARP filename)
     // counters
 
     UINT_32 texturesc;
+    UINT_32 instancedc;
 
     fread (&dr_objectsc,    SIZE_UINT_32, 1, f);
     fread (&dr_modelsc,     SIZE_UINT_32, 1, f);
     fread (&dr_materialsc,  SIZE_UINT_32, 1, f);
     fread (&texturesc,      SIZE_UINT_32, 1, f);
-
-    // ALLOCATIONS
-
-    // main data structures
-
-    dr_models       = (TModel    *)     malloc (sizeof (TModel)    * (dr_modelsc    + M_RESERVED_MODELS));
-    dr_objects      = (TObject   *)     malloc (sizeof (TObject)   * (dr_objectsc   + M_RESERVED_OBJECTS));
-    dr_materials    = (TMaterial *)     malloc (sizeof (TMaterial) * (dr_materialsc + M_RESERVED_MATERIALS));
-
-    // model properites
-
-    dr_model_occlusions     = (UINT_16P) malloc ((dr_modelsc + M_RESERVED_MODELS) * SIZE_UINT_16);
-    dr_model_shaders        = (UINT_8P)  malloc ((dr_modelsc + M_RESERVED_MODELS) * SIZE_UINT_8);
-    dr_model_stamps         = (UINT_32P) calloc ((dr_modelsc + M_RESERVED_MODELS),  SIZE_UINT_32);
-    dr_model_flags          = (UINT_16P) malloc ((dr_modelsc + M_RESERVED_MODELS) * SIZE_UINT_16);
-
-    // material properites
-
-    dr_material_counters    = (UINT_16P) calloc ((dr_materialsc + M_RESERVED_MATERIALS), SIZE_UINT_16);
-    dr_material_stamps      = (UINT_32P) calloc ((dr_materialsc + M_RESERVED_MATERIALS), SIZE_UINT_32);
-
-    // object properties
-
-    dr_object_details       = (TDetail   *)     malloc (sizeof (TDetail)    * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_boundaries    = (TBoundary *)     malloc (sizeof (TBoundary)  * (dr_objectsc + M_RESERVED_OBJECTS));
-
-    dr_object_disappear         = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_disappear_split   = (UINT_8P)     malloc (SIZE_UINT_8     * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_disappear_shadow  = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_distances         = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_distancesq        = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_distances_sort    = (UINT_32P)    malloc (SIZE_UINT_32    * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_flags             = (UINT_16P)    malloc (SIZE_UINT_16    * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_queries           = (UINT_16P)    malloc (SIZE_UINT_16    * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_models            = (UINT_16P)    malloc (SIZE_UINT_16    * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_materials         = (UINT_16P)    malloc (SIZE_UINT_16    * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_depths            = (UINT_8P)     malloc (SIZE_UINT_8     * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_morph1            = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_morph2            = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_object_transforms        = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS)    * 16);
-    dr_object_centers           = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS)    *  3);
-
-    // object instances
-
-    dr_object_instances             = (UINT_16P)    malloc ((dr_objectsc + M_RESERVED_OBJECTS) * SIZE_UINT_16);
-    dr_object_instances_rand        = (FLOAT_32PP)  calloc ((dr_objectsc + M_RESERVED_OBJECTS),  SIZE_FLOAT_32P);
-    dr_object_instances_transforms  = (FLOAT_32PP)  calloc ((dr_objectsc + M_RESERVED_OBJECTS),  SIZE_FLOAT_32P);
-
-    // object tags
-
-    dr_object_tags      = (UINT_16P) calloc ((dr_objectsc + M_RESERVED_OBJECTS), SIZE_UINT_16);
-
-    // object lists
-
-    dr_list_objects1        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_list_objects2        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_list_objects3        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_list_objects4        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
-    dr_list_objects_view    = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
-
-    UINT_32P p = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS) * M_DR_SUN_SPLITS);
-
-    for (i = 0; i < M_DR_SUN_SPLITS; i ++) {
-
-        dr_list_objects_shadow_split [i] = &p [i * ((dr_objectsc + M_RESERVED_OBJECTS))];
-    }
-
-    // nodes
-
-    dr_nodes   = (TNode  *) malloc (sizeof (TNode)  * M_RESERVED_NODES);
-    dr_nodesc  = 0;
-
-    // chains
-
-    dr_chains  = (TChain *) malloc (sizeof (TChain) * M_RESERVED_CHAINS);
-    dr_chainsc = 0;
-
-    // radix sorter
-
-    so_RadixCreate	(&dr_radix, (dr_objectsc + M_RESERVED_OBJECTS));
-
-    // rendering context nodes
-
-    dr_context_models        = (TContextModel    *) malloc (sizeof (TContextModel)    * (dr_modelsc    + M_RESERVED_MODELS));
-    dr_context_materials     = (TContextMaterial *) malloc (sizeof (TContextMaterial) * (dr_materialsc + M_RESERVED_MATERIALS));
-
-    dr_context.list          = dr_context_materials;
+    fread (&instancedc,     SIZE_UINT_32, 1, f);
 
     // WORLD PARAMS
 
@@ -119,11 +36,10 @@ INT_32 lo_LoadWorld (CHARP filename)
 
     UINT_32P list_textures = (UINT_32P) malloc (sizeof (VOIDP) * texturesc);
 
-    CHAR fname [255];   UINT_32 length;
-
+    // ---------------------------------------------------------------------------------------
     // TEXTURES
 
-    for (i = 0; i < texturesc; i ++) {
+    for (i = 0; i < (INT_32) texturesc; i ++) {
 
         TImage image;
 
@@ -207,8 +123,6 @@ INT_32 lo_LoadWorld (CHARP filename)
             UINT_32 format;
             UINT_32 blocksize;
 
-            /// ADD SPECIAL HANDLING FOR SPECULAR TEXTURES (NOT RGB, NOT RGBA BUT GL_INTENSITY 8 bit) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
             switch (image.type) {
                 case M_IMAGE_TYPE_RGB:      glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB8,   image.width, image.height, 0, GL_RGB,   GL_UNSIGNED_BYTE, image.data);	break;
                 case M_IMAGE_TYPE_RGBA:     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8,  image.width, image.height, 0, GL_RGBA,  GL_UNSIGNED_BYTE, image.data);	break;
@@ -267,9 +181,17 @@ INT_32 lo_LoadWorld (CHARP filename)
         list_textures [i] = id;
     }
 
+    // ---------------------------------------------------------------------------------------
     // MATERIALS
 
-    for (i = 0; i < dr_materialsc; i ++) {
+    dr_materials    = (TMaterial *) malloc (sizeof (TMaterial) * (dr_materialsc + M_RESERVED_MATERIALS));
+
+    // material properites
+
+    dr_material_counters    = (UINT_16P) calloc ((dr_materialsc + M_RESERVED_MATERIALS), SIZE_UINT_16);
+    dr_material_stamps      = (UINT_32P) calloc ((dr_materialsc + M_RESERVED_MATERIALS), SIZE_UINT_32);
+
+    for (i = 0; i < (INT_32) dr_materialsc; i ++) {
 
         CHARP name;
 
@@ -290,31 +212,22 @@ INT_32 lo_LoadWorld (CHARP filename)
         switch (type) {
 
             case M_MATERIAL_TYPE_SOLID: {
-                    fread ((VOIDP) &material->gloss1,       SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &material->shininess1,   SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->normal1   = list_textures [tex];
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->diffuse1  = list_textures [tex];
+                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->diffuse   = list_textures [tex];
+                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->composite = list_textures [tex];
                     break;
                 }
             case M_MATERIAL_TYPE_TERRAIN: {
-                    fread ((VOIDP) &material->gloss1,       SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &material->gloss2,       SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &material->gloss3,       SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &material->shininess1,   SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &material->shininess2,   SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &material->shininess3,   SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->mask      = list_textures [tex];
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->normal1   = list_textures [tex];
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->normal2   = list_textures [tex];
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->normal3   = list_textures [tex];
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->diffuse1  = list_textures [tex];
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->diffuse2  = list_textures [tex];
-                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->diffuse3  = list_textures [tex];
+                    fread ((VOIDP) &tex,					SIZE_UINT_32,   1, f); material->diffuse   = list_textures [tex];
+                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->composite = list_textures [tex];
+                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->weights1  = list_textures [tex];
+                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->weights2  = list_textures [tex];
+                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->weights3  = list_textures [tex];
+                    fread ((VOIDP) &tex,                    SIZE_UINT_32,   1, f); material->weights4  = list_textures [tex];
                     break;
                 }
             case M_MATERIAL_TYPE_ENVIROMENT: {
 
-                    fread ((VOIDP) &tex, SIZE_UINT_32,   1, f); material->diffuse1 = list_textures [tex];
+                    fread ((VOIDP) &tex, SIZE_UINT_32,   1, f); material->diffuse = list_textures [tex];
 
                     glGetError ();
 
@@ -329,16 +242,14 @@ INT_32 lo_LoadWorld (CHARP filename)
                     break;
                 }
             case M_MATERIAL_TYPE_GRASS: {
-                    fread ((VOIDP) &material->gloss1,      SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &material->shininess1,  SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &tex,                   SIZE_UINT_32,   1, f); material->diffuse1  = list_textures [tex];
+                    fread ((VOIDP) &tex,					SIZE_UINT_32,   1, f); material->diffuse   = list_textures [tex];
+					fread ((VOIDP) &material->damping,		SIZE_FLOAT_32,  1, f);
+					fread ((VOIDP) &material->threshold,	SIZE_FLOAT_32,  1, f);
                     break;
                 }
             case M_MATERIAL_TYPE_FOLIAGE: {
-                    fread ((VOIDP) &material->gloss1,      SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &material->shininess1,  SIZE_FLOAT_32,  1, f);
-                    fread ((VOIDP) &tex,                   SIZE_UINT_32,   1, f); material->normal1   = list_textures [tex];
-                    fread ((VOIDP) &tex,                   SIZE_UINT_32,   1, f); material->diffuse1  = list_textures [tex];
+                    fread ((VOIDP) &tex,					SIZE_UINT_32,   1, f); material->diffuse   = list_textures [tex];
+                    fread ((VOIDP) &tex,					SIZE_UINT_32,   1, f); material->composite = list_textures [tex];
                     break;
                 }
         }
@@ -350,10 +261,20 @@ INT_32 lo_LoadWorld (CHARP filename)
     // release
     free (list_textures);
 
-    // MESHES
+    // ---------------------------------------------------------------------------------------
+    // MODELS
+
+    dr_models   = (TModel *) malloc (sizeof (TModel) * (dr_modelsc + M_RESERVED_MODELS));
+
+    // model properites
+
+    dr_model_occlusions     = (UINT_16P) malloc ((dr_modelsc + M_RESERVED_MODELS) * SIZE_UINT_16);
+    dr_model_shaders        = (UINT_8P)  malloc ((dr_modelsc + M_RESERVED_MODELS) * SIZE_UINT_8);
+    dr_model_stamps         = (UINT_32P) calloc ((dr_modelsc + M_RESERVED_MODELS),  SIZE_UINT_32);
+    dr_model_flags          = (UINT_16P) malloc ((dr_modelsc + M_RESERVED_MODELS) * SIZE_UINT_16);
 
     // load meshes
-    for (i = 0; i < dr_modelsc; i ++) {
+    for (i = 0; i < (INT_32) dr_modelsc; i ++) {
 
         CHARP name;
 
@@ -821,47 +742,156 @@ INT_32 lo_LoadWorld (CHARP filename)
     glBindBufferARB (GL_ARRAY_BUFFER_ARB, 0);
     glBindBufferARB (GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
 
+    // ---------------------------------------------------------------------------------------
+    // INSTANCED
+
+	// save number of records
+	UINT_32 ocount = dr_objectsc;
+
+	// preloaded data
+    VOIDPP  instanced = (VOIDPP) malloc (SIZE_VOIDP * instancedc);
+    
+	// We preload instanced data before objects loading to evaluate object count and 
+	// select object that are to be skipped if they have no instances
+	// External instances file data structure can describe more than one object with instances, so
+	// without prereading objects counts we don't know how to allocate static object data.
+
+    for (i = 0; i < (INT_32) instancedc; i ++) {
+		
+        CHAR filepath [255];
+
+        // name
+        fread ((VOIDP) &length, SIZE_UINT_32, 1, f);    CHARP name = (CHARP) malloc (SIZE_CHAR * length);
+        fread ((VOIDP) name, SIZE_CHAR, length, f);
+
+        // reconstruct file name
+        sprintf (filepath, "%s%s.inst", M_LOADER_INSTANCESPATH, name);
+
+        // open file of intances
+        FILE * fp = fopen (filepath, "rb");     
+		
+		if (fp != NULL) {
+
+			// get file length
+			fseek (fp, 0L, SEEK_END);   UINT_32 l = ftell (fp); instanced [i] = malloc (l);
+			fseek (fp, 0L, SEEK_SET);
+
+			// cacheing data
+			fread ((VOIDP) instanced [i], SIZE_UINT_8, l, fp);
+
+			// accumulate count
+			dr_objectsc += (UINT_32) (*((UINT_16P) instanced [i])) - 1;
+
+			// close file
+			fclose (fp);
+
+		} else {
+
+			// file do not exist so we remove object associated with it
+			instanced [i] = NULL;	dr_objectsc --;
+		}
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // OBJECTS
+
+    dr_objects					= (TObject   *)		malloc (sizeof (TObject)	* (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_details           = (TDetail   *)     malloc (sizeof (TDetail)    * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_boundaries        = (TBoundary *)     malloc (sizeof (TBoundary)  * (dr_objectsc + M_RESERVED_OBJECTS));
+
+    dr_object_disappear_end     = (FLOAT_32P)       malloc (SIZE_FLOAT_32       * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_disappear_start   = (FLOAT_32P)       malloc (SIZE_FLOAT_32       * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_disappear_shadow  = (FLOAT_32P)       malloc (SIZE_FLOAT_32       * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_disappear_split   = (UINT_8P)         malloc (SIZE_UINT_8         * (dr_objectsc + M_RESERVED_OBJECTS));
+
+    dr_object_flags             = (UINT_16P)        malloc (SIZE_UINT_16        * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_models            = (UINT_16P)        malloc (SIZE_UINT_16        * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_queries           = (UINT_16P)        malloc (SIZE_UINT_16        * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_materials         = (UINT_16P)        malloc (SIZE_UINT_16        * (dr_objectsc + M_RESERVED_OBJECTS));
+
+    dr_object_centers           = (FLOAT_32P)       malloc (SIZE_FLOAT_32       * (dr_objectsc + M_RESERVED_OBJECTS)    * 3);
+    dr_object_transforms        = (FLOAT_32P)       malloc (SIZE_FLOAT_32       * (dr_objectsc + M_RESERVED_OBJECTS)    * 16);
+
+    dr_object_morph1            = (FLOAT_32P)       malloc (SIZE_FLOAT_32       * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_morph2            = (FLOAT_32P)       malloc (SIZE_FLOAT_32       * (dr_objectsc + M_RESERVED_OBJECTS));
+
+    // object instances
+
+    dr_object_instances             = (UINT_16P)    malloc ((dr_objectsc + M_RESERVED_OBJECTS) * SIZE_UINT_16);
+    dr_object_instances_rand        = (FLOAT_32PP)  calloc ((dr_objectsc + M_RESERVED_OBJECTS),  SIZE_FLOAT_32P);
+    dr_object_instances_transforms  = (FLOAT_32PP)  calloc ((dr_objectsc + M_RESERVED_OBJECTS),  SIZE_FLOAT_32P);
+
     // world boundary init.
+
     dr_world_min [0] = FLT_MAX;     dr_world_max [0] = - FLT_MAX;
     dr_world_min [1] = FLT_MAX;     dr_world_max [1] = - FLT_MAX;
     dr_world_min [2] = FLT_MAX;     dr_world_max [2] = - FLT_MAX;
 
-    // OBJECTS
+	INT_32 index = 0;
 
-    for (i = 0; i < dr_objectsc; i ++) {
+    for (i = 0; i < (INT_32) ocount; i ++) {
+
+		INT_32 pindex;
+
+        UINT_32 presence;
+
+        // instances
+        fread ((VOIDP) &pindex, SIZE_INT_32, 1, f);
+
+		// is instanced object, but have no instances
+		if ((pindex >= 0) && (instanced [pindex] == NULL)) {
+
+			// skipping file data 
+
+			fread ((VOIDP) &length, SIZE_UINT_32, 1, f);
+
+			fseek (f, length, SEEK_CUR);
+
+			// fread ((VOIDP) &dr_object_models            [index], SIZE_UINT_16,  1, f);
+			// fread ((VOIDP) &dr_object_materials         [index], SIZE_UINT_16,  1, f);
+			// fread ((VOIDP) &dr_object_disappear_end     [index], SIZE_FLOAT_32, 1, f);
+			// fread ((VOIDP) &dr_object_disappear_start   [index], SIZE_FLOAT_32, 1, f);
+			// fread ((VOIDP) &dr_object_disappear_shadow  [index], SIZE_FLOAT_32, 1, f);
+			// fread ((VOIDP) &dr_object_flags             [index], SIZE_UINT_16,  1, f);
+
+			fseek (f, SIZE_UINT_16 * 3 + SIZE_FLOAT_32 * 3, SEEK_CUR);
+
+			fread ((VOIDP) &presence, SIZE_UINT_32, 1, f);
+	        if (presence) {
+
+				// fread ((VOIDP) &detail->lod1, SIZE_UINT_16,  1, f);
+				// fread ((VOIDP) &detail->lod1_distance,  SIZE_FLOAT_32, 1, f);
+				// fread ((VOIDP) &detail->lod2, SIZE_UINT_16,  1, f);
+				// fread ((VOIDP) &detail->lod2_distance,  SIZE_FLOAT_32, 1, f);
+				// fread ((VOIDP) &detail->lod3, SIZE_UINT_16,  1, f);
+				// fread ((VOIDP) &detail->lod3_distance,  SIZE_FLOAT_32, 1, f);
+
+				fseek (f, SIZE_UINT_16 * 3 + SIZE_FLOAT_32 * 3, SEEK_CUR);
+			}
+
+			// we skip this object 
+			continue;
+		}
 
         // shortcut
-        TObject * object = &dr_objects [i];
+        TObject * object = &dr_objects [index];
 
         // name
         fread ((VOIDP) &length, SIZE_UINT_32, 1, f);            object->name = (CHARP) malloc (SIZE_CHAR * length);
         fread ((VOIDP) object->name, SIZE_CHAR, length, f);
 
-        // model
-        fread ((VOIDP) &dr_object_models            [i], SIZE_UINT_16,  1, f);
-
-        // material
-        fread ((VOIDP) &dr_object_materials         [i], SIZE_UINT_16,  1, f);
-
-        // disappear distance
-        fread ((VOIDP) &dr_object_disappear         [i], SIZE_FLOAT_32, 1, f);
-
-        // shadow disappear distance
-        fread ((VOIDP) &dr_object_disappear_shadow  [i], SIZE_FLOAT_32, 1, f);
-
-        // flags
-        fread ((VOIDP) &dr_object_flags             [i], SIZE_UINT_16,  1, f);
-
-        UINT_32 presence;
+        fread ((VOIDP) &dr_object_models            [index], SIZE_UINT_16,  1, f);
+        fread ((VOIDP) &dr_object_materials         [index], SIZE_UINT_16,  1, f);
+        fread ((VOIDP) &dr_object_disappear_end     [index], SIZE_FLOAT_32, 1, f);
+        fread ((VOIDP) &dr_object_disappear_start   [index], SIZE_FLOAT_32, 1, f);
+        fread ((VOIDP) &dr_object_disappear_shadow  [index], SIZE_FLOAT_32, 1, f);
+        fread ((VOIDP) &dr_object_flags             [index], SIZE_UINT_16,  1, f);
 
         // LOD description
         fread ((VOIDP) &presence, SIZE_UINT_32, 1, f);
         if (presence) {
 
-            TDetail * detail = &dr_object_details [i];
-
-            fread ((VOIDP) &detail->end,   SIZE_FLOAT_32, 1, f);
-            fread ((VOIDP) &detail->start, SIZE_FLOAT_32, 1, f);
+            TDetail * detail = &dr_object_details [index];
 
             fread ((VOIDP) &detail->lod1, SIZE_UINT_16,  1, f);
             fread ((VOIDP) &detail->lod1_distance,  SIZE_FLOAT_32, 1, f);
@@ -870,7 +900,7 @@ INT_32 lo_LoadWorld (CHARP filename)
             fread ((VOIDP) &detail->lod3, SIZE_UINT_16,  1, f);
             fread ((VOIDP) &detail->lod3_distance,  SIZE_FLOAT_32, 1, f);
 
-            detail->lodbase = dr_object_models [i];
+            detail->lodbase = dr_object_models [index];
 
             // creating occlusion query
             if ((dr_model_flags [detail->lodbase] & M_FLAG_MODEL_OCCLUSION)    ||
@@ -879,13 +909,13 @@ INT_32 lo_LoadWorld (CHARP filename)
                 ((detail->lod3 != 0xffff) && (dr_model_flags [detail->lod3   ] & M_FLAG_MODEL_OCCLUSION))) {
 
                 UINT_32 query;
-                glGenQueriesARB (1, &query);    dr_object_queries [i] = (UINT_16) query;
+                glGenQueriesARB (1, &query);    dr_object_queries [index] = (UINT_16) query;
 
-            } else  dr_object_queries [i] = 0;
+            } else  dr_object_queries [index] = 0;
 
         } else {
 
-            TDetail * detail = &dr_object_details [i];
+            TDetail * detail = &dr_object_details [index];
 
             detail->lod1    = 0xffff;
             detail->lod2    = 0xffff;
@@ -893,108 +923,183 @@ INT_32 lo_LoadWorld (CHARP filename)
             detail->lodbase = 0xffff;
 
             // init morphing parameters
-            dr_object_morph1 [i] = 0.0;
-            dr_object_morph2 [i] = 1.0f / dr_object_disappear [i];
+            dr_object_morph1 [index] =												dr_object_disappear_start [index];
+            dr_object_morph2 [index] = 1.0f / (dr_object_disappear_end [index] -	dr_object_disappear_start [index]);
 
             // creating occlusion query
-            if (dr_model_flags [dr_object_models [i]] & M_FLAG_MODEL_OCCLUSION) {
+            if (dr_model_flags [dr_object_models [index]] & M_FLAG_MODEL_OCCLUSION) {
                 
                 UINT_32 query;
-                glGenQueriesARB (1, &query);    dr_object_queries [i] = (UINT_16) query;
+                glGenQueriesARB (1, &query);    dr_object_queries [index] = (UINT_16) query;
 
-            } else  dr_object_queries [i] = 0;
+            } else  dr_object_queries [index] = 0;
         }
 
-        // turn to quadratic distance
-        dr_object_disappear [i] *= dr_object_disappear [i];
-
-        // shortcut
-        TBoundary * boundary = &dr_object_boundaries [i];
-
-        // instances
-        fread ((VOIDP) &presence, SIZE_UINT_32, 1, f);
-        if (presence) {
-
-            CHAR filepath [255];
-
-            sprintf (filepath, "%s%s.inst", M_LOADER_INSTANCESPATH, object->name);
-
-            // open mesh file
-            FILE * fp = fopen (filepath, "rb");     if (fp == NULL) return -1;
-
-            // instances count
-            fread ((VOIDP) &dr_object_instances [i], SIZE_UINT_16, 1, fp);
-
-            // transformations
-            fread ((VOIDP) (dr_object_instances_transforms [i] = (FLOAT_32P) malloc (SIZE_FLOAT_32 * 7 * dr_object_instances [i])),
-                                                                                     SIZE_FLOAT_32,  7 * dr_object_instances [i],    fp);
-
-            // random factors
-            dr_object_instances_rand [i] = (FLOAT_32P) malloc (SIZE_FLOAT_32 * dr_object_instances [i]);
-
-            // generate factors
-            UINT_32   c = dr_object_instances       [i];
-            FLOAT_32P p = dr_object_instances_rand  [i];
-
-            for (UINT_32 n = 0; n < c; n ++)  p [n] = (rand () / (FLOAT_32) RAND_MAX);
-
-            // boundary
-            fread ((VOIDP) &boundary->boxmin [0],  SIZE_FLOAT_32,  1, fp);
-            fread ((VOIDP) &boundary->boxmin [1],  SIZE_FLOAT_32,  1, fp);
-            fread ((VOIDP) &boundary->boxmin [2],  SIZE_FLOAT_32,  1, fp);
-
-            fread ((VOIDP) &boundary->boxmax [0],  SIZE_FLOAT_32,  1, fp);
-            fread ((VOIDP) &boundary->boxmax [1],  SIZE_FLOAT_32,  1, fp);
-            fread ((VOIDP) &boundary->boxmax [2],  SIZE_FLOAT_32,  1, fp);
-
-            // close file
-            fclose (fp);
-
-            // completing boundary
-            dr_ClipCompleteBoundary (boundary);
-
-        } else {
+		// single object
+        if (pindex < 0) {
 
             // single object
-            dr_object_instances             [i] = 1;
-            dr_object_instances_transforms  [i] = NULL;
+            dr_object_instances             [index] = 1;
+            dr_object_instances_transforms  [index] = NULL;
 
-            // shortcuts
-            TModel      * model         = &dr_models                [dr_object_models [i]];
-            FLOAT_32P     transform     = &dr_object_transforms     [i * 16];
+            // shortcut
+            TModel * model = &dr_models	[dr_object_models	[index]];
+
+            // shortcut
+            TBoundary * boundary	= &dr_object_boundaries [index];
+
+            // shortcut
+            FLOAT_32P transform		= &dr_object_transforms	[index * 16];
 
             // matrix
             fread ((VOIDP) transform, SIZE_FLOAT_32, 16, f);
 
             // updating object boundary
             dr_ClipUpdateBoundary (boundary, model->boxmin, model->boxmax, transform);
+
+            // update object center
+            FLOAT_32P center = &dr_object_centers [index * 3];
+
+            center [0] = boundary->center [0];
+            center [1] = boundary->center [1];
+            center [2] = boundary->center [2];
+
+            // collecting world bounding box
+            dr_world_min [0] = MIN (boundary->boxmin [0], dr_world_min [0]);
+            dr_world_min [1] = MIN (boundary->boxmin [1], dr_world_min [1]);
+            dr_world_min [2] = MIN (boundary->boxmin [2], dr_world_min [2]);
+
+            dr_world_max [0] = MAX (boundary->boxmax [0], dr_world_max [0]);
+            dr_world_max [1] = MAX (boundary->boxmax [1], dr_world_max [1]);
+            dr_world_max [2] = MAX (boundary->boxmax [2], dr_world_max [2]);
+
+            // ID
+            object->ID = index;
+
+			// advance
+			index ++;
+
+        } else {
+
+			// count of instances
+            UINT_32 count = (UINT_32) (*((UINT_16P) (instanced [pindex])));
+
+			// shortcut
+            CHARP pinstanced = ((CHARP) (instanced [pindex])) + SIZE_UINT_16;
+
+			// shortcut
+            TDetail * detailo = &dr_object_details [index];
+
+			// origin index
+            UINT_32 indexo = index;
+
+			// create sub-objects
+            for (UINT_32 n = 0; n < count; n ++) {
+
+                // we make a copy of base object
+                if (n > 0) {
+
+                    // name
+                    sprintf (dr_objects [index].name = (CHARP) malloc (SIZE_CHAR * (strlen (dr_objects [indexo].name) + 6)), "%s_%i", dr_objects [indexo].name, n);
+
+                    dr_object_models            [index] = dr_object_models              [indexo];
+                    dr_object_materials         [index] = dr_object_materials           [indexo];
+                    dr_object_disappear_end     [index] = dr_object_disappear_end       [indexo];
+                    dr_object_disappear_start   [index] = dr_object_disappear_start     [indexo];
+                    dr_object_disappear_shadow  [index] = dr_object_disappear_shadow    [indexo];
+                    dr_object_flags             [index] = dr_object_flags               [indexo];
+
+                    TDetail * detail = &dr_object_details [index];
+
+					detail->lod1            = detailo->lod1;
+					detail->lod2            = detailo->lod2;
+					detail->lod3            = detailo->lod3;
+					detail->lod1_distance   = detailo->lod1_distance;
+					detail->lod2_distance   = detailo->lod2_distance;
+					detail->lod3_distance   = detailo->lod3_distance;
+					detail->lodbase         = detailo->lodbase;
+
+                    if (dr_object_queries [indexo]) {
+
+                        UINT_32 query;
+                        glGenQueriesARB (1, &query);    dr_object_queries [index] = (UINT_16) query;
+                    }
+
+                    if (detailo->lod1 == 0xffff) {
+
+                        // init morphing parameters
+						dr_object_morph1 [index] =												dr_object_disappear_start [index];
+						dr_object_morph2 [index] = 1.0f / (dr_object_disappear_end [index] -	dr_object_disappear_start [index]);
+                    }
+                }
+
+                // count of instances
+                UINT_32 c = dr_object_instances [index] = * ((UINT_16P) pinstanced);     pinstanced += SIZE_UINT_16;
+
+                // transformations
+                UINT_32 l = SIZE_FLOAT_32 * 7 * dr_object_instances [index];
+
+				// copy values from pre-readed data block
+                memcpy ((VOIDP) (dr_object_instances_transforms [index] = (FLOAT_32P) malloc (l)), (VOIDP) pinstanced, l);  pinstanced += l;
+
+                // random factors
+                dr_object_instances_rand [index] = (FLOAT_32P) malloc (SIZE_FLOAT_32 * dr_object_instances [index]);
+
+                // generate factors
+                FLOAT_32P p = dr_object_instances_rand [index];
+
+                /// SLOW !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                for (UINT_32 m = 0; m < c; m ++)  p [m] = (rand () / (FLOAT_32) RAND_MAX);
+
+                // shortcut
+                TBoundary * boundary = &dr_object_boundaries [index];
+
+                // boundary
+				boundary->boxmin [0] = * ((FLOAT_32P) pinstanced);  pinstanced += SIZE_FLOAT_32;
+				boundary->boxmin [1] = * ((FLOAT_32P) pinstanced);  pinstanced += SIZE_FLOAT_32;
+				boundary->boxmin [2] = * ((FLOAT_32P) pinstanced);  pinstanced += SIZE_FLOAT_32;
+
+				boundary->boxmax [0] = * ((FLOAT_32P) pinstanced);  pinstanced += SIZE_FLOAT_32;
+				boundary->boxmax [1] = * ((FLOAT_32P) pinstanced);  pinstanced += SIZE_FLOAT_32;
+				boundary->boxmax [2] = * ((FLOAT_32P) pinstanced);  pinstanced += SIZE_FLOAT_32;
+
+                // complete boundary
+                dr_ClipCompleteBoundary (boundary);
+
+                // update object center
+                FLOAT_32P center = &dr_object_centers [index * 3];
+
+                center [0] = boundary->center [0];
+                center [1] = boundary->center [1];
+                center [2] = boundary->center [2];
+
+                // collecting world bounding box
+                dr_world_min [0] = MIN (boundary->boxmin [0], dr_world_min [0]);
+                dr_world_min [1] = MIN (boundary->boxmin [1], dr_world_min [1]);
+                dr_world_min [2] = MIN (boundary->boxmin [2], dr_world_min [2]);
+
+                dr_world_max [0] = MAX (boundary->boxmax [0], dr_world_max [0]);
+                dr_world_max [1] = MAX (boundary->boxmax [1], dr_world_max [1]);
+                dr_world_max [2] = MAX (boundary->boxmax [2], dr_world_max [2]);
+
+                // ID
+                object->ID = index;
+
+                // advance
+                index ++;
+            }
         }
-
-        // update object center
-        FLOAT_32P center = &dr_object_centers [i * 3];
-
-        center [0] = boundary->center [0];
-        center [1] = boundary->center [1];
-        center [2] = boundary->center [2];
-
-        // collecting world bounding box
-        TBoundary * b = &dr_object_boundaries [i];
-
-        dr_world_min [0] = MIN (b->boxmin [0], dr_world_min [0]);
-        dr_world_min [1] = MIN (b->boxmin [1], dr_world_min [1]);
-        dr_world_min [2] = MIN (b->boxmin [2], dr_world_min [2]);
-
-        dr_world_max [0] = MAX (b->boxmax [0], dr_world_max [0]);
-        dr_world_max [1] = MAX (b->boxmax [1], dr_world_max [1]);
-        dr_world_max [2] = MAX (b->boxmax [2], dr_world_max [2]);
-
-        // ID
-        object->ID = i;
     }
 
-    // ENVIROMENT
+	// free temorary array
+    for (UINT_32 n = 0; n < instancedc; n ++)
+        if (instanced [n])
+			free (instanced [n]);
 
-    INT_32 index;
+    free (instanced);
+
+    // ---------------------------------------------------------------------------------------
+    // ENVIROMENT
 
     // model
     fread ((VOIDP) &index, SIZE_UINT_32, 1, f);  dr_enviroment_model = &dr_models [index];
@@ -1002,6 +1107,7 @@ INT_32 lo_LoadWorld (CHARP filename)
     // material
     fread ((VOIDP) &index, SIZE_UINT_32, 1, f);  dr_enviroment_material = &dr_materials [index];
 
+    // ---------------------------------------------------------------------------------------
     // SUN
 
     FLOAT_32 tmp [3], d;
@@ -1034,6 +1140,7 @@ INT_32 lo_LoadWorld (CHARP filename)
     // far plane
     fread ((VOIDP) &d,                SIZE_FLOAT_32, 1, f);     dr_sun_planefar = (FLOAT_64) d;
 
+    // ---------------------------------------------------------------------------------------
     // FOG
 
     // color
@@ -1041,21 +1148,75 @@ INT_32 lo_LoadWorld (CHARP filename)
     fread ((VOIDP) &dr_fog_color [1], SIZE_FLOAT_32, 1, f);
     fread ((VOIDP) &dr_fog_color [2], SIZE_FLOAT_32, 1, f);
 
+    // done
+    fclose (f);
+
+    // ---------------------------------------------------------------------------------------
     // BUILDING OCT-TREE
+
+    // nodes
+
+    dr_nodes   = (TNode  *) malloc (sizeof (TNode)  * M_RESERVED_NODES);
+    dr_nodesc  = 0;
+
+    // chains
+
+    dr_chains  = (TChain *) malloc (sizeof (TChain) * M_RESERVED_CHAINS);
+    dr_chainsc = 0;
+
+    // depths in oct-tree
+
+    dr_object_depths = (UINT_8P) malloc (SIZE_UINT_8 * (dr_objectsc + M_RESERVED_OBJECTS));
 
     // initialization
     dr_ClipInit ();
 
     // adding objects into oct-tree
-    for (i = 0; i < dr_objectsc; i ++)
+    for (i = 0; i < (INT_32) dr_objectsc; i ++)
 
         dr_ClipAdd  (i);
 
     // oct-tree defragmentation
     dr_ClipDefrag ();
 
-    // done
-    fclose (f);
+    // ---------------------------------------------------------------------------------------
+    // INTERNAL DATA
+
+    // RENDERING CONTEXT NODES
+
+    dr_context_models        = (TContextModel    *) malloc (sizeof (TContextModel)    * (dr_modelsc    + M_RESERVED_MODELS));
+    dr_context_materials     = (TContextMaterial *) malloc (sizeof (TContextMaterial) * (dr_materialsc + M_RESERVED_MATERIALS));
+
+    dr_context.list          = dr_context_materials;
+
+    // OBJECT TAGS
+
+    dr_object_tags      = (UINT_16P) calloc ((dr_objectsc + M_RESERVED_OBJECTS), SIZE_UINT_16);
+
+    // OBJECT LISTS
+
+    dr_list_objects1        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_list_objects2        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_list_objects3        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_list_objects4        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_list_objects_view    = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
+
+    UINT_32P p = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS) * M_DR_SUN_SPLITS);
+
+    for (i = 0; i < M_DR_SUN_SPLITS; i ++) {
+
+        dr_list_objects_shadow_split [i] = &p [i * ((dr_objectsc + M_RESERVED_OBJECTS))];
+    }
+
+    // RADIX SORTER
+
+    so_RadixCreate	(&dr_radix,  (dr_objectsc + M_RESERVED_OBJECTS));
+
+    // OBJECT INTERNAL 
+
+    dr_object_distances         = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_distancesq        = (FLOAT_32P)   malloc (SIZE_FLOAT_32   * (dr_objectsc + M_RESERVED_OBJECTS));
+    dr_object_distances_sort    = (UINT_32P)    malloc (SIZE_UINT_32    * (dr_objectsc + M_RESERVED_OBJECTS));
 
     return 0;
 }
@@ -1097,7 +1258,8 @@ VOID lo_UnloadWorld ()
     free (dr_object_distances);
     free (dr_object_distancesq);
     free (dr_object_distances_sort);
-    free (dr_object_disappear);
+    free (dr_object_disappear_end);
+    free (dr_object_disappear_start);
     free (dr_object_disappear_split);
     free (dr_object_disappear_shadow);
     free (dr_object_queries);

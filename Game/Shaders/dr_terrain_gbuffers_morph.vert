@@ -4,19 +4,6 @@ uniform float planefar;
 uniform vec2 uv1scale;
 uniform vec2 uv2scale;
 
-uniform vec3 shininess;
-uniform vec3 gloss;
-
-varying float shininess1;
-varying float shininess2;
-varying float shininess3;
-
-varying float gloss1;
-varying float gloss2;
-varying float gloss3;
-
-varying vec3  normal;
-
 varying float depth;
 
 varying mat3 tbni;
@@ -82,21 +69,9 @@ void main ()
             gl_TexCoord [0] =                 vec4 (t * uv1scale, 0.0, 0.0);
             gl_TexCoord [1] = gl_MultiTexCoord1 * vec4 (uv2scale, 0.0, 0.0);
             
-    // GLOSS ------------------------------------------------------------------------------------------------------------------------------------------------
-    
-            gloss1          = gloss.x;
-            gloss2          = gloss.y;
-            gloss3          = gloss.z;
-
-    // SHININESS --------------------------------------------------------------------------------------------------------------------------------------------
-
-            shininess1      = shininess.x;
-            shininess2      = shininess.y;
-            shininess3      = shininess.z;
-
     /// TBN MATRIX ------------------------------------------------------------------------------------------------------------------------------------------
     
-                 normal     = normalize (mat3 (matrix) *        n);
+            vec3 normal     = normalize (mat3 (matrix) *        n);
             vec3 tangent    = normalize (mat3 (matrix) * (2.0 * gl_SecondaryColor.xyz - 1.0));
             vec3 binormal   = cross     (tangent, normal);
         

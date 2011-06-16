@@ -119,7 +119,7 @@ def formatName (format_string, substition_string, replaces):
 #### CHECK NAMES
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def processCheckNames (name, data):
+def processCheckNames (name, owner):
 
     print ('Check names : ')
     print ('')
@@ -127,10 +127,40 @@ def processCheckNames (name, data):
     # parsing formatting string
     repl = formatNameParse (name, 'name')
 
-    for obj in bpy.context.selected_objects:
+    # object
+    if   (owner == '0'):
 
-        if data :   print ("Object :", obj.name, "Name :", formatName (name, obj.data.name, repl))
-        else :      print ("Object :", obj.name, "Name :", formatName (name, obj.name, repl))
+        for obj in bpy.context.selected_objects:
+            try:    print ("Object :", obj.name, "Name :", formatName (name, obj.name, repl))
+            except: pass
+                
+    # mesh
+    elif (owner == '1'):
+
+        for obj in bpy.context.selected_objects:
+            try:    print ("Object :", obj.name, "Name :", formatName (name, obj.data.name, repl))
+            except: pass
+
+    # material
+    elif (owner == '2'):
+
+        for obj in bpy.context.selected_objects:
+            try:    print ("Object :", obj.name, "Name :", formatName (name, obj.active_material.name, repl))
+            except: pass
+
+    # texture
+    elif (owner == '3'):
+
+        for obj in bpy.context.selected_objects:
+            try:    print ("Object :", obj.name, "Name :", formatName (name, obj.active_material.active_texture.name, repl))
+            except: pass
+            
+    # particle settings
+    elif (owner == '4'):
+
+        for obj in bpy.context.selected_objects:
+            try:    print ("Object :", obj.name, "Name :", formatName (name, obj.particle_systems.active.settings.name, repl))
+            except: pass
             
     print ('')
             
@@ -140,27 +170,57 @@ def processCheckNames (name, data):
 #### PROPERTY REMOVE
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def removeProperty (name, data):
+def removeProperty (name, owner):
 
     scene = bpy.context.scene
 
     if (name != ''):
-        if (data):
-            for obj in bpy.context.selected_objects:
-                try:    del obj.data [name]
-                except: pass
-        else:
+
+        # object
+        if   (owner == '0'):
+
             for obj in bpy.context.selected_objects:
                 try:    del obj [name]
                 except: pass
+                    
+        # mesh
+        elif (owner == '1'):
 
+            for obj in bpy.context.selected_objects:
+                try:    del obj.data [name]
+                except: pass
+
+        # material
+        elif (owner == '2'):
+
+            for obj in bpy.context.selected_objects:
+                try:    del obj.active_material [name]
+                except: pass
+
+        # texture
+        elif (owner == '3'):
+
+            for obj in bpy.context.selected_objects:
+                try:    del obj.active_material.active_texture [name]
+                except: pass
+
+        # particle settings
+        elif (owner == '4'):
+
+            for obj in bpy.context.selected_objects:
+                try:    del obj.particle_systems.active.settings [name]
+                except: pass
+                
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 #### PROPERTY SET
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
                 
-def setProperty (name, value, data, overwrite):
+def setProperty (name, value, owner, overwrite):
 
     scene = bpy.context.scene
+
+    scene.shift_pt_history.add ()
+    scene.shift_pt_history [-1].name = name
 
     if (name != ''):
         
@@ -174,7 +234,20 @@ def setProperty (name, value, data, overwrite):
             # parsing formatting string
             repl = formatNameParse (value, 'name')
 
-            if (data):
+            # object
+            if   (owner == '0'):
+
+                if (overwrite):
+                    for obj in bpy.context.selected_objects:
+                        obj [name] = formatName (value, obj.name, repl)
+                else:
+                    for obj in bpy.context.selected_objects:
+                        try:    obj [name];    print ('WARNING | Property already exist : object \'', obj.name, '\' , property \'', name, '\'')
+                        except: obj [name] = formatName (value, obj.name, repl)
+                        
+            # mesh
+            elif (owner == '1'):
+
                 if (overwrite):
                     for obj in bpy.context.selected_objects:
                         obj.data [name] = formatName (value, obj.data.name, repl)
@@ -182,25 +255,48 @@ def setProperty (name, value, data, overwrite):
                     for obj in bpy.context.selected_objects:
                         try:    obj.data [name];    print ('WARNING | Property already exist : object data \'', obj.data.name, '\' , property \'', name, '\'')
                         except: obj.data [name] = formatName (value, obj.data.name, repl)
-            else:
+
+            # material
+            elif (owner == '2'):
+
                 if (overwrite):
                     for obj in bpy.context.selected_objects:
-                        obj [name] = formatName (value, obj.name, repl)
+                        try:    obj.active_material [name] = formatName (value, obj.active_material.name, repl)
+                        except: pass
                 else:
                     for obj in bpy.context.selected_objects:
-                        try:    obj [name];    print ('WARNING | Property already exist : object \'', obj.name, '\' , property \'', name, '\'')
-                        except: obj [name] = formatName (value, obj.name, repl)            
+                        try:    obj.active_material [name];    print ('WARNING | Property already exist : object data \'', obj.active_material.name, '\' , property \'', name, '\'')
+                        except: obj.active_material [name] = formatName (value, obj.active_material.name, repl)
+
+            # texture
+            elif (owner == '3'):
+                
+                if (overwrite):
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.active_material.active_texture [name] = formatName (value, obj.active_material.active_texture.name, repl)
+                        except: pass
+                else:
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.active_material.active_texture [name];    print ('WARNING | Property already exist : object data \'', obj.active_material.active_texture.name, '\' , property \'', name, '\'')
+                        except: obj.active_material.active_texture [name] = formatName (value, obj.active_material.active_texture.name, repl)
+                        
+            # particle settings
+            elif (owner == '4'):
+                
+                if (overwrite):
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.particle_systems.active.settings [name] = formatName (value, obj.particle_systems.active.settings.name, repl)
+                        except: pass
+                else:
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.particle_systems.active.settings [name];    print ('WARNING | Property already exist : object data \'', obj.particle_systems.active.settings.name, '\' , property \'', name, '\'')
+                        except: obj.particle_systems.active.settings [name] = formatName (value, obj.particle_systems.active.settings.name, repl)
+                        
         else :
 
-            if (data):
-                if (overwrite):
-                    for obj in bpy.context.selected_objects:
-                        obj.data [name] = value
-                else:
-                    for obj in bpy.context.selected_objects:
-                        try:    obj.data [name];    print ('WARNING | Property already exist : object data \'', obj.data.name, '\' , property \'', name, '\'')
-                        except: obj.data [name] = value
-            else:
+            # object
+            if   (owner == '0'):
+
                 if (overwrite):
                     for obj in bpy.context.selected_objects:
                         obj [name] = value
@@ -208,45 +304,92 @@ def setProperty (name, value, data, overwrite):
                     for obj in bpy.context.selected_objects:
                         try:    obj [name];    print ('WARNING | Property already exist : object \'', obj.name, '\' , property \'', name, '\'')
                         except: obj [name] = value
+                        
+            # mesh
+            elif (owner == '1'):
 
+                if (overwrite):
+                    for obj in bpy.context.selected_objects:
+                        obj.data [name] = value
+                else:
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.data [name];    print ('WARNING | Property already exist : object data \'', obj.data.name, '\' , property \'', name, '\'')
+                        except: obj.data [name] = value
+
+            # material
+            elif (owner == '2'):
+
+                if (overwrite):
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.active_material [name] = value
+                        except: pass
+                else:
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.active_material [name];    print ('WARNING | Property already exist : object data \'', obj.active_material.name, '\' , property \'', name, '\'')
+                        except: obj.active_material [name] = value
+
+            # texture
+            elif (owner == '3'):
+                
+                if (overwrite):
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.active_material.active_texture [name] = value
+                        except: pass
+                else:
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.active_material.active_texture [name];    print ('WARNING | Property already exist : object data \'', obj.active_material.active_texture.name, '\' , property \'', name, '\'')
+                        except: obj.active_material.active_texture [name] = value
+
+            # particle settings
+            elif (owner == '4'):
+                
+                if (overwrite):
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.particle_systems.active.settings [name] = value
+                        except: pass
+                else:
+                    for obj in bpy.context.selected_objects:
+                        try:    obj.particle_systems.active.settings [name];    print ('WARNING | Property already exist : object data \'', obj.particle_systems.active.settings.name, '\' , property \'', name, '\'')
+                        except: obj.particle_systems.active.settings [name] = value
+                        
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 #### PROCESS SET
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
     
-def process1Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property1, scene.shift_pt_property1_value, scene.shift_pt_property1_data, scene.shift_pt_overwrite)
-def process2Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property2, scene.shift_pt_property2_value, scene.shift_pt_property2_data, scene.shift_pt_overwrite)
-def process3Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property3, scene.shift_pt_property3_value, scene.shift_pt_property3_data, scene.shift_pt_overwrite)
-def process4Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property4, scene.shift_pt_property4_value, scene.shift_pt_property4_data, scene.shift_pt_overwrite)
-def process5Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property5, scene.shift_pt_property5_value, scene.shift_pt_property5_data, scene.shift_pt_overwrite)
-def process6Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property6, scene.shift_pt_property6_value, scene.shift_pt_property6_data, scene.shift_pt_overwrite)
-def process7Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property7, scene.shift_pt_property7_value, scene.shift_pt_property7_data, scene.shift_pt_overwrite)
-def process8Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property8, scene.shift_pt_property8_value, scene.shift_pt_property8_data, scene.shift_pt_overwrite)
+def process1Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property1, scene.shift_pt_property1_value, scene.shift_pt_property1_owner, scene.shift_pt_overwrite)
+def process2Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property2, scene.shift_pt_property2_value, scene.shift_pt_property2_owner, scene.shift_pt_overwrite)
+def process3Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property3, scene.shift_pt_property3_value, scene.shift_pt_property3_owner, scene.shift_pt_overwrite)
+def process4Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property4, scene.shift_pt_property4_value, scene.shift_pt_property4_owner, scene.shift_pt_overwrite)
+def process5Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property5, scene.shift_pt_property5_value, scene.shift_pt_property5_owner, scene.shift_pt_overwrite)
+def process6Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property6, scene.shift_pt_property6_value, scene.shift_pt_property6_owner, scene.shift_pt_overwrite)
+def process7Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property7, scene.shift_pt_property7_value, scene.shift_pt_property7_owner, scene.shift_pt_overwrite)
+def process8Set     (): scene = bpy.context.scene;  setProperty (scene.shift_pt_property8, scene.shift_pt_property8_value, scene.shift_pt_property8_owner, scene.shift_pt_overwrite)
 
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 #### PROCESS REMOVE
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def process1Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property1, scene.shift_pt_property1_data) 
-def process2Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property2, scene.shift_pt_property2_data)
-def process3Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property3, scene.shift_pt_property3_data)
-def process4Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property4, scene.shift_pt_property4_data)
-def process5Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property5, scene.shift_pt_property5_data)
-def process6Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property6, scene.shift_pt_property6_data)
-def process7Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property7, scene.shift_pt_property7_data)
-def process8Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property8, scene.shift_pt_property8_data)
+def process1Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property1, scene.shift_pt_property1_owner) 
+def process2Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property2, scene.shift_pt_property2_owner)
+def process3Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property3, scene.shift_pt_property3_owner)
+def process4Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property4, scene.shift_pt_property4_owner)
+def process5Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property5, scene.shift_pt_property5_owner)
+def process6Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property6, scene.shift_pt_property6_owner)
+def process7Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property7, scene.shift_pt_property7_owner)
+def process8Remove  (): scene = bpy.context.scene;  removeProperty (scene.shift_pt_property8, scene.shift_pt_property8_owner)
 
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 #### PROCESS CLEAR
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
 
-def process1Clear   (): scene = bpy.context.scene;  scene.shift_pt_property1 = '';  scene.shift_pt_property1_value = '';    scene.shift_pt_property1_format = ''
-def process2Clear   (): scene = bpy.context.scene;  scene.shift_pt_property2 = '';  scene.shift_pt_property2_value = '';    scene.shift_pt_property2_format = ''
-def process3Clear   (): scene = bpy.context.scene;  scene.shift_pt_property3 = '';  scene.shift_pt_property3_value = '';    scene.shift_pt_property3_format = ''
-def process4Clear   (): scene = bpy.context.scene;  scene.shift_pt_property4 = '';  scene.shift_pt_property4_value = '';    scene.shift_pt_property4_format = ''
-def process5Clear   (): scene = bpy.context.scene;  scene.shift_pt_property5 = '';  scene.shift_pt_property5_value = '';    scene.shift_pt_property5_format = ''
-def process6Clear   (): scene = bpy.context.scene;  scene.shift_pt_property6 = '';  scene.shift_pt_property6_value = '';    scene.shift_pt_property6_format = ''
-def process7Clear   (): scene = bpy.context.scene;  scene.shift_pt_property7 = '';  scene.shift_pt_property7_value = '';    scene.shift_pt_property7_format = ''
-def process8Clear   (): scene = bpy.context.scene;  scene.shift_pt_property8 = '';  scene.shift_pt_property8_value = '';    scene.shift_pt_property8_format = ''
+def process1Clear   (): scene = bpy.context.scene;  scene.shift_pt_property1 = '';  scene.shift_pt_property1_value = '';
+def process2Clear   (): scene = bpy.context.scene;  scene.shift_pt_property2 = '';  scene.shift_pt_property2_value = '';
+def process3Clear   (): scene = bpy.context.scene;  scene.shift_pt_property3 = '';  scene.shift_pt_property3_value = '';
+def process4Clear   (): scene = bpy.context.scene;  scene.shift_pt_property4 = '';  scene.shift_pt_property4_value = '';
+def process5Clear   (): scene = bpy.context.scene;  scene.shift_pt_property5 = '';  scene.shift_pt_property5_value = '';
+def process6Clear   (): scene = bpy.context.scene;  scene.shift_pt_property6 = '';  scene.shift_pt_property6_value = '';
+def process7Clear   (): scene = bpy.context.scene;  scene.shift_pt_property7 = '';  scene.shift_pt_property7_value = '';
+def process8Clear   (): scene = bpy.context.scene;  scene.shift_pt_property8 = '';  scene.shift_pt_property8_value = '';
 
 
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -793,7 +936,7 @@ class PropertyToolsOp1Check (bpy.types.Operator):
     bl_undo     = False
     def execute (self, context):
         scene = bpy.context.scene
-        processCheckNames (scene.shift_pt_property1_value, scene.shift_pt_property1_data)
+        processCheckNames (scene.shift_pt_property1_value, scene.shift_pt_property1_owner)
         return {'FINISHED'}
 class PropertyToolsOp2Check (bpy.types.Operator):
     bl_idname   = "object.property_tools_operator2_check"
@@ -803,7 +946,7 @@ class PropertyToolsOp2Check (bpy.types.Operator):
     bl_undo     = False
     def execute (self, context):
         scene = bpy.context.scene
-        processCheckNames (scene.shift_pt_property2_value, scene.shift_pt_property2_data)
+        processCheckNames (scene.shift_pt_property2_value, scene.shift_pt_property2_owner)
         return {'FINISHED'}
 class PropertyToolsOp3Check (bpy.types.Operator):
     bl_idname   = "object.property_tools_operator3_check"
@@ -813,7 +956,7 @@ class PropertyToolsOp3Check (bpy.types.Operator):
     bl_undo     = False
     def execute (self, context):
         scene = bpy.context.scene
-        processCheckNames (scene.shift_pt_property3_value, scene.shift_pt_property3_data)
+        processCheckNames (scene.shift_pt_property3_value, scene.shift_pt_property3_owner)
         return {'FINISHED'}
 class PropertyToolsOp4Check (bpy.types.Operator):
     bl_idname   = "object.property_tools_operator4_check"
@@ -823,7 +966,7 @@ class PropertyToolsOp4Check (bpy.types.Operator):
     bl_undo     = False
     def execute (self, context):
         scene = bpy.context.scene
-        processCheckNames (scene.shift_pt_property4_value, scene.shift_pt_property4_data)
+        processCheckNames (scene.shift_pt_property4_value, scene.shift_pt_property4_owner)
         return {'FINISHED'}
 class PropertyToolsOp5Check (bpy.types.Operator):
     bl_idname   = "object.property_tools_operator5_check"
@@ -833,7 +976,7 @@ class PropertyToolsOp5Check (bpy.types.Operator):
     bl_undo     = False
     def execute (self, context):
         scene = bpy.context.scene
-        processCheckNames (scene.shift_pt_property5_value, scene.shift_pt_property5_data)
+        processCheckNames (scene.shift_pt_property5_value, scene.shift_pt_property5_owner)
         return {'FINISHED'}
 class PropertyToolsOp6Check (bpy.types.Operator):
     bl_idname   = "object.property_tools_operator6_check"
@@ -843,7 +986,7 @@ class PropertyToolsOp6Check (bpy.types.Operator):
     bl_undo     = False
     def execute (self, context):
         scene = bpy.context.scene
-        processCheckNames (scene.shift_pt_property6_value, scene.shift_pt_property6_data)
+        processCheckNames (scene.shift_pt_property6_value, scene.shift_pt_property6_owner)
         return {'FINISHED'}
 class PropertyToolsOp7Check (bpy.types.Operator):
     bl_idname   = "object.property_tools_operator7_check"
@@ -853,7 +996,7 @@ class PropertyToolsOp7Check (bpy.types.Operator):
     bl_undo     = False
     def execute (self, context):
         scene = bpy.context.scene
-        processCheckNames (scene.shift_pt_property7_value, scene.shift_pt_property7_data)
+        processCheckNames (scene.shift_pt_property7_value, scene.shift_pt_property7_owner)
         return {'FINISHED'}
 class PropertyToolsOp8Check (bpy.types.Operator):
     bl_idname   = "object.property_tools_operator8_check"
@@ -863,7 +1006,7 @@ class PropertyToolsOp8Check (bpy.types.Operator):
     bl_undo     = False
     def execute (self, context):
         scene = bpy.context.scene
-        processCheckNames (scene.shift_pt_property8_value, scene.shift_pt_property8_data)
+        processCheckNames (scene.shift_pt_property8_value, scene.shift_pt_property8_owner)
         return {'FINISHED'}
 
 class PropertyToolsOpRemoveUV (bpy.types.Operator):
@@ -923,6 +1066,9 @@ class PropertyToolsOpToogleAllEdges (bpy.types.Operator):
             if (obj.type == 'MESH'):    obj.data.show_all_edges = not obj.data.show_all_edges
         
         return {'FINISHED'}
+
+class PropertyNames (bpy.types.PropertyGroup):
+    name = StringProperty (name='Name', description='Name of the property', maxlen = 128, default='none')
     
 class PropertyToolsPanel (bpy.types.Panel):
      
@@ -971,7 +1117,7 @@ class PropertyToolsPanel (bpy.types.Panel):
         
             box = layout.box    ()
             box1 = box.box      ()
-            box1.prop           (context.scene, 'shift_pt_property' + str (n))
+            box1.prop_search    (context.scene, 'shift_pt_property' + str (n), context.scene, 'shift_pt_history')
             split = box1.split  (percentage = 0.95, align = True)
             split.prop          (context.scene, 'shift_pt_property' + str (n) + '_value')
             split.operator      ('object.property_tools_operator' + str (n) + '_check', 'C')
@@ -982,15 +1128,15 @@ class PropertyToolsPanel (bpy.types.Panel):
             row.operator        ('object.property_tools_operator' + str (n) + '_remove',   'Remove')
             row.separator       ()
             row.separator       ()
-            row.prop            (context.scene, 'shift_pt_property' + str (n) + '_data')
+            row.prop            (context.scene, 'shift_pt_property' + str (n) + '_owner')
         
-        box = layout.box ()
+        box = layout.box    ()
         box.prop            (context.scene, 'shift_pt_overwrite')
 
-        box = layout_.box ()
+        box = layout_.box   ()
         box.operator        ('object.property_tools_operator_toogle_all_edges',    'Toogle Display All Edges')
-
-        layout_.separator ()
+        
+        layout_.separator   ()
                         
 def register ():
 
@@ -1085,44 +1231,106 @@ def register ():
         default     = "")
 
     # ----------------------------------------------------------
-    bpy.types.Scene.shift_pt_property1_data = BoolProperty (
-        name        = "Data",
-        description = "Set property to object data",
-        default     = False)
-    bpy.types.Scene.shift_pt_property2_data = BoolProperty (
-        name        = "Data",
-        description = "Set property to object data",
-        default     = False)
-    bpy.types.Scene.shift_pt_property3_data = BoolProperty (
-        name        = "Data",
-        description = "Set property to object data",
-        default     = False)
-    bpy.types.Scene.shift_pt_property4_data = BoolProperty (
-        name        = "Data",
-        description = "Set property to object data",
-        default     = False)
-    bpy.types.Scene.shift_pt_property5_data = BoolProperty (
-        name        = "Data",
-        description = "Set property to object data",
-        default     = False)
-    bpy.types.Scene.shift_pt_property6_data = BoolProperty (
-        name        = "Data",
-        description = "Set property to object data",
-        default     = False)
-    bpy.types.Scene.shift_pt_property7_data = BoolProperty (
-        name        = "Data",
-        description = "Set property to object data",
-        default     = False)
-    bpy.types.Scene.shift_pt_property8_data = BoolProperty (
-        name        = "Data",
-        description = "Set property to object data",
-        default     = False)
+    bpy.types.Scene.shift_pt_property1_owner = EnumProperty(
+        name="",
+        description="Select the poperty owner",
+        items=[("0","Owner","Select the poperty owner"),
+               ("0","Obj","Set property to object"),
+               ("1","Msh","Set property to object data"),
+               ("2","Mat","Set property to active material of object"),
+               ("3","Tex","Set property to active texture of object"),
+               ("4","Par","Set property to active particle system settings of object"),
+              ],
+        default='0')
+    bpy.types.Scene.shift_pt_property2_owner = EnumProperty(
+        name="",
+        description="Select the poperty owner",
+        items=[("0","Owner","Select the poperty owner"),
+               ("0","Obj","Set property to object"),
+               ("1","Msh","Set property to object data"),
+               ("2","Mat","Set property to active material of object"),
+               ("3","Tex","Set property to active texture of object"),
+               ("4","Par","Set property to active particle system settings of object"),
+              ],
+        default='0')
+    bpy.types.Scene.shift_pt_property3_owner = EnumProperty(
+        name="",
+        description="Select the poperty owner",
+        items=[("0","Owner","Select the poperty owner"),
+               ("0","Obj","Set property to object"),
+               ("1","Msh","Set property to object data"),
+               ("2","Mat","Set property to active material of object"),
+               ("3","Tex","Set property to active texture of object"),
+               ("4","Par","Set property to active particle system settings of object"),
+              ],
+        default='0')
+    bpy.types.Scene.shift_pt_property4_owner = EnumProperty(
+        name="",
+        description="Select the poperty owner",
+        items=[("0","Owner","Select the poperty owner"),
+               ("0","Obj","Set property to object"),
+               ("1","Msh","Set property to object data"),
+               ("2","Mat","Set property to active material of object"),
+               ("3","Tex","Set property to active texture of object"),
+               ("4","Par","Set property to active particle system settings of object"),
+              ],
+        default='0')
+    bpy.types.Scene.shift_pt_property5_owner = EnumProperty(
+        name="",
+        description="Select the poperty owner",
+        items=[("0","Owner","Select the poperty owner"),
+               ("0","Obj","Set property to object"),
+               ("1","Msh","Set property to object data"),
+               ("2","Mat","Set property to active material of object"),
+               ("3","Tex","Set property to active texture of object"),
+               ("4","Par","Set property to active particle system settings of object"),
+              ],
+        default='0')
+    bpy.types.Scene.shift_pt_property6_owner = EnumProperty(
+        name="",
+        description="Select the poperty owner",
+        items=[("0","Owner","Select the poperty owner"),
+               ("0","Obj","Set property to object"),
+               ("1","Msh","Set property to object data"),
+               ("2","Mat","Set property to active material of object"),
+               ("3","Tex","Set property to active texture of object"),
+               ("4","Par","Set property to active particle system settings of object"),
+              ],
+        default='0')
+    bpy.types.Scene.shift_pt_property7_owner = EnumProperty(
+        name="",
+        description="Select the poperty owner",
+        items=[("0","Owner","Select the poperty owner"),
+               ("0","Obj","Set property to object"),
+               ("1","Msh","Set property to object data"),
+               ("2","Mat","Set property to active material of object"),
+               ("3","Tex","Set property to active texture of object"),
+               ("4","Par","Set property to active particle system settings of object"),
+              ],
+        default='0')
+    bpy.types.Scene.shift_pt_property8_owner = EnumProperty(
+        name="",
+        description="Select the poperty owner",
+        items=[("0","Owner","Select the poperty owner"),
+               ("0","Obj","Set property to object"),
+               ("1","Msh","Set property to object data"),
+               ("2","Mat","Set property to active material of object"),
+               ("3","Tex","Set property to active texture of object"),
+               ("4","Par","Set property to active particle system settings of object"),
+              ],
+        default='0')
             
     # ----------------------------------------------------------
     bpy.types.Scene.shift_pt_overwrite = BoolProperty (
         name        = "Overwrite",
         description = "Overwrites existing properties",
-        default     = True)
+        default     = True)    
+
+    # ----------------------------------------------------------
+    bpy.types.Scene.shift_pt_history = CollectionProperty (
+        type        = PropertyNames,
+        name        = 'History',
+        description = 'Property names history')
      
 def unregister ():
     
@@ -1141,16 +1349,7 @@ def unregister ():
     del bpy.types.Scene.shift_pt_property6
     del bpy.types.Scene.shift_pt_property7
     del bpy.types.Scene.shift_pt_property8
-    
-    del bpy.types.Scene.shift_pt_property1_data
-    del bpy.types.Scene.shift_pt_property2_data
-    del bpy.types.Scene.shift_pt_property3_data
-    del bpy.types.Scene.shift_pt_property4_data
-    del bpy.types.Scene.shift_pt_property5_data
-    del bpy.types.Scene.shift_pt_property6_data
-    del bpy.types.Scene.shift_pt_property7_data
-    del bpy.types.Scene.shift_pt_property8_data
-    
+        
     del bpy.types.Scene.shift_pt_property1_value
     del bpy.types.Scene.shift_pt_property2_value
     del bpy.types.Scene.shift_pt_property3_value
@@ -1160,7 +1359,17 @@ def unregister ():
     del bpy.types.Scene.shift_pt_property7_value
     del bpy.types.Scene.shift_pt_property8_value
     
+    del bpy.types.Scene.shift_pt_property1_owner
+    del bpy.types.Scene.shift_pt_property2_owner
+    del bpy.types.Scene.shift_pt_property3_owner
+    del bpy.types.Scene.shift_pt_property4_owner
+    del bpy.types.Scene.shift_pt_property5_owner
+    del bpy.types.Scene.shift_pt_property6_owner
+    del bpy.types.Scene.shift_pt_property7_owner
+    del bpy.types.Scene.shift_pt_property8_owner
+    
     del bpy.types.Scene.shift_pt_overwrite
+    del bpy.types.Scene.shift_pt_history
 
 if __name__ == "__main__":
     
