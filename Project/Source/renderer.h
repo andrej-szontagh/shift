@@ -11,7 +11,7 @@
 #define M_DR_HDR_BLOOM                  0.5f                // bloom factor
 #define M_DR_HDR_EXPOSURE               0.5f                // exposure balanced level
 #define M_DR_HDR_EXPOSURE_SCALE_MIN     0.5f                // exposure scale minimum boundary
-#define M_DR_HDR_EXPOSURE_SCALE_MAX     2.0f                // exposure scale maximum boundary
+#define M_DR_HDR_EXPOSURE_SCALE_MAX     1.7f                // exposure scale maximum boundary
 #define M_DR_HDR_EXPOSURE_SPEED         0.001f              // speed of exposure adaptation
 
 #define M_DR_SUN_SPLITS                 5                   // number of splits (shadowmaps)

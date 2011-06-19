@@ -30,7 +30,6 @@ uniform sampler2DRect base;
 #endif
 
 uniform float bloom;
-varying float scale;
 
 void main ()
 {
@@ -64,6 +63,6 @@ void main ()
         c += texture2DRect (tex6, gl_TexCoord[0].xy * 0.015625  );
     #endif
 
-    gl_FragColor = texture2DRect (base, gl_TexCoord[0].xy) * scale + bloom * c;
+    gl_FragColor = texture2DRect (base, gl_TexCoord[0].xy) + bloom * c;
 }
 

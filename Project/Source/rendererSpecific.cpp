@@ -632,7 +632,6 @@ INLINEF VOID dr_DrawGrassNormal (
         // draw ..
         glCallList (list);
     }
-
 /*
 	UINT_32 c = dr_object_instances [ID];
 
@@ -650,7 +649,7 @@ INLINEF VOID dr_DrawGrassNormal (
 
 	transform = dr_object_instances_transforms [ID];
 
-    UINT_32P indices = so_RadixSort (&dr_radix1, distances, dr_object_instances [ID]);
+    UINT_32P indices = so_RadixSort (&dr_radix_instanced, distances, dr_object_instances [ID]);
 
     // instances loop
     for (UINT_32 i = 0; i < c; i ++) {

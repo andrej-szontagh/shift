@@ -38,6 +38,7 @@ import sys
 import time
 import math
 import ctypes
+import random
 import operator
 import mathutils
 
@@ -79,99 +80,126 @@ def processConvert ():
             # object mode
             bpy.ops.object.mode_set (mode = 'OBJECT')
 
-            for s in obj.particle_systems:
+            # active particle system
+            s = obj.particle_systems.active
 
-                # does it have dupli object ?
-                if s.settings.dupli_object:
+            # does it have dupli object ?
+            if s.settings.dupli_object:
 
-                    passed = True
+                passed = True
 
-                    # dupli_object
-                    objd = s.settings.dupli_object
+                # dupli_object
+                objd = s.settings.dupli_object
+                
+                # set active object
+                scene.objects.active = objd;    objd.select = True
                     
-                    # set active object
-                    scene.objects.active = objd;    objd.select = True
+                # list of new objects
+                newobjects = []
+                    
+                # hair ?
+                if s.settings.type == 'HAIR':
+
+                    for j, p in enumerate (s.particles):
+
+                        translation = p.location + (p.prev_location - p.location) * (len (p.hair_keys) - 1)
+
+                        # CHECK HERE CANCELLATION RADIUS IN 'newobjects'
+
+                        skip = False
+                        for o in newobjects:
+
+                            x = o.location [0] - translation [0]
+                            y = o.location [1] - translation [1]
+                            z = o.location [2] - translation [2]
+
+                            if math.sqrt (x*x + y*y + z*z) < scene.shift_pat_cancellation:  skip = True; break
+
+                        if skip: continue
+
+                        # create new object instance
+                        objn = bpy.data.objects.new ('new_%s%i' % (objd.name, j),  objd.data);
+
+                        # instance scale
+                        scale = (p.location - p.prev_location).length  * (len (p.hair_keys) - 1) * p.size
                         
-                    # list of new objects
-                    newobjects = []
+                        # build matrix for particle
+                        matrix = mathutils.Matrix ();   matrix.identity ()
                         
-                    # hair ?
-                    if s.settings.type == 'HAIR':
+                        # scale matrix
+                        matrix = mathutils.Matrix.Scale (scale, 4) * matrix
+                        
+                        # random rotation
+                        matrix = mathutils.Matrix.Rotation (scene.shift_pat_randomx * random.random (), 4, 'X') * matrix
+                        matrix = mathutils.Matrix.Rotation (scene.shift_pat_randomy * random.random (), 4, 'Y') * matrix
+                        matrix = mathutils.Matrix.Rotation (scene.shift_pat_randomz * random.random (), 4, 'Z') * matrix
+                        
+                        # hack ..
+                        matrix = mathutils.Matrix.Rotation (radians ( 90), 4, 'Y') * matrix
 
-                        for j, p in enumerate (s.particles):
+                        # isolate rotation part
+                        local = objd.matrix_world.to_3x3 ();    local.resize_4x4 ()
+                        
+                        # apply local matrix
+                        matrix = local * matrix
 
-                            # create new object instance
-                            objn = bpy.data.objects.new ('new_%s%i' % (objd.name, j),  objd.data);
-                            
-                            scale       = (p.hair [0].co - p.hair [1].co).length * (len (p.hair) - 1) * 0.5
-                            translation =  p.hair [0].co
-                            
-                            # build matrix for particle
-                            matrix = mathutils.Matrix ();   matrix.identity ()
-                            
-                            # scale
-                            matrix = mathutils.Matrix.Scale (scale, 4) * matrix
-                            
-                            # hack ..
-                            matrix = mathutils.Matrix.Rotation (radians (90), 4, 'Y') * matrix
-                            
-                            # rotation
-                            rotmatrix = p.rotation.to_matrix ();    rotmatrix.resize_4x4 ();    matrix = rotmatrix * matrix
-                            
-                            # translation
-                            matrix = mathutils.Matrix.Translation (translation) * matrix
+                        # rotation
+                        rotmatrix = p.rotation.to_matrix ();    rotmatrix.resize_4x4 ();    matrix = rotmatrix * matrix
+                        
+                        # translation
+                        matrix = mathutils.Matrix.Translation (translation) * matrix
 
-                            # set new matrix
-                            objn.matrix_world = matrix
-                            
-                            # link new object
-                            scene.objects.link (objn)
+                        # set new matrix
+                        objn.matrix_world = matrix
+                        
+                        # link new object
+                        scene.objects.link (objn)
 
-                            # add to list
-                            newobjects.append (objn)
+                        # add to list
+                        newobjects.append (objn)
 
-                    else:
+                else:
 
-                        for j, p in enumerate (s.particles):
-                            
-                            # create new object instance
-                            objn = bpy.data.objects.new ('new_%s%i' % (objd.name, j),  objd.data);
-                            
-                            # copy matrix
-                            objn.matrix_world = objd.matrix_world.copy ()
+                    for j, p in enumerate (s.particles):
+                        
+                        # create new object instance
+                        objn = bpy.data.objects.new ('new_%s%i' % (objd.name, j),  objd.data);
+                        
+                        # copy matrix
+                        objn.matrix_world = objd.matrix_world.copy ()
 
-                            # set new translation
-                            objn.matrix_world [3][0] = p.location [0]
-                            objn.matrix_world [3][1] = p.location [1]
-                            objn.matrix_world [3][2] = p.location [2]
-                            
-                            # link new object
-                            scene.objects.link (objn)
-                            
-                            # add to list
-                            newobjects.append (objn)
+                        # set new translation
+                        objn.matrix_world [3][0] = p.location [0]
+                        objn.matrix_world [3][1] = p.location [1]
+                        objn.matrix_world [3][2] = p.location [2]
+                        
+                        # link new object
+                        scene.objects.link (objn)
+                        
+                        # add to list
+                        newobjects.append (objn)
 
-                    if scene.shift_pat_merge:
+                if scene.shift_pat_merge:
 
-                        if (len (newobjects) > 0):
-                            
-                            # deselect all
-                            bpy.ops.object.select_all (action = 'DESELECT')
+                    if (len (newobjects) > 0):
+                        
+                        # deselect all
+                        bpy.ops.object.select_all (action = 'DESELECT')
 
-                            # set active object
-                            scene.objects.active = newobjects [0];  newobjects [0].select = True
-                            
-                            # make copy of mesh
-                            bpy.ops.object.make_single_user (object = True, obdata = True)
+                        # set active object
+                        scene.objects.active = newobjects [0];  newobjects [0].select = True
+                        
+                        # make copy of mesh
+                        bpy.ops.object.make_single_user (object = True, obdata = True)
 
-                            # select all new objects
-                            for o in newobjects:    o.select = True
+                        # select all new objects
+                        for o in newobjects:    o.select = True
 
-                            # join them
-                            bpy.ops.object.join ()
+                        # join them
+                        bpy.ops.object.join ()
 
-                    # cleanup
-                    newobjects [:] = []
+                # cleanup
+                newobjects [:] = []
                     
             if passed:
                 
@@ -322,6 +350,28 @@ def processRemoveAll ():
                 bpy.ops.object.particle_system_remove ()
                             
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
+#### PROCESS RANDOMIZE
+####------------------------------------------------------------------------------------------------------------------------------------------------------
+
+def processRandomize ():
+
+    # shortcut
+    scene = bpy.context.scene
+
+    # shortcut
+    selected = bpy.context.selected_objects
+    
+    for obj in selected:
+
+        if obj.type == 'MESH':
+
+            scene.objects.active = obj
+            
+            for p in obj.particle_systems:
+
+                p.seed = int (random.random () * 100000)
+                
+####------------------------------------------------------------------------------------------------------------------------------------------------------
 #### INTEGRATION AND GUI
 ####------------------------------------------------------------------------------------------------------------------------------------------------------
     
@@ -395,6 +445,20 @@ class ParticleToolsRemoveAll (bpy.types.Operator):
 
         return {'FINISHED'}
     
+class ParticleToolsRandomize (bpy.types.Operator):
+
+    bl_idname       = "object.particletools_randomize_operator"
+    bl_label        = "SHIFT - Particle Tools"
+    bl_description  = "Randomize seed in all particle systems from selected objects"
+    bl_register     = True
+    bl_undo         = True
+    
+    def execute (self, context):
+
+        processRandomize ()
+
+        return {'FINISHED'}
+    
 class ParticleToolsPanel (bpy.types.Panel):
      
     bl_idname   = "object.particletools_panel"
@@ -412,12 +476,30 @@ class ParticleToolsPanel (bpy.types.Panel):
         
         box = layout.box    ()
         box.operator        ('object.particletools_remove_all_operator', 'Remove All Particle Sytems')
-        box = layout.box    ()
         box.operator        ('object.particletools_copy_to_selected_operator', 'Copy To Selected')
+        box.operator        ('object.particletools_randomize_operator', 'Randomize Seed')
+        
         box = layout.box    ()
         split = box.split   (align = True, percentage = 0.7)
         split.operator      ('object.particletools_convert_operator', 'Convert To Mesh')
         split.prop          (context.scene, 'shift_pat_merge')
+
+        _box = box.box      ()
+        split = (_box).split(align = True, percentage = 0.6)
+        col = split.column  (align = False)
+        col.label           ('Random Rotation X :')
+        col.label           ('Random Rotation Y :')
+        col.label           ('Random Rotation Z :')
+        col = split.column  (align = True)
+        col.prop            (context.scene, 'shift_pat_randomx')
+        col.prop            (context.scene, 'shift_pat_randomy')
+        col.prop            (context.scene, 'shift_pat_randomz')
+
+        _box = box.box      ()
+        split = _box.split  (align = True, percentage = 0.5)
+        split.label         ('Cancellation Radius : ')
+        split.prop          (context.scene, 'shift_pat_cancellation')
+        
         box = layout.box    ()
         split = box.split   (align = True, percentage = 0.35)
         split.operator      ('object.particletools_set_object_operator', 'Set Object')
@@ -443,6 +525,42 @@ def register ():
         name        = "Merge",
         description = "Merge all instances into one mesh",
         default     = False)
+
+    bpy.types.Scene.shift_pat_cancellation = FloatProperty (
+        name        = "",
+        description = "Cancellation radius, all other instances in this radius are removed.",
+        subtype     = 'DISTANCE',
+        min         = 0.0,
+        max         = 10.0,
+        step        = 0.001,
+        default     = 0.0)
+
+    bpy.types.Scene.shift_pat_randomx = FloatProperty (
+        name        = "",
+        description = "Random rotation of dupli object in X axis.",
+        subtype     = 'ANGLE',
+        min         = 0.0,
+        max         = math.pi,
+        step        = 1.0,
+        default     = 0.0)
+
+    bpy.types.Scene.shift_pat_randomy = FloatProperty (
+        name        = "",
+        description = "Random rotation of dupli object in Y axis.",
+        subtype     = 'ANGLE',
+        min         = 0.0,
+        max         = math.pi,
+        step        = 1.0,
+        default     = 0.0)
+     
+    bpy.types.Scene.shift_pat_randomz = FloatProperty (
+        name        = "",
+        description = "Random rotation of dupli object in Z axis.",
+        subtype     = 'ANGLE',
+        min         = 0.0,
+        max         = math.pi,
+        step        = 1.0,
+        default     = 0.0)
 
     # ----------------------------------------------------------
     bpy.types.Scene.shift_pat_object = StringProperty (

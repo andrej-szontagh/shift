@@ -11,7 +11,7 @@ varying vec3 view;
 #define RADIUSMAX   200.0
 #define SAMPLES     16
 #define SAMPLESINV  0.0625
-#define STRENGTH    20.0
+#define STRENGTH    100.0
 #define DISTANCEQI  1.0
 #define TRANSITION  10000.0
 
@@ -148,9 +148,9 @@ void main ()
 
     // output the result
     occlusion = clamp (1.0 - STRENGTH * SAMPLESINV * occlusion * (1.0 - shade) / sum, 0.0, 1.0);
-    
-    // quadratic ..
-    // occlusion *= occlusion;
+
+	// deformation
+	occlusion = occlusion * 0.5 + 0.5;
 
     // out
     gl_FragColor = vec4 (occlusion, occlusion, occlusion, shade);

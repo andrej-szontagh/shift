@@ -426,7 +426,7 @@ extern "C"
 						v [1] /= scale;
 						v [2] /= scale;
 												
-						scale *= (datak [m] - 1.0f) * data [index + 6] * 2.0f;
+						scale *= (datak [m] - 1.0f) * data [index + 6];
 
 						FLOAT_32 translation [3] = {    data [index    ], 
 														data [index + 2], 

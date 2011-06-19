@@ -1883,6 +1883,38 @@ def processExportScene (filepath):
             
             mesh = instanced [pindex][1].settings.dupli_object.data
 
+            # object name
+            stream.write (struct.pack ('i',     len (name) + 1))
+            stream.write (struct.pack ('%isB' % len (name), name.encode ('ascii'), 0))
+            
+            # mesh index
+            stream.write (struct.pack ('H', mesh ['tmp_index']))
+
+            # material index
+            stream.write (struct.pack ('H', mesh.materials [0]['tmp_index']))
+
+            # disappear distance
+            try:    disappear = instanced [pindex][1].settings ['disappear']
+            except:
+                try:    disappear = mesh ['disappear']
+                except: disappear = 1000000.0
+
+            stream.write (struct.pack ('f', disappear))
+            
+            # disappear start
+            try:    disappear_start = instanced [pindex][1].settings ['disappear_start']
+            except:
+                try:    disappear_start = mesh ['disappear_start']
+                except: disappear_start = 0.0
+
+            stream.write (struct.pack ('f', disappear_start))
+            
+            # shadow disappear distance
+            try:    stream.write (struct.pack ('f', instanced [pindex][1].settings ['disappear_shadow']))
+            except:
+                try:    stream.write (struct.pack ('f', mesh ['disappear_shadow']))
+                except: stream.write (struct.pack ('f', disappear))
+
         # single object
         else:
 
@@ -1890,37 +1922,37 @@ def processExportScene (filepath):
             
             mesh = obj.data
         
-        # object name
-        stream.write (struct.pack ('i',     len (name) + 1))
-        stream.write (struct.pack ('%isB' % len (name), name.encode ('ascii'), 0))
-        
-        # mesh index
-        stream.write (struct.pack ('H', mesh ['tmp_index']))
+            # object name
+            stream.write (struct.pack ('i',     len (name) + 1))
+            stream.write (struct.pack ('%isB' % len (name), name.encode ('ascii'), 0))
+            
+            # mesh index
+            stream.write (struct.pack ('H', mesh ['tmp_index']))
 
-        # material index
-        stream.write (struct.pack ('H', mesh.materials [0]['tmp_index']))
+            # material index
+            stream.write (struct.pack ('H', mesh.materials [0]['tmp_index']))
 
-        # disappear distance
-        try:    disappear = obj ['disappear']
-        except:
-            try:    disappear = mesh ['disappear']
-            except: disappear = 1000000.0
+            # disappear distance
+            try:    disappear = obj ['disappear']
+            except:
+                try:    disappear = mesh ['disappear']
+                except: disappear = 1000000.0
 
-        stream.write (struct.pack ('f', disappear))
-        
-        # disappear start
-        try:    disappear_start = obj ['disappear_start']
-        except:
-            try:    disappear_start = mesh ['disappear_start']
-            except: disappear_start = 0.0
+            stream.write (struct.pack ('f', disappear))
+            
+            # disappear start
+            try:    disappear_start = obj ['disappear_start']
+            except:
+                try:    disappear_start = mesh ['disappear_start']
+                except: disappear_start = 0.0
 
-        stream.write (struct.pack ('f', disappear_start))
-        
-        # shadow disappear distance
-        try:    stream.write (struct.pack ('f', obj ['disappear_shadow']))
-        except:
-            try:    stream.write (struct.pack ('f', mesh ['disappear_shadow']))
-            except: stream.write (struct.pack ('f', disappear))
+            stream.write (struct.pack ('f', disappear_start))
+            
+            # shadow disappear distance
+            try:    stream.write (struct.pack ('f', obj ['disappear_shadow']))
+            except:
+                try:    stream.write (struct.pack ('f', mesh ['disappear_shadow']))
+                except: stream.write (struct.pack ('f', disappear))
             
         # flags
 
