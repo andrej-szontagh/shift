@@ -9,5 +9,5 @@ void main ()
 {
     // ALPHA TEST -------------------------------------------------------------------------------------------------------------------------------------------
 
-        if (texture2D (tex_diffuse, gl_TexCoord [0].st).a < (threshold + damping * factor)) discard;
+		if (texture2D (tex_diffuse, gl_TexCoord [0].st).a < (threshold + damping * factor)) discard;
 }

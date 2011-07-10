@@ -626,10 +626,12 @@ INLINE UINT_8 dr_ClipShadow (
 
         // NOTE : we assume that each split have minimum 1 plane otherwise this code is invalid
 
+        UINT_32 offset = m * 48;
+
         do {
 
             // shortcut
-            register FLOAT_32P p = &dr_sun_split_planes [m][i][0];
+            register FLOAT_32P p = &dr_sun_split_planes [offset + (i << 2)];
 
             // nominator
             register FLOAT_32 nom = p[0] * cx + p[1] * cy + p[2] * cz + p[3];
@@ -651,7 +653,7 @@ INLINE UINT_8 dr_ClipShadow (
                 while ((-- i) >= 0) {
 
                     // shortcut
-                    p = &dr_sun_split_planes [m][i][0];
+                    p = &dr_sun_split_planes [offset + (i << 2)];
 
                     // sphere test
                     if ((- p[0] * cx - p[1] * cy - p[2] * cz - p[3]) > sphere) {
@@ -724,7 +726,7 @@ INLINE UINT_8 dr_ClipShadow (
 
         next:;
 
-    } while ((++ m) < M_DR_SUN_SPLITS);
+    } while ((++ m) < dr_control_sun_splits);
 
     //  if (passed == 0) return (M_CLIP_OUTSIDE);
 

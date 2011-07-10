@@ -55,7 +55,7 @@ void main ()
 
     // LINEAR DEPTH -----------------------------------------------------------------------------------------------------------------------------------------
     
-            depth           = (- gl_ClipVertex.z / planefar) * 65535.0;
+            depth           = - gl_ClipVertex.z / planefar;
 
     // GLOSS ------------------------------------------------------------------------------------------------------------------------------------------------
                 
@@ -67,8 +67,12 @@ void main ()
             
     // TBN MATRIX -------------------------------------------------------------------------------------------------------------------------------------------
 
-                 normal     = normalize (vec3 (gl_ModelViewMatrix * vec4 (0.0, 1.0, 0.0, 0.0)));
-            vec3 tangent    = normalize (vec3 (gl_ModelViewMatrix * vec4 (1.0, 0.0, 0.0, 0.0)));
+                 normal     = normalize (mat3 (matrix) *        gl_Normal);
+            vec3 tangent    = normalize (mat3 (matrix) * (2.0 * gl_SecondaryColor.xyz - 1.0));
+
+//                 normal     = normalize (vec3 (gl_ModelViewMatrix * vec4 (0.0, 1.0, 0.0, 0.0)));
+//            vec3 tangent    = normalize (vec3 (gl_ModelViewMatrix * vec4 (1.0, 0.0, 0.0, 0.0)));
+
             vec3 binormal   = cross     (tangent, normal);
             
     ///     Inverted TBN matrix (is orthonormal -> invert = transpose)

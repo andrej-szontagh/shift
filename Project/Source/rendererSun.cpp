@@ -1,5 +1,173 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// dr_SunLoad
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if 1
+
+VOID    dr_SunLoad ()
+{
+
+    dr_sun_split_nearh      = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits);
+    dr_sun_split_nearw      = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits);
+    dr_sun_split_farh       = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits);
+    dr_sun_split_farw       = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits);
+    dr_sun_split_planesc    = (UINT_32P)    malloc (SIZE_UINT_32   * dr_control_sun_splits);
+    dr_sun_split_planesd    = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits * 12 * 4);
+    dr_sun_split_planes     = (FLOAT_32P)   malloc (SIZE_FLOAT_32  * dr_control_sun_splits * 12 * 4);
+    dr_sun_split_points     = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits *  8 * 3);
+    dr_sun_split_clip       = (UINT_8P)     malloc (SIZE_UINT_8    * dr_control_sun_splits);
+    dr_sun_split_start      = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits);
+    dr_sun_split_end        = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits);
+    dr_sun_planesside       = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits);
+    dr_sun_view             = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits * 16);
+    dr_sun_projection       = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits * 16);
+    dr_sun_transitions      = (FLOAT_64P)   malloc (SIZE_FLOAT_64  * dr_control_sun_splits);
+    dr_sun_matrices         = (FLOAT_32P)   malloc (SIZE_FLOAT_32  * dr_control_sun_splits * 16);
+    dr_sun_depthmin         = (FLOAT_32P)   malloc (SIZE_FLOAT_32  * dr_control_sun_splits);
+    dr_sun_depthmax         = (FLOAT_32P)   malloc (SIZE_FLOAT_32  * dr_control_sun_splits);
+    dr_sun_offsets          = (FLOAT_32P)   malloc (SIZE_FLOAT_32  * dr_control_sun_splits);
+    dr_sunshadows           = (UINT_32P)    malloc (SIZE_UINT_32   * dr_control_sun_splits);
+
+    // OBJECT LISTS
+
+    dr_list_objects_shadow_split  = (UINT_32PP) malloc (SIZE_UINT_32P * dr_control_sun_splits);
+    dr_list_objects_shadow_splitc = (UINT_32P)  malloc (SIZE_UINT_32  * dr_control_sun_splits);
+
+    UINT_32P p = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS) * dr_control_sun_splits);
+
+    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++) {
+
+        dr_list_objects_shadow_split [i] = &p [i * ((dr_objectsc + M_RESERVED_OBJECTS))];
+    }
+
+    // FBO
+
+    glGenFramebuffersEXT  (1, &dr_framebuffer_sun);
+    glGenRenderbuffersEXT (1, &dr_renderbuffer_sun);
+
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dr_framebuffer_sun);
+
+    glBindRenderbufferEXT		 (GL_RENDERBUFFER_EXT, dr_renderbuffer_sun);
+    glRenderbufferStorageEXT	 (GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT32, dr_control_sun_res, dr_control_sun_res);
+    glFramebufferRenderbufferEXT (GL_FRAMEBUFFER_EXT,  GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, dr_renderbuffer_sun);
+
+    // TEXTURES
+
+    FLOAT_32 bordercolor [4] = {1.0, 1.0, 1.0, 1.0};
+
+    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++) {
+
+        glGenTextures    (1, &dr_sunshadows [i]);
+        glBindTexture    (GL_TEXTURE_2D, dr_sunshadows [i]);
+        glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+        glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+        glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+        glTexParameteri  (GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+        glTexParameterfv (GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, bordercolor);
+        glTexImage2D     (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, dr_control_sun_res, dr_control_sun_res, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
+    }
+
+    glGenTextures    (1, &dr_sunshadowtmp);
+    glBindTexture    (GL_TEXTURE_2D, dr_sunshadowtmp);
+    glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+    glTexParameteri  (GL_TEXTURE_2D, GL_DEPTH_TEXTURE_MODE, GL_INTENSITY);
+    glTexParameterfv (GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, bordercolor);
+    glTexImage2D     (GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32, dr_control_sun_res, dr_control_sun_res, 0, GL_DEPTH_COMPONENT, GL_UNSIGNED_INT, NULL);
+
+    // SHADER
+
+    CHAR prefix [50];
+
+    sprintf (prefix, "#define SPLITS %c\n", '0' + dr_control_sun_splits);
+
+    if (dr_control_sun_debug)
+        sprintf (prefix, "%s#define DEBUG \n", prefix);
+
+    lo_LoadShaders ("Shaders\\dr_sun.vert",
+        "Shaders\\dr_sun.frag", prefix, 
+        &dr_program_sun,
+        &dr_program_sunv,
+        &dr_program_sunf);
+
+    INT_32P units = (INT_32P) malloc (SIZE_INT_32 * dr_control_sun_splits);
+
+    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++)  units [i] = 3 + i;
+
+    glUseProgram    (dr_program_sun);
+    glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_G1"),       0);
+    glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_G2"),       1);
+    glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_rand"),     2);
+    glUniform1iv    (glGetUniformLocation (dr_program_sun, "tex_shadow"),   dr_control_sun_splits, units);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "intensity"),    dr_sun_intensity);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "ambient"),      dr_sun_ambient);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "width"),        (FLOAT_32) dr_width);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "height"),       (FLOAT_32) dr_height);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "invsize"),      1.0f / (FLOAT_32) dr_control_sun_res);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "farplane"),     dr_planefar);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "farw"),         (FLOAT_32) dr_farw);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "farh"),         (FLOAT_32) dr_farh);
+
+    dr_program_sun_matrix = glGetUniformLocation (dr_program_sun, "matrix");
+
+    free (units);
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// dr_SunUnload
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+#if 1
+
+VOID    dr_SunUnload ()
+{
+
+    free (dr_sun_split_nearh);
+    free (dr_sun_split_nearw);
+    free (dr_sun_split_farh);
+    free (dr_sun_split_farw);
+    free (dr_sun_split_planesc);
+    free (dr_sun_split_planesd);
+    free (dr_sun_split_planes);
+    free (dr_sun_split_points);
+    free (dr_sun_split_clip);
+    free (dr_sun_split_start);
+    free (dr_sun_split_end);
+    free (dr_sun_planesside);
+    free (dr_sun_view);
+    free (dr_sun_projection);
+    free (dr_sun_transitions);
+    free (dr_sun_matrices);
+    free (dr_sun_depthmin);
+    free (dr_sun_depthmax);
+    free (dr_sun_offsets);
+
+    glDeleteFramebuffersEXT  (1, &dr_framebuffer_sun);
+    glDeleteRenderbuffersEXT (1, &dr_renderbuffer_sun);
+
+    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++) 
+
+        glDeleteTextures    (1, &dr_sunshadows [i]);
+        glDeleteTextures    (1, &dr_sunshadowtmp);
+
+    free (dr_sunshadows);
+
+    lo_UnloadShaders (  dr_program_sun, 
+                        dr_program_sunv, 
+                        dr_program_sunf);
+}
+
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // dr_SunInit
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -7,9 +175,6 @@
 
 VOID    dr_SunInit ()
 {
-
-    dr_sun_count = M_DR_SUN_SPLITS;
-
     // sun view space vectors
     vCROSS (dr_sun_directionx, dr_sun_directionz, dr_worldup);
     vCROSS (dr_sun_directiony, dr_sun_directionx, dr_sun_directionz);
@@ -26,27 +191,27 @@ VOID    dr_SunInit ()
     FLOAT_64 split_start;
     FLOAT_64 split_startt;
 
-    UINT_32 i, c = dr_sun_count - 1;
+    UINT_32 i, c = dr_control_sun_splits - 1;
 
-    FLOAT_64 scale = 1.0 / pow (dr_sun_distance, 9.0);
+    FLOAT_64 scale = 1.0 / pow (dr_sun_distance, dr_control_sun_distribution - 1.0);
 
     /////////////////////////////////////////////////////
     // FIRST SPLIT
     /////////////////////////////////////////////////////
 
     split_start = 0;
-    split_end   = dr_sun_distance / dr_sun_count;
+    split_end   = 1.0 / (FLOAT_64) dr_control_sun_splits;
 
-    // PRACTICAL SPLIT SCHEME
+    // CUSTOM SPLIT SCHEME
 
-    split_end = 0.9 * pow (split_end, 10.0) * scale + 0.1 * split_end;
+    split_end = dr_sun_distance * (dr_control_sun_scheme * pow (split_end, (FLOAT_64) dr_control_sun_distribution) + (1.0 - dr_control_sun_scheme) * split_end);
 
-    dr_sun_planesside	[0] =             split_end * M_DR_SUN_ZOOM;
-    dr_sun_offsets		[0] = (FLOAT_32)((split_end * M_DR_SUN_OFFSET) / dr_sun_planefar);                  /// OFFSET DEPENDS ON SHADOWMAP RESOLUTION !!!!!!!!!!!!!!!!!!!!!!!!!!
+    dr_sun_planesside	[0] =             split_end * dr_control_sun_zoom;
+    dr_sun_offsets		[0] = (FLOAT_32)((split_end * dr_control_sun_offset) / dr_sun_planefar);                  /// OFFSET DEPENDS ON SHADOWMAP RESOLUTION !!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // TRANSITION WIDTH
 
-    trans = split_end * M_DR_SUN_TRAN;
+    trans = split_end * dr_control_sun_transition;
 
     dr_sun_transitions  [0] = trans;
 
@@ -55,8 +220,8 @@ VOID    dr_SunInit ()
     split_startt = split_start;
     split_endt   = split_end   + dr_sun_transitions [0];
 
-    dr_sun_splits [0][0] = split_startt;
-    dr_sun_splits [0][1] = split_endt;
+    dr_sun_split_start [0] = split_startt;
+    dr_sun_split_end   [0] = split_endt;
                 
     // SPLIT LINEAR DEPTH
 
@@ -78,18 +243,18 @@ VOID    dr_SunInit ()
     for (i = 1; i < c; i ++) {
 
         split_start =   split_end;
-                        split_end   = (i + 1) * dr_sun_distance / dr_sun_count;
+                        split_end   = (i + 1) / (FLOAT_64) dr_control_sun_splits;
 
-        // PRACTICAL SPLIT SCHEME
+        // CUSTOM SPLIT SCHEME
 
-        split_end = 0.9 * pow (split_end, 10.0) * scale + 0.1 * split_end;
+        split_end = dr_sun_distance * (dr_control_sun_scheme * pow (split_end, (FLOAT_64) dr_control_sun_distribution) + (1.0 - dr_control_sun_scheme) * split_end);
 
-        dr_sun_planesside	[i] =             split_end * M_DR_SUN_ZOOM;
-        dr_sun_offsets		[i] = (FLOAT_32)((split_end * M_DR_SUN_OFFSET) / dr_sun_planefar);              /// OFFSET DEPENDS ON SHADOWMAP RESOLUTION !!!!!!!!!!!!!!!!!!!!!!!!!!
+        dr_sun_planesside	[i] =             split_end * dr_control_sun_zoom;
+        dr_sun_offsets		[i] = (FLOAT_32)((split_end * dr_control_sun_offset) / dr_sun_planefar);              /// OFFSET DEPENDS ON SHADOWMAP RESOLUTION !!!!!!!!!!!!!!!!!!!!!!!!!!
 
         // TRANSITION WIDTH
 
-        trans = split_end * M_DR_SUN_TRAN;
+        trans = split_end * dr_control_sun_transition;
 
         dr_sun_transitions  [i] = trans;
 
@@ -98,8 +263,8 @@ VOID    dr_SunInit ()
         split_startt = split_start - dr_sun_transitions [i - 1];
         split_endt   = split_end   + dr_sun_transitions [i    ];
 
-        dr_sun_splits [i][0] = split_startt;
-        dr_sun_splits [i][1] = split_endt;
+        dr_sun_split_start [i] = split_startt;
+        dr_sun_split_end   [i] = split_endt;
                     
         // SPLIT LINEAR DEPTH
 
@@ -120,18 +285,18 @@ VOID    dr_SunInit ()
     /////////////////////////////////////////////////////
 
     split_start =   split_end;
-                    split_end   = (i + 1) * dr_sun_distance / dr_sun_count;
+                    split_end   = (i + 1) / (FLOAT_64) dr_control_sun_splits;
 
-    // PRACTICAL SPLIT SCHEME
+    // CUSTOM SPLIT SCHEME
 
-    split_end = 0.9 * pow (split_end, 10.0) * scale + 0.1 * split_end;
+    split_end = dr_sun_distance * (dr_control_sun_scheme * pow (split_end, (FLOAT_64) dr_control_sun_distribution) + (1.0 - dr_control_sun_scheme) * split_end);
 
-    dr_sun_planesside	[i] =             split_end * M_DR_SUN_ZOOM;
-    dr_sun_offsets		[i] = (FLOAT_32)((split_end * M_DR_SUN_OFFSET) / dr_sun_planefar);                  /// OFFSET DEPENDS ON SHADOWMAP RESOLUTION !!!!!!!!!!!!!!!!!!!!!!!!!!
+    dr_sun_planesside	[i] =             split_end * dr_control_sun_zoom;
+    dr_sun_offsets		[i] = (FLOAT_32)((split_end * dr_control_sun_offset) / dr_sun_planefar);                  /// OFFSET DEPENDS ON SHADOWMAP RESOLUTION !!!!!!!!!!!!!!!!!!!!!!!!!!
 
     // TRANSITION WIDTH
 
-    trans = split_end * M_DR_SUN_TRAN;
+    trans = split_end * dr_control_sun_transition;
 
     dr_sun_transitions  [i] = trans;
 
@@ -140,14 +305,15 @@ VOID    dr_SunInit ()
     split_startt = split_start - dr_sun_transitions [i - 1];
     split_endt   = split_end   + dr_sun_transitions [i    ];
 
-    dr_sun_splits [i][0] = split_startt;
-    dr_sun_splits [i][1] = split_endt;
+    dr_sun_split_start [i] = split_startt;
+    dr_sun_split_end   [i] = split_endt;
 
     // SPLIT LINEAR DEPTH
 
-    dr_sun_depthmin [i] = (FLOAT_32) (split_startt / dr_planefar);      // split start
-    dr_sun_depthmax [i] = (FLOAT_32) (split_endt   / dr_planefar);      // split end
-    dr_sun_splitend     = (FLOAT_32) (split_end    / dr_planefar);
+    dr_sun_depthmin [i]     = (FLOAT_32) (split_startt / dr_planefar);      // split start
+    dr_sun_depthmax [i]     = (FLOAT_32) (split_endt   / dr_planefar);      // split end
+
+    dr_sun_split_finish     = (FLOAT_32) (split_end    / dr_planefar);      // finish
 
     // EVALUATE FRUSTUM DIMENSIONS
 
@@ -157,6 +323,27 @@ VOID    dr_SunInit ()
     dr_sun_split_farh  [i] = split_endt     * dr_avertical;             // far plane frustum quad up vector length
     dr_sun_split_farw  [i] = dr_sun_split_farh  [i] * dr_aspect;        // far plane frustum quad side vector length
 
+    // UPDATE SHADER UNIFORMS
+
+    glUseProgram    (dr_program_sun);
+
+    glUniform1fv    (glGetUniformLocation (dr_program_sun, "offset"),   dr_control_sun_splits,  dr_sun_offsets);
+    glUniform1fv    (glGetUniformLocation (dr_program_sun, "depthmin"), dr_control_sun_splits,  dr_sun_depthmin);
+    glUniform1fv    (glGetUniformLocation (dr_program_sun, "depthmax"), dr_control_sun_splits,  dr_sun_depthmax);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "depthend"), dr_sun_split_finish);
+
+    // UPDATE OBJECT SHADOW DISAPPEARING
+
+    for (UINT_32 i = 0; i < dr_objectsc; i ++) {
+
+        UINT_32 split = 0;
+        for (;  split < dr_control_sun_splits; split ++) {
+
+            if (dr_object_disappear_shadow [i] <= dr_sun_split_start [split]) break;
+        }
+
+        dr_object_disappear_split [i] = (UINT_8) split;
+    }
 }
 
 #endif
@@ -353,7 +540,7 @@ VOID    dr_SunPrepare ()
             (((A * pointst[2][0]) + (B * pointst[2][1]) + d) > - 0.0001) && \
             (((A * pointst[3][0]) + (B * pointst[3][1]) + d) > - 0.0001)) {
 
-            // NOTE: we have to use offset above becouse some points are laing on this plane
+            // NOTE: we have to use offset above because some points are laying on this plane
 
             ////////////////////////////////////////////
             // RECONSTRUCTING CLIP PLANE
@@ -457,13 +644,13 @@ VOID    dr_SunPrepare ()
     ////////////////////////////////////////////
 
     UINT_32 planes  = 0;
-    UINT_32 count   = dr_sun_count;
+    UINT_32 count   = dr_control_sun_splits;
 
     for (i = 0; i < count; i ++) {
 
         // shortcuts
-        FLOAT_64 dnear = dr_sun_splits [i][0];
-        FLOAT_64 dfar  = dr_sun_splits [i][1];
+        FLOAT_64 dnear = dr_sun_split_start [i];
+        FLOAT_64 dfar  = dr_sun_split_end   [i];
 
         // origin is in the middle between two splits
         FLOAT_64 dist = (dnear + dfar) * 0.5;
@@ -530,9 +717,12 @@ VOID    dr_SunPrepare ()
         originprj [0] = originview [0] * sidei;
         originprj [1] = originview [1] * sidei;
 
+        // half of shadowmap resolution
+        UINT_32 shadowh = (dr_control_sun_res >> 1);
+
         // we clamp projected coords to shadowmap texels to avoid 'saw' aliasing
-        originprj [0] = floor (originprj [0] * M_DR_SUN_SHADOWH) / M_DR_SUN_SHADOWH;
-        originprj [1] = floor (originprj [1] * M_DR_SUN_SHADOWH) / M_DR_SUN_SHADOWH;
+        originprj [0] = floor (originprj [0] * shadowh) / shadowh;
+        originprj [1] = floor (originprj [1] * shadowh) / shadowh;
 
         // unprojecting back to sun view space
         originview [0] = originprj [0] * side;
@@ -570,8 +760,8 @@ VOID    dr_SunPrepare ()
         // SAVE MATRICES
         ////////////////////////////////////////////
 
-        memcpy ((VOIDP) dr_sun_projection   [i], (VOIDP) matprj,  SIZE_FLOAT_64 * 16);
-        memcpy ((VOIDP) dr_sun_view         [i], (VOIDP) matview, SIZE_FLOAT_64 * 16);
+        memcpy ((VOIDP) &dr_sun_projection   [i << 4], (VOIDP) matprj,  SIZE_FLOAT_64 * 16);
+        memcpy ((VOIDP) &dr_sun_view         [i << 4], (VOIDP) matview, SIZE_FLOAT_64 * 16);
 
         ////////////////////////////////////////////
         // COMBINED MATRIX
@@ -582,7 +772,7 @@ VOID    dr_SunPrepare ()
                               matview [ 8] * sidei, matview [ 9] * sidei, matview [10] * -depthi, 0.0,
                               matview [12] * sidei, matview [13] * sidei, matview [14] * -depthi, 1.0 };
 
-        FLOAT_32P pmat = dr_sun_matrices [i];   mASSIGN (pmat, (FLOAT_32) mat);
+        FLOAT_32P pmat = &dr_sun_matrices [i << 4];   mASSIGN (pmat, (FLOAT_32) mat);
         
         // projected origin, we will need it later below
         pTRANSFORM_COL4x4p2 (originprj, origin, mat);
@@ -611,41 +801,43 @@ VOID    dr_SunPrepare ()
 
         // NEAR PLANE POINTS
 
-        dr_sun_split_points [i][0][0] = nearp[0] + dr_cambi[0] * nearw + dr_camup[0] * nearh;
-        dr_sun_split_points [i][0][1] = nearp[1] + dr_cambi[1] * nearw + dr_camup[1] * nearh;
-        dr_sun_split_points [i][0][2] = nearp[2] + dr_cambi[2] * nearw + dr_camup[2] * nearh;
-        pTRANSFORM_COL4x4p2 (pointst [0], dr_sun_split_points [i][0], mat);
-        dr_sun_split_points [i][1][0] = nearp[0] + dr_cambi[0] * nearw - dr_camup[0] * nearh;
-        dr_sun_split_points [i][1][1] = nearp[1] + dr_cambi[1] * nearw - dr_camup[1] * nearh;
-        dr_sun_split_points [i][1][2] = nearp[2] + dr_cambi[2] * nearw - dr_camup[2] * nearh;
-        pTRANSFORM_COL4x4p2 (pointst [1], dr_sun_split_points [i][1], mat);
-        dr_sun_split_points [i][2][0] = nearp[0] - dr_cambi[0] * nearw + dr_camup[0] * nearh;
-        dr_sun_split_points [i][2][1] = nearp[1] - dr_cambi[1] * nearw + dr_camup[1] * nearh;
-        dr_sun_split_points [i][2][2] = nearp[2] - dr_cambi[2] * nearw + dr_camup[2] * nearh;
-        pTRANSFORM_COL4x4p2 (pointst [2], dr_sun_split_points [i][2], mat);
-        dr_sun_split_points [i][3][0] = nearp[0] - dr_cambi[0] * nearw - dr_camup[0] * nearh;
-        dr_sun_split_points [i][3][1] = nearp[1] - dr_cambi[1] * nearw - dr_camup[1] * nearh;
-        dr_sun_split_points [i][3][2] = nearp[2] - dr_cambi[2] * nearw - dr_camup[2] * nearh;
-        pTRANSFORM_COL4x4p2 (pointst [3], dr_sun_split_points [i][3], mat);
+        UINT_32 offset = i * 24;    FLOAT_64P p = &dr_sun_split_points [offset];
+
+        p [0] = nearp[0] + dr_cambi[0] * nearw + dr_camup[0] * nearh;
+        p [1] = nearp[1] + dr_cambi[1] * nearw + dr_camup[1] * nearh;
+        p [2] = nearp[2] + dr_cambi[2] * nearw + dr_camup[2] * nearh;
+        pTRANSFORM_COL4x4p2 (pointst [0], p, mat);                      p = &dr_sun_split_points [(offset += 3)];
+        p [0] = nearp[0] + dr_cambi[0] * nearw - dr_camup[0] * nearh;
+        p [1] = nearp[1] + dr_cambi[1] * nearw - dr_camup[1] * nearh;
+        p [2] = nearp[2] + dr_cambi[2] * nearw - dr_camup[2] * nearh;
+        pTRANSFORM_COL4x4p2 (pointst [1], p, mat);                      p = &dr_sun_split_points [(offset += 3)];
+        p [0] = nearp[0] - dr_cambi[0] * nearw + dr_camup[0] * nearh;
+        p [1] = nearp[1] - dr_cambi[1] * nearw + dr_camup[1] * nearh;
+        p [2] = nearp[2] - dr_cambi[2] * nearw + dr_camup[2] * nearh;
+        pTRANSFORM_COL4x4p2 (pointst [2], p, mat);                      p = &dr_sun_split_points [(offset += 3)];
+        p [0] = nearp[0] - dr_cambi[0] * nearw - dr_camup[0] * nearh;
+        p [1] = nearp[1] - dr_cambi[1] * nearw - dr_camup[1] * nearh;
+        p [2] = nearp[2] - dr_cambi[2] * nearw - dr_camup[2] * nearh;
+        pTRANSFORM_COL4x4p2 (pointst [3], p, mat);                      p = &dr_sun_split_points [(offset += 3)];
 
         // FAR PLANE POINTS
 
-        dr_sun_split_points [i][4][0] = farp[0] + dr_cambi[0] * farw + dr_camup[0] * farh;
-        dr_sun_split_points [i][4][1] = farp[1] + dr_cambi[1] * farw + dr_camup[1] * farh;
-        dr_sun_split_points [i][4][2] = farp[2] + dr_cambi[2] * farw + dr_camup[2] * farh;
-        pTRANSFORM_COL4x4p2 (pointst [4], dr_sun_split_points [i][4], mat);
-        dr_sun_split_points [i][5][0] = farp[0] + dr_cambi[0] * farw - dr_camup[0] * farh;
-        dr_sun_split_points [i][5][1] = farp[1] + dr_cambi[1] * farw - dr_camup[1] * farh;
-        dr_sun_split_points [i][5][2] = farp[2] + dr_cambi[2] * farw - dr_camup[2] * farh;
-        pTRANSFORM_COL4x4p2 (pointst [5], dr_sun_split_points [i][5], mat);
-        dr_sun_split_points [i][6][0] = farp[0] - dr_cambi[0] * farw + dr_camup[0] * farh;
-        dr_sun_split_points [i][6][1] = farp[1] - dr_cambi[1] * farw + dr_camup[1] * farh;
-        dr_sun_split_points [i][6][2] = farp[2] - dr_cambi[2] * farw + dr_camup[2] * farh;
-        pTRANSFORM_COL4x4p2 (pointst [6], dr_sun_split_points [i][6], mat);
-        dr_sun_split_points [i][7][0] = farp[0] - dr_cambi[0] * farw - dr_camup[0] * farh;
-        dr_sun_split_points [i][7][1] = farp[1] - dr_cambi[1] * farw - dr_camup[1] * farh;
-        dr_sun_split_points [i][7][2] = farp[2] - dr_cambi[2] * farw - dr_camup[2] * farh;
-        pTRANSFORM_COL4x4p2 (pointst [7], dr_sun_split_points [i][7], mat);
+        p [0] = farp[0] + dr_cambi[0] * farw + dr_camup[0] * farh;
+        p [1] = farp[1] + dr_cambi[1] * farw + dr_camup[1] * farh;
+        p [2] = farp[2] + dr_cambi[2] * farw + dr_camup[2] * farh;
+        pTRANSFORM_COL4x4p2 (pointst [4], p, mat);                      p = &dr_sun_split_points [(offset += 3)];
+        p [0] = farp[0] + dr_cambi[0] * farw - dr_camup[0] * farh;
+        p [1] = farp[1] + dr_cambi[1] * farw - dr_camup[1] * farh;
+        p [2] = farp[2] + dr_cambi[2] * farw - dr_camup[2] * farh;
+        pTRANSFORM_COL4x4p2 (pointst [5], p, mat);                      p = &dr_sun_split_points [(offset += 3)];
+        p [0] = farp[0] - dr_cambi[0] * farw + dr_camup[0] * farh;
+        p [1] = farp[1] - dr_cambi[1] * farw + dr_camup[1] * farh;
+        p [2] = farp[2] - dr_cambi[2] * farw + dr_camup[2] * farh;
+        pTRANSFORM_COL4x4p2 (pointst [6], p, mat);                      p = &dr_sun_split_points [(offset += 3)];
+        p [0] = farp[0] - dr_cambi[0] * farw - dr_camup[0] * farh;
+        p [1] = farp[1] - dr_cambi[1] * farw - dr_camup[1] * farh;
+        p [2] = farp[2] - dr_cambi[2] * farw - dr_camup[2] * farh;
+        pTRANSFORM_COL4x4p2 (pointst [7], p, mat);
 
         // near plane quad edges (clokwise order)
 
@@ -815,18 +1007,18 @@ VOID    dr_SunPrepare ()
                 u [3] = - u [0] * point [0] - u [1] * point [1] - u [2] * point [2];
 
                 // shortcut
-                UINT_32 index = dr_sun_split_planesc [i];
+                UINT_32 offset = i * 48 + (dr_sun_split_planesc [i] << 2);
 
                 // clipping plane
-                dr_sun_split_planesd [i][index][0] = u [0];
-                dr_sun_split_planesd [i][index][1] = u [1];
-                dr_sun_split_planesd [i][index][2] = u [2];
-                dr_sun_split_planesd [i][index][3] = u [3];
+                dr_sun_split_planesd [offset + 0] = u [0];
+                dr_sun_split_planesd [offset + 1] = u [1];
+                dr_sun_split_planesd [offset + 2] = u [2];
+                dr_sun_split_planesd [offset + 3] = u [3];
 
-                dr_sun_split_planes [i][index][0] = (FLOAT_32) u [0];
-                dr_sun_split_planes [i][index][1] = (FLOAT_32) u [1];
-                dr_sun_split_planes [i][index][2] = (FLOAT_32) u [2];
-                dr_sun_split_planes [i][index][3] = (FLOAT_32) u [3];
+                dr_sun_split_planes [offset + 0] = (FLOAT_32) u [0];
+                dr_sun_split_planes [offset + 1] = (FLOAT_32) u [1];
+                dr_sun_split_planes [offset + 2] = (FLOAT_32) u [2];
+                dr_sun_split_planes [offset + 3] = (FLOAT_32) u [3];
 
                 dr_sun_split_planesc [i] ++;
             }
@@ -842,19 +1034,19 @@ VOID    dr_SunPrepare ()
 
         if (vDOT3 (u, axisz) < 0) {
 
-            UINT_32 index = dr_sun_split_planesc [i];
+            UINT_32 offset = i * 48 + (dr_sun_split_planesc [i] << 2);
 
             FLOAT_64 D = - u [0] * nearp [0] - u [1] * nearp [1] - u [2] * nearp [2];
 
-            dr_sun_split_planesd [i][index][0] = u [0];
-            dr_sun_split_planesd [i][index][1] = u [1];
-            dr_sun_split_planesd [i][index][2] = u [2];
-            dr_sun_split_planesd [i][index][3] = D;
+            dr_sun_split_planesd [offset + 0] = u [0];
+            dr_sun_split_planesd [offset + 1] = u [1];
+            dr_sun_split_planesd [offset + 2] = u [2];
+            dr_sun_split_planesd [offset + 3] = D;
 
-            dr_sun_split_planes [i][index][0] = (FLOAT_32) u [0];
-            dr_sun_split_planes [i][index][1] = (FLOAT_32) u [1];
-            dr_sun_split_planes [i][index][2] = (FLOAT_32) u [2];
-            dr_sun_split_planes [i][index][3] = (FLOAT_32) D;
+            dr_sun_split_planes [offset + 0] = (FLOAT_32) u [0];
+            dr_sun_split_planes [offset + 1] = (FLOAT_32) u [1];
+            dr_sun_split_planes [offset + 2] = (FLOAT_32) u [2];
+            dr_sun_split_planes [offset + 3] = (FLOAT_32) D;
 
             dr_sun_split_planesc [i] ++;
         }
@@ -865,19 +1057,19 @@ VOID    dr_SunPrepare ()
 
         if (vDOT3 (u, axisz) < 0) {
 
-            UINT_32 index = dr_sun_split_planesc [i];
+            UINT_32 offset = i * 48 + (dr_sun_split_planesc [i] << 2);
 
             FLOAT_64 D = - u [0] * farp [0] - u [1] * farp [1] - u [2] * farp [2];
 
-            dr_sun_split_planesd [i][index][0] = u [0];
-            dr_sun_split_planesd [i][index][1] = u [1];
-            dr_sun_split_planesd [i][index][2] = u [2];
-            dr_sun_split_planesd [i][index][3] = D;
+            dr_sun_split_planesd [offset + 0] = u [0];
+            dr_sun_split_planesd [offset + 1] = u [1];
+            dr_sun_split_planesd [offset + 2] = u [2];
+            dr_sun_split_planesd [offset + 3] = D;
 
-            dr_sun_split_planes [i][index][0] = (FLOAT_32) u [0];
-            dr_sun_split_planes [i][index][1] = (FLOAT_32) u [1];
-            dr_sun_split_planes [i][index][2] = (FLOAT_32) u [2];
-            dr_sun_split_planes [i][index][3] = (FLOAT_32) D;
+            dr_sun_split_planes [offset + 0] = (FLOAT_32) u [0];
+            dr_sun_split_planes [offset + 1] = (FLOAT_32) u [1];
+            dr_sun_split_planes [offset + 2] = (FLOAT_32) u [2];
+            dr_sun_split_planes [offset + 3] = (FLOAT_32) D;
 
             dr_sun_split_planesc [i] ++;
         }
@@ -916,6 +1108,7 @@ VOID    dr_SunShadows ()
     M_STATE_TEX7_CLEAR;
     M_STATE_TEX8_CLEAR;
     M_STATE_TEX9_CLEAR;
+    M_STATE_TEX10_CLEAR;
 
     M_STATE_ARRAY_COLOR_CLEAR;
     M_STATE_ARRAY_SECONDARY_COLOR_CLEAR;
@@ -930,14 +1123,14 @@ VOID    dr_SunShadows ()
 
     // SPLIT LOOP
 
-    for (UINT_32 i = 0; i < dr_sun_count; i ++) {
+    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++) {
 
         ////////////////////////////////////////////
         // LOADING MATRICES
         ////////////////////////////////////////////
 
-        M_STATE_MATRIXMODE_PROJECTION;   glLoadMatrixd (dr_sun_projection [i]);
-        M_STATE_MATRIXMODE_MODELVIEW;    glLoadMatrixd (dr_sun_view       [i]);
+        M_STATE_MATRIXMODE_PROJECTION;   glLoadMatrixd (&dr_sun_projection [i << 4]);
+        M_STATE_MATRIXMODE_MODELVIEW;    glLoadMatrixd (&dr_sun_view       [i << 4]);
 
         ////////////////////////////////////////////
         // CLEAR AREA TO RENDER
@@ -947,7 +1140,7 @@ VOID    dr_SunShadows ()
         glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, dr_sunshadows [i], 0);
 
         #ifdef M_DEBUG
-            glClear (GL_DEPTH_BUFFER_BIT);
+            glClearDepth (0.0); glClear (GL_DEPTH_BUFFER_BIT);  glClearDepth (1.0);
         #endif
 
         // clear by frustum geometry
@@ -955,19 +1148,21 @@ VOID    dr_SunShadows ()
         
         glDepthFunc (GL_ALWAYS);    glDepthRange (1.0, 1.0);
 
+        UINT_32 offset = i * 24;
+
         glBegin (GL_QUADS);
-            glVertex3dv (&dr_sun_split_points [i][2][0]);   glVertex3dv (&dr_sun_split_points [i][3][0]);   
-            glVertex3dv (&dr_sun_split_points [i][1][0]);   glVertex3dv (&dr_sun_split_points [i][0][0]);   // near
-            glVertex3dv (&dr_sun_split_points [i][4][0]);   glVertex3dv (&dr_sun_split_points [i][5][0]);   
-            glVertex3dv (&dr_sun_split_points [i][7][0]);   glVertex3dv (&dr_sun_split_points [i][6][0]);   // far
-            glVertex3dv (&dr_sun_split_points [i][6][0]);   glVertex3dv (&dr_sun_split_points [i][7][0]);   
-            glVertex3dv (&dr_sun_split_points [i][3][0]);   glVertex3dv (&dr_sun_split_points [i][2][0]);   // left
-            glVertex3dv (&dr_sun_split_points [i][0][0]);   glVertex3dv (&dr_sun_split_points [i][1][0]);   
-            glVertex3dv (&dr_sun_split_points [i][5][0]);   glVertex3dv (&dr_sun_split_points [i][4][0]);   // right
-            glVertex3dv (&dr_sun_split_points [i][4][0]);   glVertex3dv (&dr_sun_split_points [i][6][0]);   
-            glVertex3dv (&dr_sun_split_points [i][2][0]);   glVertex3dv (&dr_sun_split_points [i][0][0]);   // top
-            glVertex3dv (&dr_sun_split_points [i][1][0]);   glVertex3dv (&dr_sun_split_points [i][3][0]);   
-            glVertex3dv (&dr_sun_split_points [i][7][0]);   glVertex3dv (&dr_sun_split_points [i][5][0]);   // bottom
+            glVertex3dv (&dr_sun_split_points [offset + 2*3]);   glVertex3dv (&dr_sun_split_points [offset + 3*3]);   
+            glVertex3dv (&dr_sun_split_points [offset + 1*3]);   glVertex3dv (&dr_sun_split_points [offset + 0*3]);   // near
+            glVertex3dv (&dr_sun_split_points [offset + 4*3]);   glVertex3dv (&dr_sun_split_points [offset + 5*3]);   
+            glVertex3dv (&dr_sun_split_points [offset + 7*3]);   glVertex3dv (&dr_sun_split_points [offset + 6*3]);   // far
+            glVertex3dv (&dr_sun_split_points [offset + 6*3]);   glVertex3dv (&dr_sun_split_points [offset + 7*3]);   
+            glVertex3dv (&dr_sun_split_points [offset + 3*3]);   glVertex3dv (&dr_sun_split_points [offset + 2*3]);   // left
+            glVertex3dv (&dr_sun_split_points [offset + 0*3]);   glVertex3dv (&dr_sun_split_points [offset + 1*3]);   
+            glVertex3dv (&dr_sun_split_points [offset + 5*3]);   glVertex3dv (&dr_sun_split_points [offset + 4*3]);   // right
+            glVertex3dv (&dr_sun_split_points [offset + 4*3]);   glVertex3dv (&dr_sun_split_points [offset + 6*3]);   
+            glVertex3dv (&dr_sun_split_points [offset + 2*3]);   glVertex3dv (&dr_sun_split_points [offset + 0*3]);   // top
+            glVertex3dv (&dr_sun_split_points [offset + 1*3]);   glVertex3dv (&dr_sun_split_points [offset + 3*3]);   
+            glVertex3dv (&dr_sun_split_points [offset + 7*3]);   glVertex3dv (&dr_sun_split_points [offset + 5*3]);   // bottom
         glEnd ();
 
         glDepthFunc (GL_LESS);      glDepthRange (0.0, 1.0);
@@ -993,11 +1188,11 @@ VOID    dr_SunShadows ()
             glClipPlane	(GL_CLIP_PLANE0 + plane, &dr_sun_frustum_planesd [j][0]);    plane ++;
         }
 
-        c = MIN (dr_sun_split_planesc [i], 4);
+        c = MIN (dr_sun_split_planesc [i], 4);      offset = i * 48;
         for (UINT_32 j = 0; j < c; j ++) {
 
             M_STATE_PLANE_SET (plane);
-            glClipPlane	(GL_CLIP_PLANE0 + plane, &dr_sun_split_planesd [i][j][0]);   plane ++;
+            glClipPlane	(GL_CLIP_PLANE0 + plane, &dr_sun_split_planesd [offset + (j << 2)]);   plane ++;
         }
 
         // polygon offset applies nonuniform bias to remove projection aliasing
@@ -1031,35 +1226,84 @@ VOID    dr_SunShadows ()
 
 VOID    dr_SunDraw ()
 {
-    M_STATE_DEPTHTEST_CLEAR;
-    M_STATE_DEPTHMASK_CLEAR;
-
     glUseProgram (dr_program_sun);
 
     // shadowmaps
     M_STATE_TEX0_RECT_SET   (dr_G1);
     M_STATE_TEX1_RECT_SET   (dr_G2);
     M_STATE_TEX2_SET        (dr_rand);
-    M_STATE_TEX3_SET        (dr_sunshadows [0]);
-    M_STATE_TEX4_SET        (dr_sunshadows [1]);
-    M_STATE_TEX5_SET        (dr_sunshadows [2]);
-    M_STATE_TEX6_SET        (dr_sunshadows [3]);
-    M_STATE_TEX7_SET        (dr_sunshadows [4]);
-    M_STATE_TEX8_CLEAR;
-    M_STATE_TEX9_CLEAR;
+
+    switch (dr_control_sun_splits) {
+        case 3:
+            M_STATE_TEX3_SET        (dr_sunshadows [0]);
+            M_STATE_TEX4_SET        (dr_sunshadows [1]);
+            M_STATE_TEX5_SET        (dr_sunshadows [2]);
+            M_STATE_TEX6_CLEAR;
+            M_STATE_TEX7_CLEAR;
+            M_STATE_TEX8_CLEAR;
+            M_STATE_TEX9_CLEAR;
+            M_STATE_TEX10_CLEAR;
+            break;
+        case 4:
+            M_STATE_TEX3_SET        (dr_sunshadows [0]);
+            M_STATE_TEX4_SET        (dr_sunshadows [1]);
+            M_STATE_TEX5_SET        (dr_sunshadows [2]);
+            M_STATE_TEX6_SET        (dr_sunshadows [3]);
+            M_STATE_TEX7_CLEAR;
+            M_STATE_TEX8_CLEAR;
+            M_STATE_TEX9_CLEAR;
+            M_STATE_TEX10_CLEAR;
+            break;
+        case 5:
+            M_STATE_TEX3_SET        (dr_sunshadows [0]);
+            M_STATE_TEX4_SET        (dr_sunshadows [1]);
+            M_STATE_TEX5_SET        (dr_sunshadows [2]);
+            M_STATE_TEX6_SET        (dr_sunshadows [3]);
+            M_STATE_TEX7_SET        (dr_sunshadows [4]);
+            M_STATE_TEX8_CLEAR;
+            M_STATE_TEX9_CLEAR;
+            M_STATE_TEX10_CLEAR;
+            break;
+        case 6:
+            M_STATE_TEX3_SET        (dr_sunshadows [0]);
+            M_STATE_TEX4_SET        (dr_sunshadows [1]);
+            M_STATE_TEX5_SET        (dr_sunshadows [2]);
+            M_STATE_TEX6_SET        (dr_sunshadows [3]);
+            M_STATE_TEX7_SET        (dr_sunshadows [4]);
+            M_STATE_TEX8_SET        (dr_sunshadows [5]);
+            M_STATE_TEX9_CLEAR;
+            M_STATE_TEX10_CLEAR;
+            break;
+        case 7:
+            M_STATE_TEX3_SET        (dr_sunshadows [0]);
+            M_STATE_TEX4_SET        (dr_sunshadows [1]);
+            M_STATE_TEX5_SET        (dr_sunshadows [2]);
+            M_STATE_TEX6_SET        (dr_sunshadows [3]);
+            M_STATE_TEX7_SET        (dr_sunshadows [4]);
+            M_STATE_TEX8_SET        (dr_sunshadows [5]);
+            M_STATE_TEX9_SET        (dr_sunshadows [6]);
+            M_STATE_TEX10_CLEAR;
+            break;
+        case 8:
+            M_STATE_TEX3_SET        (dr_sunshadows [0]);
+            M_STATE_TEX4_SET        (dr_sunshadows [1]);
+            M_STATE_TEX5_SET        (dr_sunshadows [2]);
+            M_STATE_TEX6_SET        (dr_sunshadows [3]);
+            M_STATE_TEX7_SET        (dr_sunshadows [4]);
+            M_STATE_TEX8_SET        (dr_sunshadows [5]);
+            M_STATE_TEX9_SET        (dr_sunshadows [6]);
+            M_STATE_TEX10_SET       (dr_sunshadows [7]);
+            break;
+    }
 
     // load sun matrices
-    glUniformMatrix4fv (dr_program_sun_matrix, M_DR_SUN_SPLITS, false, &dr_sun_matrices[0][0]);
+    glUniformMatrix4fv (dr_program_sun_matrix, dr_control_sun_splits, false, dr_sun_matrices);
+
+	// image adjustment parameters
+	glMultiTexCoord3f (GL_TEXTURE1, dr_control_image_desaturation, dr_control_image_brightness, dr_control_image_contrast);
 
     // draw
     glCallList (dr_quad);
-
-    // BACK
-
-    M_STATE_DEPTHTEST_SET;
-    M_STATE_DEPTHMASK_SET;
-
-    glDepthRange (0.0, 1.0);    glColor3f (1.0, 1.0, 1.0);
 }
 
 #endif

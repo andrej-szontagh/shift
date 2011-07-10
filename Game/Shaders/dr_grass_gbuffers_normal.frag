@@ -17,10 +17,8 @@ void main ()
             vec4 diffuse = texture2D (tex_diffuse, gl_TexCoord [0].st);
 
     // G1 ---------------------------------------------------------------------------------------------------------------------------------------------------
-    
-            //gl_FragData [0] = vec4 (diffuse.rgb, floor (max (1.0, shininess)) + fract (gloss * pow (dot (diffuse.rgb, vec3 (0.333, 0.333, 0.333)), 3.0))));
-            
-            gl_FragData [0] = vec4 (diffuse.rgb, 100.001);
+                
+            gl_FragData [0] = vec4 (diffuse.rgb, 0.01);
     
     // G2 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -31,5 +29,6 @@ void main ()
     
             vec2 normalm = normal.xy / sqrt (normal.z * 8.0 + 8.0) + 0.5;
 
-            gl_FragData [1] = vec4 (normalm.x, normalm.y, floor (depth), fract (depth));    
+            gl_FragData [1] = vec4 (normalm.x, normalm.y, depth, 0.01);
+
 }

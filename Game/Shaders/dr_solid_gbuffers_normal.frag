@@ -18,8 +18,7 @@ void main ()
             vec4 diffuse   = texture2D (tex_diffuse,    gl_TexCoord [0].st);
             vec4 composite = texture2D (tex_composite,  gl_TexCoord [0].st);
 
-            gl_FragData [0] = vec4 (diffuse.rgb,    floor (max (1.0,      composite.r * 0.1)) +
-                                                    fract (min (0.999999, composite.b * 0.5)));
+            gl_FragData [0] = vec4 (diffuse.rgb, composite.r);
  
     // G2 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -34,6 +33,6 @@ void main ()
     
             normalm.xy = normalm.xy / sqrt (normalm.z * 8.0 + 8.0) + 0.5;
     
-            gl_FragData [1] = vec4 (normalm.x, normalm.y, floor (depth), fract (depth));
-    
+            gl_FragData [1] = vec4 (normalm.x, normalm.y, depth, composite.b);
+
 }

@@ -59,10 +59,9 @@ INT_32 lo_LoadWorld (CHARP filename)
         free (name);
 
         // texture properties
-
-        UINT_32 wraps;          fread ((VOIDP) &wraps,         SIZE_UINT_32,   1, f);
-        UINT_32 wrapt;          fread ((VOIDP) &wrapt,         SIZE_UINT_32,   1, f);
-        UINT_32 filteraniso;    fread ((VOIDP) &filteraniso,   SIZE_UINT_32,   1, f);
+		UINT_32 gamma;	fread ((VOIDP) &gamma,	SIZE_UINT_32,	1, f);
+        UINT_32 wraps;  fread ((VOIDP) &wraps,	SIZE_UINT_32,   1, f);
+        UINT_32 wrapt;	fread ((VOIDP) &wrapt,	SIZE_UINT_32,   1, f);
 
         switch (wraps) {
             case 0: wraps = GL_REPEAT;          break;
@@ -109,28 +108,39 @@ INT_32 lo_LoadWorld (CHARP filename)
 
             glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-            if (filteraniso > 0) {
+            glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, dr_control_anisotrophy);
 
-                glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16);    ///filteraniso);
-
-                glTexParameteri  (GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
-                glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);   } else {
-                glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            }
+            glTexParameteri  (GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+            glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
             BOOL compressed = false;
 
             UINT_32 format;
             UINT_32 blocksize;
 
-            switch (image.type) {
-                case M_IMAGE_TYPE_RGB:      glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB8,   image.width, image.height, 0, GL_RGB,   GL_UNSIGNED_BYTE, image.data);	break;
-                case M_IMAGE_TYPE_RGBA:     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8,  image.width, image.height, 0, GL_RGBA,  GL_UNSIGNED_BYTE, image.data);	break;
+			// gamma correction
+			if (dr_control_gammacorrection && GLEE_EXT_texture_sRGB && GLEE_EXT_framebuffer_sRGB && gamma) {
 
-                case M_IMAGE_TYPE_DXT1:     compressed = true;  format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;   blocksize = 8;  break;
-                case M_IMAGE_TYPE_DXT3:     compressed = true;  format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;  blocksize = 16; break;
-                case M_IMAGE_TYPE_DXT5:     compressed = true;  format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;  blocksize = 16; break;
-            }
+				switch (image.type) {
+					case M_IMAGE_TYPE_RGB:      glTexImage2D (GL_TEXTURE_2D, 0, GL_SRGB8_EXT,			image.width, image.height, 0, GL_RGB,   GL_UNSIGNED_BYTE, image.data);	break;
+					case M_IMAGE_TYPE_RGBA:     glTexImage2D (GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8_EXT,	image.width, image.height, 0, GL_RGBA,  GL_UNSIGNED_BYTE, image.data);	break;
+
+					case M_IMAGE_TYPE_DXT1:     compressed = true;  format = GL_COMPRESSED_SRGB_S3TC_DXT1_EXT;			blocksize = 8;  break;
+					case M_IMAGE_TYPE_DXT3:     compressed = true;  format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT;	blocksize = 16; break;
+					case M_IMAGE_TYPE_DXT5:     compressed = true;  format = GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT;	blocksize = 16; break;
+				}
+
+			} else {
+
+				switch (image.type) {
+					case M_IMAGE_TYPE_RGB:      glTexImage2D (GL_TEXTURE_2D, 0, GL_RGB8,   image.width, image.height, 0, GL_RGB,   GL_UNSIGNED_BYTE, image.data);	break;
+					case M_IMAGE_TYPE_RGBA:     glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA8,  image.width, image.height, 0, GL_RGBA,  GL_UNSIGNED_BYTE, image.data);	break;
+
+					case M_IMAGE_TYPE_DXT1:     compressed = true;  format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;   blocksize = 8;  break;
+					case M_IMAGE_TYPE_DXT3:     compressed = true;  format = GL_COMPRESSED_RGBA_S3TC_DXT3_EXT;  blocksize = 16; break;
+					case M_IMAGE_TYPE_DXT5:     compressed = true;  format = GL_COMPRESSED_RGBA_S3TC_DXT5_EXT;  blocksize = 16; break;
+				}
+			}
 
             if (compressed) {
 
@@ -171,7 +181,11 @@ INT_32 lo_LoadWorld (CHARP filename)
             glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-            glTexImage2D     (GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB8, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.data);
+			// gamma correction
+			if (dr_control_gammacorrection && GLEE_EXT_texture_sRGB && GLEE_EXT_framebuffer_sRGB && gamma)
+
+				glTexImage2D     (GL_TEXTURE_RECTANGLE_ARB, 0, GL_SRGB8_EXT, image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.data);	else
+				glTexImage2D     (GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGB8,		 image.width, image.height, 0, GL_RGB, GL_UNSIGNED_BYTE, image.data);
         }
 
         // removing image data
@@ -206,6 +220,14 @@ INT_32 lo_LoadWorld (CHARP filename)
 
         // shortcut
         TMaterial * material = &dr_materials [i];
+
+		// init
+		material->diffuse   = 0;
+        material->weights1  = 0;
+        material->weights2  = 0;
+        material->weights3  = 0;
+        material->weights4  = 0;
+        material->composite = 0;
 
         UINT_32 tex;
 
@@ -1201,16 +1223,11 @@ INT_32 lo_LoadWorld (CHARP filename)
     dr_list_objects4        = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
     dr_list_objects_view    = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS));
 
-    UINT_32P p = (UINT_32P) malloc (SIZE_UINT_32 * (dr_objectsc + M_RESERVED_OBJECTS) * M_DR_SUN_SPLITS);
-
-    for (i = 0; i < M_DR_SUN_SPLITS; i ++) {
-
-        dr_list_objects_shadow_split [i] = &p [i * ((dr_objectsc + M_RESERVED_OBJECTS))];
-    }
-
     // RADIX SORTER
 
-    so_RadixCreate	(&dr_radix,  (dr_objectsc + M_RESERVED_OBJECTS));
+    so_RadixCreate	(&dr_radix,	(dr_objectsc + M_RESERVED_OBJECTS));
+
+    so_RadixCreate	(&dr_radix_instanced, 65535);
 
     // OBJECT INTERNAL 
 
@@ -1299,6 +1316,8 @@ VOID lo_UnloadWorld ()
     free (dr_list_objects3);
     free (dr_list_objects_view);
     free (dr_list_objects_shadow_split [0]);
+    free (dr_list_objects_shadow_split);
+    free (dr_list_objects_shadow_splitc);
 
     // nodes
 

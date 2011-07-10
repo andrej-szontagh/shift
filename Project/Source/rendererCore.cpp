@@ -113,7 +113,7 @@ VOID    dr_Render (FLOAT_32 delta)
     #endif
 
     // init counters
-    for (UINT_32 i = 0; i < M_DR_SUN_SPLITS; i ++)
+    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++)
 
             dr_list_objects_shadow_splitc [i] = 0;
 
@@ -156,7 +156,7 @@ VOID    dr_Render (FLOAT_32 delta)
     }
 
     // shadow objects
-    for (UINT_32 split = 0; split < dr_sun_count; split ++) {
+    for (UINT_32 split = 0; split < dr_control_sun_splits; split ++) {
 
         register UINT_32P listp = dr_list_objects_shadow_split  [split];
         register UINT_32  listc = dr_list_objects_shadow_splitc [split];
@@ -199,10 +199,10 @@ VOID    dr_Render (FLOAT_32 delta)
     #endif
 
     // using only part
-    glViewport (0, 0, dr_w [dr_levelculling], dr_h [dr_levelculling]);
+    glViewport (0, 0, dr_w [dr_control_culling], dr_h [dr_control_culling]);
 
     // clearing depth buffer
-    glScissor  (0, 0, dr_w [dr_levelculling], dr_h [dr_levelculling]);
+    glScissor  (0, 0, dr_w [dr_control_culling], dr_h [dr_control_culling]);
     
     // we enable writing before clean up
     M_STATE_DEPTHMASK_SET
@@ -247,7 +247,7 @@ VOID    dr_Render (FLOAT_32 delta)
         debug_StartTimerQuery (0);
     #endif
 
-    glViewport (0, 0, M_DR_SUN_SHADOW, M_DR_SUN_SHADOW);
+    glViewport (0, 0, dr_control_sun_res, dr_control_sun_res);
 
     dr_SunShadows ();
 
@@ -261,7 +261,7 @@ VOID    dr_Render (FLOAT_32 delta)
 
         if ((debug >= 5) && (debug <= 9)) {
 
-            glUseProgram  (0);
+            glUseProgram  (dr_program_debug_shadow);
 
             glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
@@ -269,20 +269,21 @@ VOID    dr_Render (FLOAT_32 delta)
 
             glViewport (0, 0, dr_width, dr_height);
 
-            M_STATE_CLEAR_TEX0_RECT;
-            M_STATE_CLEAR_TEX1_RECT;
-            M_STATE_CLEAR_TEX2_RECT;
+            M_STATE_TEX0_RECT_CLEAR;
+            M_STATE_TEX1_RECT_CLEAR;
+            M_STATE_TEX2_RECT_CLEAR;
 
-            //  M_STATE_CLEAR_TEX0;
-            M_STATE_CLEAR_TEX1;
-            M_STATE_CLEAR_TEX2;
-            M_STATE_CLEAR_TEX3;
-            M_STATE_CLEAR_TEX4;
-            M_STATE_CLEAR_TEX5;
-            M_STATE_CLEAR_TEX6;
-            M_STATE_CLEAR_TEX7;
-            M_STATE_CLEAR_TEX8;
-            M_STATE_CLEAR_TEX9;
+            //  M_STATE_TEX0_CLEAR;
+			M_STATE_TEX1_CLEAR;
+			M_STATE_TEX2_CLEAR;
+			M_STATE_TEX3_CLEAR;
+			M_STATE_TEX4_CLEAR;
+			M_STATE_TEX5_CLEAR;
+			M_STATE_TEX6_CLEAR;
+			M_STATE_TEX7_CLEAR;
+			M_STATE_TEX8_CLEAR;
+			M_STATE_TEX9_CLEAR;
+            M_STATE_TEX10_CLEAR;
 
             M_STATE_CULLFACE_CLEAR;
             M_STATE_DEPTHTEST_CLEAR;
@@ -290,14 +291,14 @@ VOID    dr_Render (FLOAT_32 delta)
             M_STATE_MATRIXMODE_PROJECTION;  glLoadIdentity ();
             M_STATE_MATRIXMODE_MODELVIEW;   glLoadIdentity ();
 
-            M_STATE_TEX0_SET;
+            glActiveTexture (GL_TEXTURE0);
 
             switch (debug) {
-                case 5: glBindTexture (GL_TEXTURE_2D, dr_sunshadows [0]);   break;
-                case 6: glBindTexture (GL_TEXTURE_2D, dr_sunshadows [1]);   break;
-                case 7: glBindTexture (GL_TEXTURE_2D, dr_sunshadows [2]);   break;
-                case 8: glBindTexture (GL_TEXTURE_2D, dr_sunshadows [3]);   break;
-                case 9: glBindTexture (GL_TEXTURE_2D, dr_sunshadows [4]);   break;
+                case 5: M_STATE_TEX0_SET (dr_sunshadows [0]);   glBindTexture (GL_TEXTURE_2D, dr_sunshadows [0]);   break;
+                case 6: M_STATE_TEX0_SET (dr_sunshadows [1]);   glBindTexture (GL_TEXTURE_2D, dr_sunshadows [1]);   break;
+                case 7: M_STATE_TEX0_SET (dr_sunshadows [2]);   glBindTexture (GL_TEXTURE_2D, dr_sunshadows [2]);   break;
+                case 8: M_STATE_TEX0_SET (dr_sunshadows [3]);   glBindTexture (GL_TEXTURE_2D, dr_sunshadows [3]);   break;
+                case 9: M_STATE_TEX0_SET (dr_sunshadows [4]);   glBindTexture (GL_TEXTURE_2D, dr_sunshadows [4]);   break;
             }
 
             glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
@@ -305,6 +306,8 @@ VOID    dr_Render (FLOAT_32 delta)
             glCallList (dr_quadpot);
 
             glTexParameteri  (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
+
+            glUseProgram  (0);
             
             return;
         }
@@ -326,18 +329,6 @@ VOID    dr_Render (FLOAT_32 delta)
     #endif
 
     //////////////////////////////////////////////
-    // FBO DEPTH ONLY
-    //////////////////////////////////////////////
-
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dr_framebuffer);
-
-    glDrawBuffer (GL_NONE); glColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_depth,  0);
-    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, 0,         0);
-    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_RECTANGLE_ARB, 0,         0);
-
-    //////////////////////////////////////////////
     // GEOMETRY PASSES
     //////////////////////////////////////////////
    
@@ -348,6 +339,18 @@ VOID    dr_Render (FLOAT_32 delta)
     M_STATE_CULLFACE_SET;
 
     glViewport (0, 0, dr_width, dr_height);
+
+    //////////////////////////////////////////////
+    // FBO DEPTH ONLY
+    //////////////////////////////////////////////
+
+    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, dr_framebuffer);
+
+    glDrawBuffer (GL_NONE); glColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_depth,  0);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, 0,         0);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_RECTANGLE_ARB, 0,         0);
 
     //////////////////////////////////////////////
     // DEPTH PASS
@@ -424,25 +427,24 @@ VOID    dr_Render (FLOAT_32 delta)
 
             glViewport (0, 0, dr_width, dr_height);
 
-            //  M_STATE_CLEAR_TEX0_RECT;
-            M_STATE_CLEAR_TEX1_RECT;
-            M_STATE_CLEAR_TEX2_RECT;
+            //  M_STATE_TEX0_RECT_CLEAR;
+            M_STATE_TEX1_RECT_CLEAR;
+            M_STATE_TEX2_RECT_CLEAR;
 
-            M_STATE_CLEAR_TEX0;
-            M_STATE_CLEAR_TEX1;
-            M_STATE_CLEAR_TEX2;
-            M_STATE_CLEAR_TEX3;
-            M_STATE_CLEAR_TEX4;
-            M_STATE_CLEAR_TEX5;
-            M_STATE_CLEAR_TEX6;
-            M_STATE_CLEAR_TEX7;
-            M_STATE_CLEAR_TEX8;
-            M_STATE_CLEAR_TEX9;
+			M_STATE_TEX0_CLEAR;
+			M_STATE_TEX1_CLEAR;
+			M_STATE_TEX2_CLEAR;
+			M_STATE_TEX3_CLEAR;
+			M_STATE_TEX4_CLEAR;
+			M_STATE_TEX5_CLEAR;
+			M_STATE_TEX6_CLEAR;
+			M_STATE_TEX7_CLEAR;
+			M_STATE_TEX8_CLEAR;
+			M_STATE_TEX9_CLEAR;
+			M_STATE_TEX10_CLEAR;
 
             M_STATE_CULLFACE_CLEAR;
             M_STATE_DEPTHTEST_CLEAR;
-
-            M_STATE_TEX0_RECT_SET;
 
             M_STATE_MATRIXMODE_MODELVIEW;	glLoadIdentity ();
             M_STATE_MATRIXMODE_PROJECTION;	glLoadIdentity ();
@@ -450,9 +452,9 @@ VOID    dr_Render (FLOAT_32 delta)
             switch (debug) {
 
                 case 1:     glColor4f (1.0, 1.0, 1.0, 1.0);
-                    glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, dr_G1);      break;
+                    M_STATE_TEX0_RECT_SET (dr_G1);      break;
                 case 2:     glColor4f (1.0, 1.0, 1.0, 1.0);
-                    glBindTexture   (GL_TEXTURE_RECTANGLE_ARB, dr_G2);      break;
+                    M_STATE_TEX0_RECT_SET (dr_G2);      break;
             }
 
             glCallList (dr_quads [0]);
@@ -477,7 +479,10 @@ VOID    dr_Render (FLOAT_32 delta)
 
     // early z cull
 
-    M_STATE_DEPTHTEST_SET;  M_STATE_DEPTHMASK_CLEAR;
+    M_STATE_CULLFACE_CLEAR;
+    M_STATE_DEPTHMASK_CLEAR;    M_STATE_DEPTHTEST_SET;
+
+    glDepthRange (1.0, 1.0);    glDepthFunc (GL_GREATER);
 
     // draw
 
@@ -497,15 +502,10 @@ VOID    dr_Render (FLOAT_32 delta)
 
     // early z cull
 
-    M_STATE_DEPTHMASK_CLEAR;    glDepthFunc (GL_EQUAL);
-
-    // all depths 1.0
-
-    glDepthRange (1.0, 1.0);
-
-    // culling off
-
     M_STATE_CULLFACE_CLEAR;
+    M_STATE_DEPTHMASK_CLEAR;    M_STATE_DEPTHTEST_SET;
+
+    glDepthRange (1.0, 1.0);    glDepthFunc (GL_EQUAL);
 
     // setup buffers
 
@@ -530,6 +530,7 @@ VOID    dr_Render (FLOAT_32 delta)
     M_STATE_TEX7_CLEAR;
     M_STATE_TEX8_CLEAR;
     M_STATE_TEX9_CLEAR;
+    M_STATE_TEX10_CLEAR;
 
     M_STATE_TEX0_RECT_SET   (dr_enviroment_material->diffuse);
     M_STATE_TEX1_RECT_CLEAR;
@@ -555,6 +556,10 @@ VOID    dr_Render (FLOAT_32 delta)
 
     glUseProgram (dr_program_enviroment);
 
+	// image adjustment parameters
+
+	glMultiTexCoord3f (GL_TEXTURE1, dr_control_sky_desaturation, dr_control_sky_brightness, dr_control_sky_contrast);
+
     // draw ..
 
     glDrawElements (GL_TRIANGLE_STRIP, dr_enviroment_model->count, GL_UNSIGNED_SHORT, NULL);
@@ -566,7 +571,7 @@ VOID    dr_Render (FLOAT_32 delta)
     glBindBufferARB (GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
     glBindBufferARB (GL_ARRAY_BUFFER_ARB, 0);
 
-    glDepthRange (0.0, 1.0);
+    glDepthRange (0.0, 1.0);    glDepthFunc (GL_LESS);
 
     #ifdef M_DEBUG
         debug_EndTimerQuery (0, "Enviroment     : ", dr_debug_profile_enviroment, dr_debug_profile_enviromentg);
@@ -576,18 +581,30 @@ VOID    dr_Render (FLOAT_32 delta)
     // SSAO
     //////////////////////////////////////////////
 
-    if (dr_enablessao) {
+    if (dr_control_ssao_enable) {
 
         #ifdef M_DEBUG
-            debug_StartTimer (0);
+			debug_StartTimerQuery (0);
         #endif
+
+        // early z cull
+
+        M_STATE_CULLFACE_CLEAR;
+        M_STATE_DEPTHMASK_CLEAR;    M_STATE_DEPTHTEST_SET;
+
+        glDepthRange (1.0, 1.0);    glDepthFunc (GL_GREATER);
 
         // SSAO
 
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0, 0);
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [dr_levelssao], 0);
+        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [dr_control_ssao_res], 0);
 
-        glViewport (0, 0, dr_w [dr_levelssao], dr_h [dr_levelssao]);
+        glViewport (0, 0, dr_w [dr_control_ssao_res], dr_h [dr_control_ssao_res]);
+
+        // clear
+
+        glClear (GL_COLOR_BUFFER_BIT);  glClearColor (1.0, 1.0, 1.0, 1.0);
+
+        // program
 
         glUseProgram  (dr_program_ssao);
 
@@ -601,18 +618,24 @@ VOID    dr_Render (FLOAT_32 delta)
 
         glCallList (dr_quads [0]);
 
+        // depth test off
+
+        M_STATE_DEPTHTEST_CLEAR;
+
+        glDepthRange (0.0, 1.0);    glDepthFunc (GL_LESS);
+
         // VERTICAL BILATERAL BLUR
 
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [dr_levelssao], 0);
+        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [dr_control_ssao_res], 0);
         glUseProgram  (dr_program_ssao_blurvert);
 
         M_STATE_TEX1_CLEAR;
 
-        M_STATE_TEX0_RECT_SET   (dr_auxA [dr_levelssao]);
+        M_STATE_TEX0_RECT_SET   (dr_auxA [dr_control_ssao_res]);
         M_STATE_TEX1_RECT_SET   (dr_G2);
         M_STATE_TEX2_RECT_CLEAR;
 
-        glCallList (dr_quads [dr_levelssao]);
+        glCallList (dr_quads [dr_control_ssao_res]);
 
         // DEBUG
 
@@ -636,14 +659,14 @@ VOID    dr_Render (FLOAT_32 delta)
 
         glViewport (0, 0, dr_width, dr_height);
 
-        M_STATE_TEX0_RECT_SET   (dr_auxB [dr_levelssao]);
+        M_STATE_TEX0_RECT_SET   (dr_auxB [dr_control_ssao_res]);
         M_STATE_TEX1_RECT_SET   (target1);
         M_STATE_TEX2_RECT_SET   (dr_G2);
 
         glCallList (dr_quads [0]);
 
         #ifdef M_DEBUG
-            debug_EndTimer (0, "SSAO           : ");
+	        debug_EndTimerQuery (0, "SSAO           : ", dr_debug_profile_ssao, dr_debug_profile_ssaog);
         #endif
 
         // DEBUG
@@ -661,8 +684,8 @@ VOID    dr_Render (FLOAT_32 delta)
                 glActiveTexture (GL_TEXTURE0); glEnable (GL_TEXTURE_RECTANGLE_ARB);
 
 				switch (debug) {
-					case 10:	glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dr_auxA [dr_levelssao]);	glCallList (dr_quads [dr_levelssao]);	break;
-					case 11:	glBindTexture (GL_TEXTURE_RECTANGLE_ARB, target2);	                glCallList (dr_quads [0]);	            break;
+					case 10:	glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dr_auxA [dr_control_ssao_res]);	glCallList (dr_quads [dr_control_ssao_res]);	break;
+					case 11:	glBindTexture (GL_TEXTURE_RECTANGLE_ARB, target2);	                        glCallList (dr_quads [0]);	                    break;
 				}
 
                 glDisable (GL_TEXTURE_RECTANGLE_ARB);
@@ -688,14 +711,14 @@ VOID    dr_Render (FLOAT_32 delta)
     // FOG
     //////////////////////////////////////////////
 
-    if (dr_enablefog) {
+    if (dr_control_fog) {
 
         #ifdef M_DEBUG
-            debug_StartTimer (0);
+			debug_StartTimerQuery (0);
         #endif
 
         glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_depth,    0);
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, target2,     0);
+        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, target1,     0);
 
         M_STATE_DEPTHTEST_SET;
 
@@ -711,27 +734,27 @@ VOID    dr_Render (FLOAT_32 delta)
         
         // textures
 
-        M_STATE_TEX0_RECT_SET   (dr_G2);
-        M_STATE_TEX1_RECT_SET   (target1);
-        M_STATE_TEX2_RECT_CLEAR;
+        M_STATE_TEX0_RECT_CLEAR;
+        M_STATE_TEX1_RECT_CLEAR;
+        M_STATE_TEX2_RECT_SET   (dr_G2);
 
         glColor3fv (dr_fog_color);
 
+		glEnable (GL_BLEND);	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
         glCallList (dr_quads [0]);
+
+		glDisable (GL_BLEND);
+
+		// restore
 
         glColor3f (1.0, 1.0, 1.0);
 
         glDepthRange (0.0, 1.0);
 
         #ifdef M_DEBUG
-            debug_EndTimer (0, "Fog            : ");
+            debug_EndTimerQuery (0, "Fog            : ", dr_debug_profile_fog, dr_debug_profile_fogg);
         #endif
-
-        GLuint tmp;
-
-        tmp = target1;
-              target1 = target2;
-                        target2 = tmp;
     }
 
     //////////////////////////////////////////////
@@ -789,10 +812,10 @@ VOID    dr_Render (FLOAT_32 delta)
     // AA
     //////////////////////////////////////////////
 
-    if (dr_enableaa) {
+    if (dr_control_aa) {
 
         #ifdef M_DEBUG
-            debug_StartTimer (0);
+			debug_StartTimerQuery (0);
         #endif
 
         M_STATE_DEPTHTEST_CLEAR;
@@ -810,14 +833,14 @@ VOID    dr_Render (FLOAT_32 delta)
 
         glCallList (dr_quads [0]);
 
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, target1, 0);
+        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, target1,	0);
 
         glUseProgram  (dr_program_aa_blurvert);
 
         glCallList (dr_quads [0]);
 
         #ifdef M_DEBUG
-            debug_EndTimer (0, "AA             : ");
+            debug_EndTimerQuery (0, "AA             : ", dr_debug_profile_aa, dr_debug_profile_aag);
         #endif
     }
 
@@ -829,212 +852,214 @@ VOID    dr_Render (FLOAT_32 delta)
     M_STATE_MATRIXMODE_MODELVIEW;   glLoadIdentity ();
 
     //////////////////////////////////////////////
-    // BLOOM
+    // TONEMAPPING
     //////////////////////////////////////////////
 
     #ifdef M_DEBUG
-        debug_StartTimer (0);
+		debug_StartTimerQuery (0);
     #endif
 
-    if (dr_enableautoexposure || dr_enablebloom) {
+	FLOAT_32 newscale = 1.0;
 
-        // HI-PASS
+	if (dr_control_autoexposure || dr_control_bloom_enable) {
 
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0, 0);
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [0], 0);
+		// HI-PASS
 
-        glViewport (0, 0, dr_w [0], dr_h [0]);
+		glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0, 0);
+		glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [0], 0);
 
-        glUseProgram  (dr_program_hdr_hipass);
-
-        glFogCoordf (dr_enableautoexposure ? dr_intensityscale : 1.0f);
-
-        glActiveTexture (GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB);
-
-        glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, target1);
-
-        glCallList (dr_quads [0]);
-
-        // DOWN SCALE
-
-        glUseProgram (0);
-
-        for (UINT_32 i = 1; i < M_DR_MIPLEVELS; i ++) {
-
-            glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [i], 0);
-            glViewport (0, 0, dr_w [i], dr_h [i]);	glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dr_auxA [i - 1]);
-            glCallList (dr_quads [i - 1]);
-        }
-    }
-
-    if (dr_enableautoexposure) {
-
-        // RETIEVEING DATA FOR AUTOEXPOSURE
-
-        glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, dr_auxA [M_DR_MIPLEVELS - 1]);
-        glGetTexImage	(GL_TEXTURE_RECTANGLE_ARB, 0, GL_ALPHA, GL_UNSIGNED_BYTE, (VOIDP) dr_intensitydata);
-    }
-
-    if (dr_enablebloom) {
-
-        // VERTICAL BLUR
-
-        glUseProgram  (dr_program_hdr_blurvert);
-
-        for (UINT_32 i = dr_levelbloom; i < M_DR_MIPLEVELS; i ++) {
-
-            glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [i], 0);
-            glViewport (0, 0, dr_w [i], dr_h [i]); glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dr_auxA [i]);
-            glCallList (dr_quads [i]);
-        }
-
-        // HORIZONTAL BLUR
-
-        glUseProgram  (dr_program_hdr_blurhoriz);
-
-        for (UINT_32 i = dr_levelbloom; i < M_DR_MIPLEVELS; i ++) {
-
-            glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [i], 0);
-            glViewport (0, 0, dr_w [i], dr_h [i]); glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dr_auxB [i]);
-            glCallList (dr_quads [i]);
-        }
-
-        // IMAGE RECONSTRUCTION
-
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [0], 0);
-        glViewport (0, 0, dr_width, dr_height);
-
-        M_STATE_CULLFACE_CLEAR;
         M_STATE_DEPTHTEST_CLEAR;
+		M_STATE_CULLFACE_CLEAR;
 
-        glUseProgram  (dr_program_hdr);
+		glViewport (0, 0, dr_w [0], dr_h [0]);
 
-        glFogCoordf (dr_enableautoexposure ? dr_intensityscale : 1.0f);
+		glUseProgram  (dr_program_hdr_hipass);
 
-        glActiveTexture	(GL_TEXTURE0);  glEnable (GL_TEXTURE_RECTANGLE_ARB); 
+		glFogCoordf (dr_intensityscale);
 
-        glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, target1);
+		M_STATE_TEX0_RECT_SET (target1);
+        M_STATE_TEX1_RECT_CLEAR;
+        M_STATE_TEX2_RECT_CLEAR;
 
-        for (UINT_32 i = dr_levelbloom; i < M_DR_MIPLEVELS; i ++) {
+		glCallList (dr_quads [0]);
 
-            glActiveTexture	(GL_TEXTURE0 + (i + 1));
-            glEnable		(GL_TEXTURE_RECTANGLE_ARB);
-            glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, dr_auxA [i]);
+		// DOWN SCALE
+
+		glUseProgram (0);
+
+		for (UINT_32 i = 1; i < dr_control_mip; i ++) {
+
+			glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [i], 0);
+			glViewport (0, 0, dr_w [i], dr_h [i]);	M_STATE_TEX0_RECT_SET (dr_auxA [i - 1]);
+			glCallList (dr_quads [i - 1]);
+		}
+
+		if (dr_control_autoexposure) {
+
+			/// REMOVE THIS !! .. USE BLENDING 
+
+			// RETIEVEING DATA FOR AUTOEXPOSURE
+
+            M_STATE_TEX0_RECT_SET (dr_auxA [dr_control_mip - 1]);
+			glGetTexImage	(GL_TEXTURE_RECTANGLE_ARB, 0, GL_ALPHA, GL_UNSIGNED_BYTE, (VOIDP) dr_intensitydata);
+
+			// EVALUATING INTENSITY
+
+			FLOAT_32 intensity = 0.0;
+
+			for (UINT_32 i = 0; i < dr_intensitysize; i ++)	{
+
+				intensity +=  dr_intensitydata [i];
+
+			}	intensity /= (dr_intensitysize * 255);
+
+			// TONE MAPPING FACTOR
+
+			newscale = dr_intensityscale + (dr_control_hdr_exposure - intensity) * MIN (dr_control_hdr_exposure_speed * delta, 1.0f);
+
+			newscale = MIN (MAX (newscale, dr_control_hdr_exposure_scale_min), dr_control_hdr_exposure_scale_max);
+
+		}
+	}
+
+	if (dr_control_bloom_enable) {
+
+        M_STATE_TEX1_RECT_CLEAR;
+        M_STATE_TEX2_RECT_CLEAR;
+
+        UINT_32 targetset = 0;
+
+		// VERTICAL BLUR
+
+        if (dr_control_bloom_enable_vblur) {
+
+		    glUseProgram  (dr_program_hdr_blurvert);
+
+		    for (UINT_32 i = dr_control_bloom_res; i < dr_control_mip; i ++) {
+
+			    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [i], 0);
+			    glViewport (0, 0, dr_w [i], dr_h [i]); M_STATE_TEX0_RECT_SET (dr_auxA [i]);
+			    glCallList (dr_quads [i]);                  
+		    }
+
+            targetset = 1;
         }
 
-        glCallList (dr_quads [0]);
+		// HORIZONTAL BLUR
 
-        for (UINT_32 i = 0; i <= M_DR_MIPLEVELS; i ++) {
+        if (dr_control_bloom_enable_hblur) {
 
-            glActiveTexture (GL_TEXTURE0 + i);
-            glDisable (GL_TEXTURE_RECTANGLE_ARB);
+            if (dr_control_bloom_enable_vblur) {
+
+		        glUseProgram  (dr_program_hdr_blurhoriz);
+
+		        for (UINT_32 i = dr_control_bloom_res; i < dr_control_mip; i ++) {
+
+			        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [i], 0);
+			        glViewport (0, 0, dr_w [i], dr_h [i]); M_STATE_TEX0_RECT_SET (dr_auxB [i]);
+			        glCallList (dr_quads [i]);
+		        }
+
+                targetset = 0;
+
+            } else {
+
+		        glUseProgram  (dr_program_hdr_blurhoriz);
+
+		        for (UINT_32 i = dr_control_bloom_res; i < dr_control_mip; i ++) {
+
+			        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [i], 0);
+			        glViewport (0, 0, dr_w [i], dr_h [i]); M_STATE_TEX0_RECT_SET (dr_auxA [i]);
+			        glCallList (dr_quads [i]);
+		        }
+
+                targetset = 1;
+            }
         }
 
-        glActiveTexture (GL_TEXTURE0);
-        glDisable (GL_TEXTURE_RECTANGLE_ARB);
-    }
+		// IMAGE RECONSTRUCTION
+
+		glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
+
+		glDrawBuffer (GL_BACK); glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+		glViewport (0, 0, dr_width, dr_height);
+
+		glUseProgram  (dr_program_hdr);		glFogCoordf (dr_control_bloom_strength);
+
+		M_STATE_TEX0_RECT_SET (target1);
+
+        if (targetset == 0) {
+
+		    for (UINT_32 i = dr_control_bloom_res; i < dr_control_mip; i ++) {
+
+			    glActiveTexture	(GL_TEXTURE1 + i);
+			    glEnable		(GL_TEXTURE_RECTANGLE_ARB);
+			    glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, dr_auxA [i]);
+		    }
+
+        } else {
+
+		    for (UINT_32 i = dr_control_bloom_res; i < dr_control_mip; i ++) {
+
+			    glActiveTexture	(GL_TEXTURE1 + i);
+			    glEnable		(GL_TEXTURE_RECTANGLE_ARB);
+			    glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, dr_auxB [i]);
+		    }
+        }
+
+		if (dr_control_gammacorrection && GLEE_EXT_texture_sRGB && GLEE_EXT_framebuffer_sRGB) {
+
+			glEnable  (GL_FRAMEBUFFER_SRGB_EXT);	glCallList (dr_quads [0]);
+			glDisable (GL_FRAMEBUFFER_SRGB_EXT);
+
+		} else {
+
+			glCallList (dr_quads [0]);
+		}
+
+		for (UINT_32 i = dr_control_bloom_res; i < dr_control_mip; i ++) {
+
+			glActiveTexture (GL_TEXTURE1 + i);
+			glDisable (GL_TEXTURE_RECTANGLE_ARB);
+		}
+
+	} else {
+
+		// IMAGE RECONSTRUCTION
+
+		glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
+
+		glDrawBuffer (GL_BACK); glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+		glViewport (0, 0, dr_width, dr_height);
+
+		glUseProgram (0);
+
+		M_STATE_TEX0_RECT_SET (target1);
+        M_STATE_TEX1_RECT_CLEAR;
+        M_STATE_TEX2_RECT_CLEAR;
+
+		glColor3f (dr_intensityscale, dr_intensityscale, dr_intensityscale);
+
+		if (dr_control_gammacorrection && GLEE_EXT_texture_sRGB && GLEE_EXT_framebuffer_sRGB) {
+
+			glEnable  (GL_FRAMEBUFFER_SRGB_EXT);	glCallList (dr_quads [0]);
+			glDisable (GL_FRAMEBUFFER_SRGB_EXT);
+
+		} else {
+
+			glCallList (dr_quads [0]);
+		}
+
+		glColor3f (1.0f, 1.0f, 1.0f);
+	}
+
+	dr_intensityscale = newscale;
 
     #ifdef M_DEBUG
-        debug_EndTimer (0, "Bloom          : ");
+        debug_EndTimerQuery (0, "Tonemapping    : ", dr_debug_profile_tonemap, dr_debug_profile_tonemapg);
     #endif
-
-    //////////////////////////////////////////////
-    // AUTO-EXPOSURE
-    //////////////////////////////////////////////
-
-    if (dr_enableautoexposure) {
-
-        #ifdef M_DEBUG
-            debug_StartTimer (0);
-        #endif
-
-        if (!dr_enablebloom) {
-
-            // IMAGE RECONSTRUCTION
-
-            glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [0], 0);
-            glViewport (0, 0, dr_width, dr_height);
-
-            M_STATE_CULLFACE_CLEAR;
-            M_STATE_DEPTHTEST_CLEAR;
-
-            glUseProgram (0);
-
-            glEnable	 (GL_TEXTURE_RECTANGLE_ARB);
-
-            glBindTexture	(GL_TEXTURE_RECTANGLE_ARB, target1);
-
-            glColor3f (dr_intensityscale, dr_intensityscale, dr_intensityscale);
-
-            glCallList (dr_quads [0]);
-
-            glColor3f (1.0f, 1.0f, 1.0f);
-
-            glDisable (GL_TEXTURE_RECTANGLE_ARB);
-        }
-
-        // EVALUATING INTENSITY
-
-        FLOAT_32 intensity = 0.0;
-
-        for (UINT_32 i = 0; i < dr_intensitysize; i ++)	{
-
-            intensity +=  dr_intensitydata [i];
-
-        }	intensity /= (dr_intensitysize * 255);
-
-        // TONE MAPPING
-
-        dr_intensityscale = dr_intensityscale + (M_DR_HDR_EXPOSURE - intensity) * MIN (M_DR_HDR_EXPOSURE_SPEED * delta, 1.0f);
-
-        dr_intensityscale = MIN (MAX (dr_intensityscale, M_DR_HDR_EXPOSURE_SCALE_MIN), M_DR_HDR_EXPOSURE_SCALE_MAX);
-
-        #ifdef M_DEBUG
-            debug_EndTimer (0, "Autoexposure   : ");
-        #endif
-    }
-
-    //////////////////////////////////////////////
-    // BACK FRAMEBUFFER
-    //////////////////////////////////////////////
-
-    glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
-
-    glDrawBuffer (GL_BACK); glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-    //////////////////////////////////////////////
-    // FINAL IMAGE
-    //////////////////////////////////////////////
-
-    glUseProgram  (0);
-
-    M_STATE_DEPTHTEST_CLEAR;
-    M_STATE_CULLFACE_CLEAR;
-
-    glViewport (0, 0, dr_width, dr_height);
-
-    //  M_STATE_CLEAR_TEX0_RECT;
-    M_STATE_TEX1_RECT_CLEAR;
-    M_STATE_TEX2_RECT_CLEAR;
-
-    M_STATE_TEX0_CLEAR;
-    M_STATE_TEX1_CLEAR;
-    M_STATE_TEX2_CLEAR;
-    M_STATE_TEX3_CLEAR;
-    M_STATE_TEX4_CLEAR;
-    M_STATE_TEX5_CLEAR;
-    M_STATE_TEX6_CLEAR;
-    M_STATE_TEX7_CLEAR;
-    M_STATE_TEX8_CLEAR;
-    M_STATE_TEX9_CLEAR;
-
-    if (dr_enableautoexposure || dr_enablebloom) {
-
-        M_STATE_TEX0_RECT_SET (dr_auxB [0]);    } else {
-        M_STATE_TEX0_RECT_SET (target1);
-    }
-
-    glCallList (dr_quads [0]);
 
     //////////////////////////////////////////////
     // GUI
@@ -1047,42 +1072,93 @@ VOID    dr_Render (FLOAT_32 delta)
         FLOAT_64 elapsed;
 
         debug_EndTimer (255, "FRAME END ------------------------------------ : ", elapsed);
-    #endif
 
-    #ifdef M_DEBUG
+        M_STATE_TEX0_RECT_CLEAR;
+        M_STATE_TEX1_RECT_CLEAR;
+        M_STATE_TEX2_RECT_CLEAR;
 
-        M_STATE_CLEAR_TEX0_RECT;
-        M_STATE_CLEAR_TEX1_RECT;
-        M_STATE_CLEAR_TEX2_RECT;
-
-        CHAR text [2048];
+        CHAR text [4096];
         
         sprintf (text, "DEBUG : \n\n");
 
-        sprintf (text, "%s - view    : %i \n",   text, dr_list_objects_viewc);
-        sprintf (text, "%s - shadow1 : %i \n",   text, dr_list_objects_shadow_splitc [0]);
-        sprintf (text, "%s - shadow2 : %i \n",   text, dr_list_objects_shadow_splitc [1]);
-        sprintf (text, "%s - shadow3 : %i \n",   text, dr_list_objects_shadow_splitc [2]);
-        sprintf (text, "%s - shadow4 : %i \n",   text, dr_list_objects_shadow_splitc [3]);
-        sprintf (text, "%s - shadow5 : %i \n\n", text, dr_list_objects_shadow_splitc [4]);
+        sprintf (text, "%s - view      : %i \n",   text, dr_list_objects_viewc);
 
-        sprintf (text, "%s - nodes   : %i \n",   text, dr_nodesc);
-        sprintf (text, "%s - chains  : %i \n\n", text, dr_chainsc);
+        for (UINT_32 n = 0; n < dr_control_sun_splits; n ++) {
 
-        sprintf (text, "%s - culled  : %i \n",   text, dr_debug_culled);
-        sprintf (text, "%s - missed  : %i \n\n", text, dr_debug_missed);
+            sprintf (text, "%s - shadow%i   : %i \n",   text, n + 1, dr_list_objects_shadow_splitc [n]);
+        }
+        
+        sprintf (text, "%s\n", text);
 
-        sprintf (text, "%s - profiler | Sorting       : %Lf ms / %Lf ms \n", text, dr_debug_profile_sort,       dr_debug_profile_sortg);
-        sprintf (text, "%s - profiler | Clipping      : %Lf ms / %Lf ms \n", text, dr_debug_profile_clip,       dr_debug_profile_clipg);
-        sprintf (text, "%s - profiler | Occlusion     : %Lf ms / %Lf ms \n", text, dr_debug_profile_occlusion,  dr_debug_profile_occlusiong);
-        sprintf (text, "%s - profiler | Details       : %Lf ms / %Lf ms \n", text, dr_debug_profile_detail,     dr_debug_profile_detailg);
-        sprintf (text, "%s - profiler | Shadows       : %Lf ms / %Lf ms \n", text, dr_debug_profile_shadows,    dr_debug_profile_shadowsg);
-        sprintf (text, "%s - profiler | G-Buffers     : %Lf ms / %Lf ms \n", text, dr_debug_profile_gbuffers,   dr_debug_profile_gbuffersg);
-        sprintf (text, "%s - profiler | Depth         : %Lf ms / %Lf ms \n", text, dr_debug_profile_depth,      dr_debug_profile_depthg);
-        sprintf (text, "%s - profiler | Sun           : %Lf ms / %Lf ms \n", text, dr_debug_profile_sun,        dr_debug_profile_sung);
-        sprintf (text, "%s - profiler | Enviroment    : %Lf ms / %Lf ms \n", text, dr_debug_profile_enviroment, dr_debug_profile_enviromentg);
+        sprintf (text, "%s - nodes     : %i \n",   text, dr_nodesc);
+        sprintf (text, "%s - chains    : %i \n\n", text, dr_chainsc);
 
-        dr_DrawText (- 0.95f, 0.9f, 0.03f, 0.05f, dr_text, true, text);
+        sprintf (text, "%s - culled    : %i \n",   text, dr_debug_culled);
+        sprintf (text, "%s - missed    : %i \n\n", text, dr_debug_missed);
+
+        sprintf (text, "%s - PROFILER  : Sorting        : %Lf ms / %Lf ms \n", text, dr_debug_profile_sort,       dr_debug_profile_sortg);
+        sprintf (text, "%s - PROFILER  : Clipping       : %Lf ms / %Lf ms \n", text, dr_debug_profile_clip,       dr_debug_profile_clipg);
+        sprintf (text, "%s - PROFILER  : Occlusion      : %Lf ms / %Lf ms \n", text, dr_debug_profile_occlusion,  dr_debug_profile_occlusiong);
+        sprintf (text, "%s - PROFILER  : Details        : %Lf ms / %Lf ms \n", text, dr_debug_profile_detail,     dr_debug_profile_detailg);
+        sprintf (text, "%s - PROFILER  : Shadows        : %Lf ms / %Lf ms \n", text, dr_debug_profile_shadows,    dr_debug_profile_shadowsg);
+        sprintf (text, "%s - PROFILER  : G-Buffers      : %Lf ms / %Lf ms \n", text, dr_debug_profile_gbuffers,   dr_debug_profile_gbuffersg);
+        sprintf (text, "%s - PROFILER  : Depth          : %Lf ms / %Lf ms \n", text, dr_debug_profile_depth,      dr_debug_profile_depthg);
+        sprintf (text, "%s - PROFILER  : Sun            : %Lf ms / %Lf ms \n", text, dr_debug_profile_sun,        dr_debug_profile_sung);
+        sprintf (text, "%s - PROFILER  : Enviroment     : %Lf ms / %Lf ms \n", text, dr_debug_profile_enviroment, dr_debug_profile_enviromentg);
+
+        sprintf (text, "%s\n\n", text);
+
+        sprintf (text, "%s - dr_control_mip                     : %i\n", text, dr_control_mip);
+        sprintf (text, "%s - dr_control_anisotrophy             : %i\n", text, dr_control_anisotrophy);
+        sprintf (text, "%s - dr_control_gammacorrection         : %i\n", text, dr_control_gammacorrection);
+        sprintf (text, "%s - dr_control_autoexposure            : %i\n", text, dr_control_autoexposure);
+        sprintf (text, "%s - dr_control_fog                     : %i\n", text, dr_control_fog);
+        sprintf (text, "%s - dr_control_aa                      : %i\n", text, dr_control_aa);
+
+        sprintf (text, "%s\n", text);
+
+        sprintf (text, "%s - dr_control_image_desaturation      : %f\n", text, dr_control_image_desaturation);
+        sprintf (text, "%s - dr_control_image_brightness        : %f\n", text, dr_control_image_brightness);
+        sprintf (text, "%s - dr_control_image_contrast          : %f\n", text, dr_control_image_contrast);
+
+        sprintf (text, "%s\n", text);
+
+        sprintf (text, "%s - dr_control_sky_desaturation        : %f\n", text, dr_control_sky_desaturation);
+        sprintf (text, "%s - dr_control_sky_brightness          : %f\n", text, dr_control_sky_brightness);
+        sprintf (text, "%s - dr_control_sky_contrast            : %f\n", text, dr_control_sky_contrast);
+
+        sprintf (text, "%s\n", text);
+
+        sprintf (text, "%s - dr_control_hdr_exposure            : %f\n", text, dr_control_hdr_exposure);
+        sprintf (text, "%s - dr_control_hdr_exposure_scale_min  : %f\n", text, dr_control_hdr_exposure_scale_min);
+        sprintf (text, "%s - dr_control_hdr_exposure_scale_max  : %f\n", text, dr_control_hdr_exposure_scale_max);
+        sprintf (text, "%s - dr_control_hdr_exposure_speed      : %f\n", text, dr_control_hdr_exposure_speed);
+
+        sprintf (text, "%s\n", text);
+
+        sprintf (text, "%s - dr_control_sun_res                 : %i\n", text, dr_control_sun_res);
+        sprintf (text, "%s - dr_control_sun_splits              : %i\n", text, dr_control_sun_splits);
+        sprintf (text, "%s - dr_control_sun_offset              : %f\n", text, dr_control_sun_offset);
+        sprintf (text, "%s - dr_control_sun_transition          : %f\n", text, dr_control_sun_transition);
+        sprintf (text, "%s - dr_control_sun_distribution        : %f\n", text, dr_control_sun_distribution);
+        sprintf (text, "%s - dr_control_sun_scheme              : %f\n", text, dr_control_sun_scheme);
+        sprintf (text, "%s - dr_control_sun_zoom                : %f\n", text, dr_control_sun_zoom);
+        sprintf (text, "%s - dr_control_sun_debug               : %i\n", text, dr_control_sun_debug);
+
+        sprintf (text, "%s\n", text);
+
+        sprintf (text, "%s - dr_control_bloom_enable            : %i\n", text, dr_control_bloom_enable);
+        sprintf (text, "%s - dr_control_bloom_enable_vblur      : %i\n", text, dr_control_bloom_enable_vblur);
+        sprintf (text, "%s - dr_control_bloom_enable_hblur      : %i\n", text, dr_control_bloom_enable_hblur);
+        sprintf (text, "%s - dr_control_bloom_res               : %i\n", text, dr_control_bloom_res);
+        sprintf (text, "%s - dr_control_bloom_strength          : %f\n", text, dr_control_bloom_strength);
+
+        sprintf (text, "%s\n", text);
+
+        sprintf (text, "%s - dr_control_ssao_enable             : %i\n", text, dr_control_ssao_enable);
+        sprintf (text, "%s - dr_control_ssao_res                : %i\n", text, dr_control_ssao_res);
+
+        dr_DrawText (- 0.95f, 0.8f, 0.015f, 0.025f, dr_text, true, text);
 
     #endif
 

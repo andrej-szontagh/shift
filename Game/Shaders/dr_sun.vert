@@ -4,6 +4,10 @@ uniform float invsize;
 uniform float width;
 uniform float height;
 
+varying float desaturation;
+varying float brightness;
+varying float contrast;
+
 varying vec2 screen;
 
 varying vec3 view;
@@ -31,4 +35,8 @@ void main ()
     // light vector into view - space
 
     ray = gl_LightSource [0].position;
+
+	desaturation	= gl_MultiTexCoord1.x;
+	brightness		= gl_MultiTexCoord1.y;
+	contrast		= gl_MultiTexCoord1.z;
 }

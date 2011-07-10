@@ -1592,17 +1592,17 @@ def processExportScene (filepath):
     # collecting textures
     for name, mat in materials:
 
-        try:    tex = bpy.data.textures [mat ['tex_diffuse']];      textures.append ((tex.name, tex))
+        try:    tex = bpy.data.textures [mat ['tex_diffuse']];      textures.append ((tex.name, tex, True))
         except: pass;
-        try:    tex = bpy.data.textures [mat ['tex_composite']];    textures.append ((tex.name, tex))
+        try:    tex = bpy.data.textures [mat ['tex_composite']];    textures.append ((tex.name, tex, False))
         except: pass;
-        try:    tex = bpy.data.textures [mat ['tex_weights1']];     textures.append ((tex.name, tex))
+        try:    tex = bpy.data.textures [mat ['tex_weights1']];     textures.append ((tex.name, tex, False))
         except: pass;
-        try:    tex = bpy.data.textures [mat ['tex_weights2']];     textures.append ((tex.name, tex))
+        try:    tex = bpy.data.textures [mat ['tex_weights2']];     textures.append ((tex.name, tex, False))
         except: pass;
-        try:    tex = bpy.data.textures [mat ['tex_weights3']];     textures.append ((tex.name, tex))
+        try:    tex = bpy.data.textures [mat ['tex_weights3']];     textures.append ((tex.name, tex, False))
         except: pass;
-        try:    tex = bpy.data.textures [mat ['tex_weights4']];     textures.append ((tex.name, tex))
+        try:    tex = bpy.data.textures [mat ['tex_weights4']];     textures.append ((tex.name, tex, False))
         except: pass;
 
     # removing duplicate textures
@@ -1642,7 +1642,7 @@ def processExportScene (filepath):
     print ('Textures :')
     print ('')        
     
-    for i, (name, tex) in enumerate (textures):
+    for i, (name, tex, gamma) in enumerate (textures):
 
         # saving index
         tex.id_data ["tmp_index"] = i
@@ -1655,6 +1655,10 @@ def processExportScene (filepath):
         stream.write (struct.pack ('i',     len (filename) + 1))
         stream.write (struct.pack ('%isB' % len (filename), filename.encode ('ascii'), 0))
 
+        # gamma
+        if gamma:   stream.write (struct.pack ('i', 1))
+        else:       stream.write (struct.pack ('i', 0))
+        
         if   tex.extension == 'REPEAT':
 
             stream.write (struct.pack ('i', 0))     # wraps
@@ -1674,10 +1678,6 @@ def processExportScene (filepath):
             
             stream.write (struct.pack ('i', 0))     # wraps
             stream.write (struct.pack ('i', 0))     # wrapt
-
-        # anisotrophy        
-        try:    stream.write (struct.pack ('i', tex.id_data ["anisotrophy"]))
-        except: stream.write (struct.pack ('i', 1))
 
         print (image.filepath)
     print ('')        
@@ -1763,7 +1763,7 @@ def processExportScene (filepath):
 
             try:    diffuse     = bpy.data.textures [mat ['tex_diffuse'  ]].id_data ['tmp_index']
             except: print ('ERROR | Material : ', name, ' custom property \'tex_diffuse\' not set or invalid')
-            try:    normal      = bpy.data.textures [mat ['tex_composite']].id_data ['tmp_index']
+            try:    composite   = bpy.data.textures [mat ['tex_composite']].id_data ['tmp_index']
             except: print ('ERROR | Material : ', name, ' custom property \'tex_composite\' not set or invalid')
 
             stream.write (struct.pack ('i', diffuse))
@@ -1880,8 +1880,10 @@ def processExportScene (filepath):
         if pindex != None:
 
             stream.write (struct.pack ('i', pindex))
+
+            settings = instanced [pindex][1].settings
             
-            mesh = instanced [pindex][1].settings.dupli_object.data
+            mesh = settings.dupli_object.data
 
             # object name
             stream.write (struct.pack ('i',     len (name) + 1))
@@ -1894,7 +1896,7 @@ def processExportScene (filepath):
             stream.write (struct.pack ('H', mesh.materials [0]['tmp_index']))
 
             # disappear distance
-            try:    disappear = instanced [pindex][1].settings ['disappear']
+            try:    disappear = settings ['disappear']
             except:
                 try:    disappear = mesh ['disappear']
                 except: disappear = 1000000.0
@@ -1902,7 +1904,7 @@ def processExportScene (filepath):
             stream.write (struct.pack ('f', disappear))
             
             # disappear start
-            try:    disappear_start = instanced [pindex][1].settings ['disappear_start']
+            try:    disappear_start = settings ['disappear_start']
             except:
                 try:    disappear_start = mesh ['disappear_start']
                 except: disappear_start = 0.0
@@ -1910,7 +1912,7 @@ def processExportScene (filepath):
             stream.write (struct.pack ('f', disappear_start))
             
             # shadow disappear distance
-            try:    stream.write (struct.pack ('f', instanced [pindex][1].settings ['disappear_shadow']))
+            try:    stream.write (struct.pack ('f', settings ['disappear_shadow']))
             except:
                 try:    stream.write (struct.pack ('f', mesh ['disappear_shadow']))
                 except: stream.write (struct.pack ('f', disappear))
@@ -1989,22 +1991,50 @@ def processExportScene (filepath):
             except: pass
         except: pass
 
-        if (lod1 != 0xffff):
-            try:    lod1 = bpy.data.meshes [lod1]['tmp_index']
-            except: lod1 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod1\' custom property value.')
-            try:    lod1_distance = mesh ['lod1_distance']
-            except: lod1 = 0xffff;  print ('ERROR | Mesh : ', name, ' is missing \'lod1_distance\' custom property.')
-        if (lod2 != 0xffff):
-            try:    lod2 = bpy.data.meshes [lod2]['tmp_index']
-            except: lod2 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod2\' custom property value.')
-            try:    lod2_distance = mesh ['lod2_distance']
-            except: lod2 = 0xffff;  print ('ERROR | Mesh : ', name, ' is missing \'lod2_distance\' custom property.')
-        if (lod3 != 0xffff):
-            try:    lod3 = bpy.data.meshes [lod3]['tmp_index']
-            except: lod3 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod3\' custom property value.')
-            try:    lod3_distance = mesh ['lod3_distance']
-            except: lod3 = 0xffff;  print ('ERROR | Mesh : ', name, ' is missing \'lod3_distance\' custom property.')
+        # instances object
+        if pindex != None:
+            
+            if (lod1 != 0xffff):
+                try:    lod1 = bpy.data.meshes [lod1]['tmp_index']
+                except: lod1 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod1\' custom property value.')
+                try:    lod1_distance = mesh ['lod1_distance']
+                except:
+                    try:    lod1_distance = settings ['lod1_distance']
+                    except: lod1 = 0xffff;  print ('ERROR | Mesh / Particle Settings : ', name, '/', settings.name, ' is missing \'lod1_distance\' custom property.')
+            if (lod2 != 0xffff):
+                try:    lod2 = bpy.data.meshes [lod2]['tmp_index']
+                except: lod2 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod2\' custom property value.')
+                try:    lod2_distance = mesh ['lod2_distance']
+                except:
+                    try:    lod2_distance = settings ['lod2_distance']
+                    except: lod2 = 0xffff;  print ('ERROR | Mesh / Particle Settings : ', name, '/', settings.name, ' is missing \'lod2_distance\' custom property.')
+            if (lod3 != 0xffff):
+                try:    lod3 = bpy.data.meshes [lod3]['tmp_index']
+                except: lod3 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod3\' custom property value.')
+                try:    lod3_distance = mesh ['lod3_distance']
+                except:
+                    try:    lod3_distance = settings ['lod3_distance']
+                    except: lod3 = 0xffff;  print ('ERROR | Mesh / Particle Settings : ', name, '/', settings.name, ' is missing \'lod3_distance\' custom property.')
+                    
+        # single object
+        else:
 
+            if (lod1 != 0xffff):
+                try:    lod1 = bpy.data.meshes [lod1]['tmp_index']
+                except: lod1 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod1\' custom property value.')
+                try:    lod1_distance = mesh ['lod1_distance']
+                except: lod1 = 0xffff;  print ('ERROR | Mesh : ', name, ' is missing \'lod1_distance\' custom property.')
+            if (lod2 != 0xffff):
+                try:    lod2 = bpy.data.meshes [lod2]['tmp_index']
+                except: lod2 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod2\' custom property value.')
+                try:    lod2_distance = mesh ['lod2_distance']
+                except: lod2 = 0xffff;  print ('ERROR | Mesh : ', name, ' is missing \'lod2_distance\' custom property.')
+            if (lod3 != 0xffff):
+                try:    lod3 = bpy.data.meshes [lod3]['tmp_index']
+                except: lod3 = 0xffff;  print ('ERROR | Mesh : ', name, ' has invalid \'lod3\' custom property value.')
+                try:    lod3_distance = mesh ['lod3_distance']
+                except: lod3 = 0xffff;  print ('ERROR | Mesh : ', name, ' is missing \'lod3_distance\' custom property.')
+                
         if lod1 != 0xffff:
 
             index = mesh ['tmp_index']
@@ -2308,6 +2338,12 @@ class ExporterOpInstances (bpy.types.Operator):
 
                     if (obj.type == 'MESH'):
 
+                        # skip objects with 'no_export' custom property
+                        try:
+                            if obj      ['no_export'] == 1: return {"CANCELLED"}
+                            if obj.data ['no_export'] == 1: return {"CANCELLED"}
+                        except: pass
+
                         for i, p in enumerate (obj.particle_systems):
 
                             obj.particle_systems.active_index = i
@@ -2334,6 +2370,12 @@ class ExporterOpInstances (bpy.types.Operator):
                     start_time = time.clock ()
 
                     for obj in bpy.context.selected_objects:
+
+                        # skip objects with 'no_export' custom property
+                        try:
+                            if obj      ['no_export'] == 1: continue
+                            if obj.data ['no_export'] == 1: continue
+                        except: pass
 
                         if (obj.type == 'MESH'):
                             
@@ -2363,6 +2405,12 @@ class ExporterOpInstances (bpy.types.Operator):
                     obj = bpy.context.object
 
                     if (obj.type == 'MESH'):
+
+                        # skip objects with 'no_export' custom property
+                        try:
+                            if obj      ['no_export'] == 1: return {"CANCELLED"}
+                            if obj.data ['no_export'] == 1: return {"CANCELLED"}
+                        except: pass
 
                         filepath = bpy.context.scene.shift_ex_instances_filepath
 

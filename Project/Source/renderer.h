@@ -8,36 +8,14 @@
 
 #if 1
 
-#define M_DR_HDR_BLOOM                  0.5f                // bloom factor
-#define M_DR_HDR_EXPOSURE               0.5f                // exposure balanced level
-#define M_DR_HDR_EXPOSURE_SCALE_MIN     0.5f                // exposure scale minimum boundary
-#define M_DR_HDR_EXPOSURE_SCALE_MAX     1.7f                // exposure scale maximum boundary
-#define M_DR_HDR_EXPOSURE_SPEED         0.001f              // speed of exposure adaptation
-
-#define M_DR_SUN_SPLITS                 5                   // number of splits (shadowmaps)
-#define M_DR_SUN_SHADOW                 1024                // resolution of shadow map
-#define M_DR_SUN_SHADOWH                512                 // half resolution
-#define M_DR_SUN_OFFSET                 0.005f              // depth offset factor for shadow mapping
-#define M_DR_SUN_TRAN                   0.05                // width of split transition
-#define M_DR_SUN_ZOOM                   1.07                // factor to scale shadowmap viewport
-#define M_DR_SUN_GRASS                  0.7f                // factor to advance grass range for shadowing
-#define M_DR_SUN_SATURATE               1.0f                // sun color saturation
-
 #define M_DR_SSAO_RAND                  4                   // size of random texture
 #define M_DR_SSAO_RANDSCALE             0.02f               // scale of random texture mapping
 
 #define M_DR_FOVY                       60.0f               // vertical FOV in degrees
-
 #define M_DR_CULLING_SAMPLES            0                   // maximum sample count to cull object
-
 #define M_DR_TREE_MAX_DEPTH             4                   // maximum depth of tree
-
 #define M_DR_MAX_CLIP_PLANES            6                   // maximum count of clip planes for allocations
-
 #define M_DR_OCCLUDER                   0.4f                // occluder selection treshold
-
-#define M_DR_MIPLEVELS                  6                   // postprocessing levels of minification
-#define M_DR_ANISOTROPY                 4                   // default anisotrophy level
 
 #endif
 
@@ -63,30 +41,49 @@
 
 // LOADER
 
-VOID dr_Init            (UINT_32  width, UINT_32 height);
-VOID dr_Free            ();
+VOID dr_Init				();
+VOID dr_Free				();
 
 // SORTING
 
-VOID dr_Sort            ();
+VOID dr_Sort				();
 
 // SUN
 
-VOID dr_SunInit         ();
-VOID dr_SunDraw         ();
-VOID dr_SunPrepare      ();
-VOID dr_SunShadows      ();
+VOID dr_SunLoad				();
+VOID dr_SunInit				();
+VOID dr_SunDraw				();
+VOID dr_SunUnload			();
+VOID dr_SunPrepare			();
+VOID dr_SunShadows			();
 
 // RENDER
 
-VOID dr_Draw            ();
-VOID dr_DrawDepth       ();
-VOID dr_DrawBlend       ();
-VOID dr_DrawShadows     (UINT_32 split);
-VOID dr_DrawOcclusions  ();
+VOID dr_Draw				();
+VOID dr_DrawDepth			();
+VOID dr_DrawBlend			();
+VOID dr_DrawShadows			(UINT_32    split);
+VOID dr_DrawOcclusions		();
 
-VOID dr_Render          (FLOAT_32 delta);
-VOID dr_Matrices        ();
+VOID dr_Render				(FLOAT_32   delta);
+VOID dr_Matrices			();
+
+// ADJUSTMENT
+
+VOID dr_AdjustGamma			            (BOOL       enable);
+VOID dr_AdjustAnisotrophy	            (UINT_32    anisotrophy);
+VOID dr_AdjustShadowsRes                (UINT_32    res);
+VOID dr_AdjustShadowsSplits             (UINT_32    splits);
+VOID dr_AdjustShadowsOffset             (FLOAT_32   offset);
+VOID dr_AdjustShadowsTransition         (FLOAT_32   transition);
+VOID dr_AdjustShadowsDistribution       (FLOAT_32   distribution);
+VOID dr_AdjustShadowsScheme             (FLOAT_32   scheme);
+VOID dr_AdjustShadowsZoom               (FLOAT_32   zoom);
+VOID dr_AdjustShadowsDebug              (BOOL       debug);
+VOID dr_AdjustBloomRes                  (UINT_32    res);
+VOID dr_AdjustBloomStrength             (FLOAT_32   strength);
+VOID dr_AdjustSSAORes                   (UINT_32    res);
+VOID dr_AdjustMIP                       (UINT_32    level);
 
 #endif
 
@@ -196,32 +193,34 @@ INLINEF VOID dr_SetDetail (UINT_32 ID, FLOAT_32 dist)
 #define M_STATE_ARRAY_TEX2_COORDS_CLEAR                     if ( dr_state_tex2_coord)           { glClientActiveTexture (GL_TEXTURE2);  glDisableClientState (GL_TEXTURE_COORD_ARRAY);   dr_state_tex2_coord = 0;   }
 #define M_STATE_ARRAY_TEX2_COORDS_SET(vbo, size, type)      if ( dr_state_tex2_coord != vbo)    { glClientActiveTexture (GL_TEXTURE2);  glEnableClientState  (GL_TEXTURE_COORD_ARRAY);   dr_state_tex2_coord = vbo; glBindBufferARB (GL_ARRAY_BUFFER_ARB, vbo); glTexCoordPointer (size, type, 0, NULL);    }
 
-#define M_STATE_TEX0_RECT_CLEAR                             if ( dr_state_tex0_rect)            { glActiveTexture (GL_TEXTURE0); glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex0_rect = 0;     }
-#define M_STATE_TEX0_RECT_SET(tex)                          if ( dr_state_tex0_rect != tex)     { glActiveTexture (GL_TEXTURE0); glEnable  (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex0_rect = tex;   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, tex);    }
-#define M_STATE_TEX1_RECT_CLEAR                             if ( dr_state_tex1_rect)            { glActiveTexture (GL_TEXTURE1); glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex1_rect = 0;     }
-#define M_STATE_TEX1_RECT_SET(tex)                          if ( dr_state_tex1_rect != tex)     { glActiveTexture (GL_TEXTURE1); glEnable  (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex1_rect = tex;   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, tex);    }
-#define M_STATE_TEX2_RECT_CLEAR                             if ( dr_state_tex2_rect)            { glActiveTexture (GL_TEXTURE2); glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex2_rect = 0;     }
-#define M_STATE_TEX2_RECT_SET(tex)                          if ( dr_state_tex2_rect != tex)     { glActiveTexture (GL_TEXTURE2); glEnable  (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex2_rect = tex;   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, tex);    }
+#define M_STATE_TEX0_RECT_CLEAR                             if ( dr_state_tex0_rect)            { glActiveTexture (GL_TEXTURE0);  glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex0_rect = 0;     }
+#define M_STATE_TEX0_RECT_SET(tex)                          if ( dr_state_tex0_rect != tex)     { glActiveTexture (GL_TEXTURE0);  glEnable  (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex0_rect = tex;   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, tex);    }
+#define M_STATE_TEX1_RECT_CLEAR                             if ( dr_state_tex1_rect)            { glActiveTexture (GL_TEXTURE1);  glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex1_rect = 0;     }
+#define M_STATE_TEX1_RECT_SET(tex)                          if ( dr_state_tex1_rect != tex)     { glActiveTexture (GL_TEXTURE1);  glEnable  (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex1_rect = tex;   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, tex);    }
+#define M_STATE_TEX2_RECT_CLEAR                             if ( dr_state_tex2_rect)            { glActiveTexture (GL_TEXTURE2);  glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex2_rect = 0;     }
+#define M_STATE_TEX2_RECT_SET(tex)                          if ( dr_state_tex2_rect != tex)     { glActiveTexture (GL_TEXTURE2);  glEnable  (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex2_rect = tex;   glBindTexture (GL_TEXTURE_RECTANGLE_ARB, tex);    }
 
-#define M_STATE_TEX0_CLEAR                                  if ( dr_state_tex0)                 { glActiveTexture (GL_TEXTURE0); glDisable (GL_TEXTURE_2D);  dr_state_tex0 = 0;      }
-#define M_STATE_TEX0_SET(tex)                               if ( dr_state_tex0 != tex)          { glActiveTexture (GL_TEXTURE0); glEnable  (GL_TEXTURE_2D);  dr_state_tex0 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX1_CLEAR                                  if ( dr_state_tex1)                 { glActiveTexture (GL_TEXTURE1); glDisable (GL_TEXTURE_2D);  dr_state_tex1 = 0;      }
-#define M_STATE_TEX1_SET(tex)                               if ( dr_state_tex1 != tex)          { glActiveTexture (GL_TEXTURE1); glEnable  (GL_TEXTURE_2D);  dr_state_tex1 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX2_CLEAR                                  if ( dr_state_tex2)                 { glActiveTexture (GL_TEXTURE2); glDisable (GL_TEXTURE_2D);  dr_state_tex2 = 0;      }
-#define M_STATE_TEX2_SET(tex)                               if ( dr_state_tex2 != tex)          { glActiveTexture (GL_TEXTURE2); glEnable  (GL_TEXTURE_2D);  dr_state_tex2 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX3_CLEAR                                  if ( dr_state_tex3)                 { glActiveTexture (GL_TEXTURE3); glDisable (GL_TEXTURE_2D);  dr_state_tex3 = 0;      }
-#define M_STATE_TEX3_SET(tex)                               if ( dr_state_tex3 != tex)          { glActiveTexture (GL_TEXTURE3); glEnable  (GL_TEXTURE_2D);  dr_state_tex3 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX4_CLEAR                                  if ( dr_state_tex4)                 { glActiveTexture (GL_TEXTURE4); glDisable (GL_TEXTURE_2D);  dr_state_tex4 = 0;      }
-#define M_STATE_TEX4_SET(tex)                               if ( dr_state_tex4 != tex)          { glActiveTexture (GL_TEXTURE4); glEnable  (GL_TEXTURE_2D);  dr_state_tex4 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX5_CLEAR                                  if ( dr_state_tex5)                 { glActiveTexture (GL_TEXTURE5); glDisable (GL_TEXTURE_2D);  dr_state_tex5 = 0;      }
-#define M_STATE_TEX5_SET(tex)                               if ( dr_state_tex5 != tex)          { glActiveTexture (GL_TEXTURE5); glEnable  (GL_TEXTURE_2D);  dr_state_tex5 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX6_CLEAR                                  if ( dr_state_tex6)                 { glActiveTexture (GL_TEXTURE6); glDisable (GL_TEXTURE_2D);  dr_state_tex6 = 0;      }
-#define M_STATE_TEX6_SET(tex)                               if ( dr_state_tex6 != tex)          { glActiveTexture (GL_TEXTURE6); glEnable  (GL_TEXTURE_2D);  dr_state_tex6 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX7_CLEAR                                  if ( dr_state_tex7)                 { glActiveTexture (GL_TEXTURE7); glDisable (GL_TEXTURE_2D);  dr_state_tex7 = 0;      }
-#define M_STATE_TEX7_SET(tex)                               if ( dr_state_tex7 != tex)          { glActiveTexture (GL_TEXTURE7); glEnable  (GL_TEXTURE_2D);  dr_state_tex7 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX8_CLEAR                                  if ( dr_state_tex8)                 { glActiveTexture (GL_TEXTURE8); glDisable (GL_TEXTURE_2D);  dr_state_tex8 = 0;      }
-#define M_STATE_TEX8_SET(tex)                               if ( dr_state_tex8 != tex)          { glActiveTexture (GL_TEXTURE8); glEnable  (GL_TEXTURE_2D);  dr_state_tex8 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
-#define M_STATE_TEX9_CLEAR                                  if ( dr_state_tex9)                 { glActiveTexture (GL_TEXTURE9); glDisable (GL_TEXTURE_2D);  dr_state_tex9 = 0;      }
-#define M_STATE_TEX9_SET(tex)                               if ( dr_state_tex9 != tex)          { glActiveTexture (GL_TEXTURE9); glEnable  (GL_TEXTURE_2D);  dr_state_tex9 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX0_CLEAR                                  if ( dr_state_tex0)                 { glActiveTexture (GL_TEXTURE0);  glDisable (GL_TEXTURE_2D);  dr_state_tex0  = 0;      }
+#define M_STATE_TEX0_SET(tex)                               if ( dr_state_tex0  != tex)         { glActiveTexture (GL_TEXTURE0);  glEnable  (GL_TEXTURE_2D);  dr_state_tex0  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX1_CLEAR                                  if ( dr_state_tex1)                 { glActiveTexture (GL_TEXTURE1);  glDisable (GL_TEXTURE_2D);  dr_state_tex1  = 0;      }
+#define M_STATE_TEX1_SET(tex)                               if ( dr_state_tex1  != tex)         { glActiveTexture (GL_TEXTURE1);  glEnable  (GL_TEXTURE_2D);  dr_state_tex1  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX2_CLEAR                                  if ( dr_state_tex2)                 { glActiveTexture (GL_TEXTURE2);  glDisable (GL_TEXTURE_2D);  dr_state_tex2  = 0;      }
+#define M_STATE_TEX2_SET(tex)                               if ( dr_state_tex2  != tex)         { glActiveTexture (GL_TEXTURE2);  glEnable  (GL_TEXTURE_2D);  dr_state_tex2  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX3_CLEAR                                  if ( dr_state_tex3)                 { glActiveTexture (GL_TEXTURE3);  glDisable (GL_TEXTURE_2D);  dr_state_tex3  = 0;      }
+#define M_STATE_TEX3_SET(tex)                               if ( dr_state_tex3  != tex)         { glActiveTexture (GL_TEXTURE3);  glEnable  (GL_TEXTURE_2D);  dr_state_tex3  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX4_CLEAR                                  if ( dr_state_tex4)                 { glActiveTexture (GL_TEXTURE4);  glDisable (GL_TEXTURE_2D);  dr_state_tex4  = 0;      }
+#define M_STATE_TEX4_SET(tex)                               if ( dr_state_tex4  != tex)         { glActiveTexture (GL_TEXTURE4);  glEnable  (GL_TEXTURE_2D);  dr_state_tex4  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX5_CLEAR                                  if ( dr_state_tex5)                 { glActiveTexture (GL_TEXTURE5);  glDisable (GL_TEXTURE_2D);  dr_state_tex5  = 0;      }
+#define M_STATE_TEX5_SET(tex)                               if ( dr_state_tex5  != tex)         { glActiveTexture (GL_TEXTURE5);  glEnable  (GL_TEXTURE_2D);  dr_state_tex5  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX6_CLEAR                                  if ( dr_state_tex6)                 { glActiveTexture (GL_TEXTURE6);  glDisable (GL_TEXTURE_2D);  dr_state_tex6  = 0;      }
+#define M_STATE_TEX6_SET(tex)                               if ( dr_state_tex6  != tex)         { glActiveTexture (GL_TEXTURE6);  glEnable  (GL_TEXTURE_2D);  dr_state_tex6  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX7_CLEAR                                  if ( dr_state_tex7)                 { glActiveTexture (GL_TEXTURE7);  glDisable (GL_TEXTURE_2D);  dr_state_tex7  = 0;      }
+#define M_STATE_TEX7_SET(tex)                               if ( dr_state_tex7  != tex)         { glActiveTexture (GL_TEXTURE7);  glEnable  (GL_TEXTURE_2D);  dr_state_tex7  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX8_CLEAR                                  if ( dr_state_tex8)                 { glActiveTexture (GL_TEXTURE8);  glDisable (GL_TEXTURE_2D);  dr_state_tex8  = 0;      }
+#define M_STATE_TEX8_SET(tex)                               if ( dr_state_tex8  != tex)         { glActiveTexture (GL_TEXTURE8);  glEnable  (GL_TEXTURE_2D);  dr_state_tex8  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX9_CLEAR                                  if ( dr_state_tex9)                 { glActiveTexture (GL_TEXTURE9);  glDisable (GL_TEXTURE_2D);  dr_state_tex9  = 0;      }
+#define M_STATE_TEX9_SET(tex)                               if ( dr_state_tex9  != tex)         { glActiveTexture (GL_TEXTURE9);  glEnable  (GL_TEXTURE_2D);  dr_state_tex9  = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
+#define M_STATE_TEX10_CLEAR                                 if ( dr_state_tex10)                { glActiveTexture (GL_TEXTURE10); glDisable (GL_TEXTURE_2D);  dr_state_tex10 = 0;      }
+#define M_STATE_TEX10_SET(tex)                              if ( dr_state_tex10 != tex)         { glActiveTexture (GL_TEXTURE10); glEnable  (GL_TEXTURE_2D);  dr_state_tex10 = tex;   glBindTexture (GL_TEXTURE_2D, tex);      }
 
 #endif

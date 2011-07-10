@@ -2,6 +2,49 @@
 // TO DO SHIT STACK
 //
 ///////////////////////////////////////////////////////////////////////////////
+// OVERALL
+//
+// - BUSH prototype mesh and texture
+//
+// - FIX GRASS LOD, use more different textures (now all sides use the same one)
+//   	make sure there are seamless lod switches
+//
+// - TREE prototype mesh and texture
+//
+// - MAKE LOD FOR ALL GEOMETRY
+//
+// - SOLVE POOR DISTANT VIEWS (missing grass)
+//
+// - ADD CONTROL FOR SHADOWING IN REALTIME
+//
+//	- NUMBER OF SPLITS
+//      - SPLIT SCHEME CURVE
+//      - WIDTH OF TRANSITIONS
+//      - NUMBER OF SAMPLES FOR FILTERING
+//      - RESOLUTION OF SHADOWMAP
+//
+// - ADD LOD CONTROL ON FLY 
+//      - MULTIPLIER FOR ALL LOD DISTANCES OR OBJECT DISTANCES TO ACHIEVE LOD ADJUSTMENT
+//
+// - TRY SUN MOVEMENT
+//
+// - GET PANORAMATIC HDR SKY TEXTURE
+//
+// - ADD OPTION TO USE MULTIPLE OBJECTS IN ONE PARTICLE SYSTEM
+//        - SAVES AMOUNT OF FILES PRODUCED
+//        - SIMPLICITY OF HANDLING
+//        - SIMPLICITY OF RENDERING (JUST CHANGE LIST NUMBER)
+//        - OVERLAPPING CONTROL
+//	- MAKE RESEARCH OF POSIBILITIES IN BLENDER
+//
+// - ADD SCRIPT TO REMOVE COLLIDING GENERATED GEOMETRY
+//
+// - FIND THE WAY HOW TO REMOVE COLLISION OF GASS WITH STONES AND OTHER OBJECTS
+//
+// - ADD GAMMA CORRECTION TO ALL INPUT INTENSITY VALUES AND COLORS (AMBIENT, FOG ..)
+//	- THIS SHOULD ALLOW SWITCHING GAMMA ON/OFF WITHOUT CORRUPTED RESULT
+//
+///////////////////////////////////////////////////////////////////////////////
 // BLENDER
 //
 //  *** SPLITTING DO NOT COPY CUSTOM PROPERTIES FOR CREATED MESHES !!!!!!!!!!!!!!!!!!
@@ -46,7 +89,7 @@
 //            but some vertices are on the same position and some faces are degenerated
 //            after optimize is reduced mesh
 //
-//    * FILE EXPORTERS DO NOT WORK WITH RELATIVE PATHS !!!!
+//    * FILE EXPORTERS DO NOT WORK WITH RELATIVE PATHS (CHECK ALL PATH HANDLING) !!!!
 //
 //  *** CONVEX HULL HAVE TOO MANY STRIP INDICES - FIND OUT WHY AND FIX IT !
 //
@@ -61,13 +104,18 @@
 ///////////////////////////////////////////////////////////////////////////////
 // SHIFT
 //
+//  - add option for special model used on shadowing or set starting minimal LOD used when shadowing (for grass)
+//  - add option to set shadow rendering skipping for instanced objects (use factor and array of random nubmers if applicable)
+//
+//
+//
+//  *** CONSIDER GEOMETRY RENDERING IN MULTIPLE PASSES, EACH MATERIAL HAS ITS PASS NUMBER. SO YOU CAN CONTROLL THE ORDER OF RENDERING 
+//	etc. GRASS/TERRAIN/ order. THEY ARE PROCESSED IN ORDER OF MATERIALS ARE TAKEN, 
+//	BUT SOMETHIMES WE WANT SPECIFIC ORDER TO IMPROVE PERF.
 //
 //  *** SPECULAR HIGHLIGHT ALIASING APPEARS .. READ ABOUNT NORMALMAPPING - SOLIVING THIS PROBLEM (IS CAUSED BY NORMALMAP)
 //
 //  *** OBJECT FLAGS ADDED DURING EXPORT !! (DISPLAY LIST - AUTOMATICLY)
-//
-//  *** WHEN FRAGMENTING GRASS INTO MANY OBJECTS IT CREATES THOUSANDS OF FILES AND THAT IS PERFORMANCE HIT ON LOAD !!!
-//      ADD SUPPORT FOR DIVISION INTO EXPORTER OR MULTIPLE OBJECTS IN ONE FILE !!!!!!!!!!!
 //
 //  *** TERRAIN WITH MORPHING AND TERRAIN WITHOUT MORPHING ARE TWO DIFFERENT MODELS SO THEY HAVE TO BE SORTED THAT WAY ??
 //

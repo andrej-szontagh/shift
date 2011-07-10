@@ -291,6 +291,7 @@ VOID dr_DrawDepth (
     M_STATE_TEX7_CLEAR;
     M_STATE_TEX8_CLEAR;
     M_STATE_TEX9_CLEAR;
+	M_STATE_TEX10_CLEAR;
 
     M_STATE_ARRAY_COLOR_CLEAR;
     M_STATE_ARRAY_SECONDARY_COLOR_CLEAR;
@@ -317,7 +318,8 @@ VOID dr_DrawDepth (
             // ---------------------------------------------------------------------
             case M_MATERIAL_TYPE_SOLID: {
 
-                M_STATE_TEX0_CLEAR;
+                // set material
+                dr_SetMaterialSolidDepth (material);
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
@@ -385,7 +387,8 @@ VOID dr_DrawDepth (
             // ---------------------------------------------------------------------
             case M_MATERIAL_TYPE_TERRAIN: {
 
-                M_STATE_TEX0_CLEAR;
+                // set material
+                dr_SetMaterialTerrainDepth (material);
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
@@ -440,7 +443,8 @@ VOID dr_DrawDepth (
                 ///
                 ///continue;
 
-                M_STATE_TEX0_SET (material->diffuse);
+                // set material
+                dr_SetMaterialFoliageDepth (material);
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
@@ -486,9 +490,8 @@ VOID dr_DrawDepth (
                 ///
                 ///continue;
 
-                //  M_STATE_CLEAR_TEX0;
-
-                M_STATE_TEX0_SET (material->diffuse);
+                // set material
+                dr_SetMaterialGrassDepth (material);
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
@@ -574,7 +577,8 @@ VOID dr_DrawShadows (
                 ///
                 ///break;
 
-                M_STATE_TEX0_CLEAR;
+                // set material
+                dr_SetMaterialSolidDepth (ma);
 
                 // pick first model
                 register UINT_32 model = dr_object_models [dr_list_objects1 [0]];  dr_model_stamps [model] = dr_stamp;
@@ -651,7 +655,8 @@ VOID dr_DrawShadows (
             // ---------------------------------------------------------------------
             case M_MATERIAL_TYPE_TERRAIN: {
 
-                M_STATE_TEX0_CLEAR;
+                // set material
+                dr_SetMaterialTerrainDepth (ma);
 
                 // pick first model
                 register UINT_32 model = dr_object_models [dr_list_objects1 [0]];  dr_model_stamps [model] = dr_stamp;
@@ -717,7 +722,8 @@ VOID dr_DrawShadows (
                 ///
                 ///break;
 
-                M_STATE_TEX0_SET (ma->diffuse);
+                // set material
+                dr_SetMaterialFoliageDepth (ma);
 
                 // pick first model
                 register UINT_32 model = dr_object_models [dr_list_objects1 [0]];  dr_model_stamps [model] = dr_stamp;
@@ -777,7 +783,8 @@ VOID dr_DrawShadows (
                 ///
                 ///break;
 
-                M_STATE_TEX0_SET (ma->diffuse);
+                // set material
+                dr_SetMaterialGrassDepth (ma);
 
                 // pick first model
                 register UINT_32 model = dr_object_models [dr_list_objects1 [0]];  dr_model_stamps [model] = dr_stamp;
@@ -796,9 +803,9 @@ VOID dr_DrawShadows (
 
                     // shortcut
                     register UINT_32 model_list = m->list;
-
+					
                     // grab objects with the same model
-                    dr_GrabSameCall (dr_DrawGrassNormal, model_list, \
+                    dr_GrabSameCall (dr_DrawGrassShadow, model_list, \
                         modeln, model, dr_model_stamps, dr_object_models, dr_list_objects1, count, search2, nextmo);
 
                     // finished
@@ -844,6 +851,7 @@ VOID dr_DrawOcclusions (
     M_STATE_TEX7_CLEAR;
     M_STATE_TEX8_CLEAR;
     M_STATE_TEX9_CLEAR;
+	M_STATE_TEX10_CLEAR;
 
     M_STATE_TEX0_RECT_CLEAR;
     M_STATE_TEX1_RECT_CLEAR;

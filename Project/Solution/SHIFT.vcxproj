@@ -119,6 +119,8 @@
     <None Include="..\..\Game\Shaders\dr_aa_blurh.vert" />
     <None Include="..\..\Game\Shaders\dr_aa_blurv.frag" />
     <None Include="..\..\Game\Shaders\dr_aa_blurv.vert" />
+    <None Include="..\..\Game\Shaders\dr_debug_shadow.frag" />
+    <None Include="..\..\Game\Shaders\dr_debug_shadow.vert" />
     <None Include="..\..\Game\Shaders\dr_enviroment.frag" />
     <None Include="..\..\Game\Shaders\dr_enviroment.vert" />
     <None Include="..\..\Game\Shaders\dr_fog.frag" />

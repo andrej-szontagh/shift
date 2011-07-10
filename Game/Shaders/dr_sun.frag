@@ -2,18 +2,22 @@
 uniform sampler2DRect   tex_G1;
 uniform sampler2DRect   tex_G2;
 uniform sampler2D       tex_rand;
-uniform sampler2DShadow tex_shadow [5];
+uniform sampler2DShadow tex_shadow [SPLITS];
 
 uniform float intensity;
-uniform float saturate;
 uniform float ambient;
 
-uniform float offset   [5];
-uniform float depthmin [5];
-uniform float depthmax [5];
+uniform float offset   [SPLITS];
+uniform float depthmin [SPLITS];
+uniform float depthmax [SPLITS];
 uniform float depthend;
 
-uniform mat4 matrix [5];
+uniform mat4 matrix [SPLITS];
+
+varying float desaturation;
+varying float brightness;
+varying float contrast;
+
 varying vec2 screen;
 
 varying vec3 view;
@@ -21,12 +25,15 @@ varying vec3 ray;
 
 void main ()
 {
-    
+
     // G1 READ
     vec4  G1         = texture2DRect (tex_G1, screen);
     
     // G2 READ
     vec4  G2         = texture2DRect (tex_G2, screen);
+
+    // SUB SURFACE SCATTERING
+    float sss        = fract (G2.w);
     
     // NORMAL DECODE
 
@@ -51,8 +58,8 @@ void main ()
     if (slope > 0.0) {
     
         // DECODE DEPTH
-        float depth      = (G2.z + G2.w) * 0.00001525902;    // 1.0 / 65535.0
-    
+        float depth      = G2.z;
+
         // VIEW POSITION
         vec3 viewpos     = depth * view;
 
@@ -62,7 +69,7 @@ void main ()
         // SHADOW
         float shadow;
          
-        // SHADOWMAP COORDS    
+        // SHADOWMAP COORDS
         // vec4  coord = matrix * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
         
         // PCF + rotation
@@ -88,172 +95,489 @@ void main ()
         // try manual depth bias calculation
         // http://www.gamedev.net/topic/556521-glsl-manual-shadow-map-biasscale/
         
-        if ((depth > depthmin [0]) && (depth < depthmin [1])) {
+        #if SPLITS == 3
 
-            vec4  coord = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+            if ((depth > depthmin [0]) && (depth < depthmin [1])) {
+
+                vec4  coord = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
             
-            s    = shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [0])).r;
-            s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [0])).r;
-            s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [0])).r;
-            s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [0])).r;
-            shadow = s * 0.25;
+                s    = shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                shadow = s * 0.25;
             
-            //gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                #ifdef DEBUG
+                    gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                #endif
         
-        } else {
-
-            // TRANSITION
-            if ((depth > depthmin [1]) && (depth < depthmax [0])) {
-            
-                vec4  coord1 = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
-                vec4  coord2 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
-                
-                s1   = shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [0])).r;
-                s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [0])).r;
-                s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [0])).r;
-                s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [0])).r;
-                s2   = shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [1])).r;
-                s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [1])).r;
-                s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [1])).r;
-                s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [1])).r;
-                shadow = (mix (s1, s2, (depth - depthmin [1]) / (depthmax [0] - depthmin [1])) * 0.25);
-
-                //gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
-            
             } else {
 
-                if ((depth > depthmax [0]) && (depth < depthmin [2])) {
-
-                    vec4  coord = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
-                    
-                    s    = shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [1])).r;
-                    s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [1])).r;
-                    s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [1])).r;
-                    s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [1])).r;
-                    shadow = s * 0.25;
-                    
-                    //gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                // TRANSITION
+                if ((depth > depthmin [1]) && (depth < depthmax [0])) {
+            
+                    vec4  coord1 = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                    vec4  coord2 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
                 
+                    s1   = shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    s2   = shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    shadow = (mix (s1, s2, (depth - depthmin [1]) / (depthmax [0] - depthmin [1])) * 0.25);
+
+                    #ifdef DEBUG
+                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                    #endif
+            
                 } else {
-        
-                    // TRANSITION
-                    if ((depth > depthmin [2]) && (depth < depthmax [1])) {
+
+                    if ((depth > depthmax [0]) && (depth < depthmin [2])) {
+
+                        vec4  coord = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
                     
-                        vec4  coord1 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
-                        vec4  coord2 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
-                        
-                        s1   = shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [1])).r;
-                        s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [1])).r;
-                        s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [1])).r;
-                        s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [1])).r;
-                        s2   = shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [2])).r;
-                        s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [2])).r;
-                        s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [2])).r;
-                        s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [2])).r;
-                        shadow = (mix (s1, s2, (depth - depthmin [2]) / (depthmax [1] - depthmin [2])) * 0.25);
-                        
-                        //gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
-                                
+                        s    = shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                        shadow = s * 0.25;
+                    
+                        #ifdef DEBUG
+                            gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                        #endif
+               
                     } else {
+        
+                        // TRANSITION
+                        if ((depth > depthmin [2]) && (depth < depthmax [1])) {
                     
-                        if ((depth > depthmax [1]) && (depth < depthmin [3])) {
+                            vec4  coord1 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                            vec4  coord2 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
                         
-                            vec4  coord = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
-
-                            s    = shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [2])).r;
-                            s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [2])).r;
-                            s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [2])).r;
-                            s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [2])).r;
-                            shadow = s * 0.25;
-                            
-                            //gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
-                                            
+                            s1   = shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            s2   = shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            shadow = (mix (s1, s2, (depth - depthmin [2]) / (depthmax [1] - depthmin [2])) * 0.25);
+                        
+                            #ifdef DEBUG
+                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                            #endif
+                               
                         } else {
-
-                            // TRANSITION
-                            if ((depth > depthmin [3]) && (depth < depthmax [2])) {
-                            
-                                vec4  coord1 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
-                                vec4  coord2 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
-                                
-                                s1   = shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [2])).r;
-                                s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [2])).r;
-                                s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [2])).r;
-                                s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [2])).r;
-                                s2   = shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [3])).r;
-                                s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [3])).r;
-                                s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [3])).r;
-                                s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [3])).r;
-                                shadow = (mix (s1, s2, (depth - depthmin [3]) / (depthmax [2] - depthmin [3])) * 0.25);
-                                
-                                //gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                                        
+                            if ((depth > depthmax [1]) && (depth < depthend)) {
                                         
+                                vec4  coord = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                            
+                                s    = shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                shadow = s * 0.25;
+                                            
+                                #ifdef DEBUG
+                                    gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                #endif
+                                            
                             } else {
-                    
-                                if ((depth > depthmax [2]) && (depth < depthmin [4])) {
-                                
-                                    vec4  coord = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
-                                    
-                                    s    = shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [3])).r;
-                                    s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [3])).r;
-                                    s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [3])).r;
-                                    s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [3])).r;
-                                    shadow = s * 0.25;
-                                    
-                                    //gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
-                                                    
+
+                                // TRANSITION
+                                if ((depth > depthend) && (depth < depthmax [2])) {
+                                            
+                                    vec4  coord1 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                
+                                    s1   = shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    shadow = (mix (s1, 4.0, (depth - depthend) / (depthmax [2] - depthend)) * 0.25);
+                                                
+                                    #ifdef DEBUG
+                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                    #endif
+                                                
                                 } else {
+                                            
+                                    shadow = 1.0;
 
-                                    // TRANSITION
-                                    if ((depth > depthmin [4]) && (depth < depthmax [3])) {
-                                    
-                                        vec4  coord1 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
-                                        vec4  coord2 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
-                                        
-                                        s1   = shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [3])).r;
-                                        s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [3])).r;
-                                        s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [3])).r;
-                                        s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [3])).r;
-                                        s2   = shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [4])).r;
-                                        s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [4])).r;
-                                        s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [4])).r;
-                                        s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [4])).r;
-                                        shadow = (mix (s1, s2, (depth - depthmin [4]) / (depthmax [3] - depthmin [4])) * 0.25);
-                                        
-                                        //gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
-                                                
-                                    } else {
+                                    #ifdef DEBUG
+                                        gl_FragColor = vec4 (0.2, 0.2, 0.2, 1.0); return;
+                                    #endif
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        #endif
+
+        #if SPLITS == 4
+
+            if ((depth > depthmin [0]) && (depth < depthmin [1])) {
+
+                vec4  coord = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+            
+                s    = shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                shadow = s * 0.25;
+            
+                #ifdef DEBUG
+                    gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                #endif
+        
+            } else {
+
+                // TRANSITION
+                if ((depth > depthmin [1]) && (depth < depthmax [0])) {
+            
+                    vec4  coord1 = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                    vec4  coord2 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                
+                    s1   = shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    s2   = shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    shadow = (mix (s1, s2, (depth - depthmin [1]) / (depthmax [0] - depthmin [1])) * 0.25);
+
+                    #ifdef DEBUG
+                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                    #endif
+            
+                } else {
+
+                    if ((depth > depthmax [0]) && (depth < depthmin [2])) {
+
+                        vec4  coord = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                    
+                        s    = shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                        shadow = s * 0.25;
+                    
+                        #ifdef DEBUG
+                            gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                        #endif
+                
+                    } else {
+        
+                        // TRANSITION
+                        if ((depth > depthmin [2]) && (depth < depthmax [1])) {
+                    
+                            vec4  coord1 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                            vec4  coord2 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                        
+                            s1   = shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            s2   = shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            shadow = (mix (s1, s2, (depth - depthmin [2]) / (depthmax [1] - depthmin [2])) * 0.25);
+                        
+                            #ifdef DEBUG
+                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;                                
+                            #endif
+
+                        } else {
+                    
+                            if ((depth > depthmax [1]) && (depth < depthmin [3])) {
+                        
+                                vec4  coord = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+
+                                s    = shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                shadow = s * 0.25;
+                            
+                                #ifdef DEBUG
+                                    gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                #endif
+                                            
+                            } else {
+
+                                // TRANSITION
+                                if ((depth > depthmin [3]) && (depth < depthmax [2])) {
+                            
+                                    vec4  coord1 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                    vec4  coord2 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
                                 
-                                        if ((depth > depthmax [3]) && (depth < depthend)) {
+                                    s1   = shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    s2   = shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    shadow = (mix (s1, s2, (depth - depthmin [3]) / (depthmax [2] - depthmin [3])) * 0.25);
+                                
+                                    #ifdef DEBUG
+                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                    #endif
                                         
-                                            vec4  coord = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                } else {
+                                                    
+                                    if ((depth > depthmax [2]) && (depth < depthend)) {
+                                        
+                                        vec4  coord = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
                                             
-                                            s    = shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [4])).r;
-                                            s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [4])).r;
-                                            s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [4])).r;
-                                            s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [4])).r;
-                                            shadow = s * 0.25;
+                                        s    = shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                        shadow = s * 0.25;
                                             
-                                            //gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                                        #ifdef DEBUG
+                                            gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                                        #endif
                                             
-                                        } else {
+                                    } else {
 
-                                            // TRANSITION
-                                            if ((depth > depthend) && (depth < depthmax [4])) {
+                                        // TRANSITION
+                                        if ((depth > depthend) && (depth < depthmax [3])) {
                                             
-                                                vec4  coord1 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                            vec4  coord1 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
                                                 
-                                                s1   = shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;    //- offset [4])).r;
-                                                s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;    //- offset [4])).r;
-                                                s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;    //- offset [4])).r;
-                                                s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;    //- offset [4])).r;
-                                                shadow = (mix (s1, 4.0, (depth - depthend) / (depthmax [4] - depthend)) * 0.25);
+                                            s1   = shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            shadow = (mix (s1, 4.0, (depth - depthend) / (depthmax [3] - depthend)) * 0.25);
                                                 
-                                                //gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                            #ifdef DEBUG
+                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                            #endif
                                                 
+                                        } else {
+                                            
+                                            shadow = 1.0;
+
+                                            #ifdef DEBUG
+                                                gl_FragColor = vec4 (0.2, 0.2, 0.2, 1.0); return;
+                                            #endif
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        #endif
+
+        #if SPLITS == 5
+
+            if ((depth > depthmin [0]) && (depth < depthmin [1])) {
+
+                vec4  coord = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+            
+                s    = shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                shadow = s * 0.25;
+            
+                #ifdef DEBUG
+                    gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                #endif
+        
+            } else {
+
+                // TRANSITION
+                if ((depth > depthmin [1]) && (depth < depthmax [0])) {
+            
+                    vec4  coord1 = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                    vec4  coord2 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                
+                    s1   = shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    s2   = shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    shadow = (mix (s1, s2, (depth - depthmin [1]) / (depthmax [0] - depthmin [1])) * 0.25);
+
+                    #ifdef DEBUG
+                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                    #endif
+            
+                } else {
+
+                    if ((depth > depthmax [0]) && (depth < depthmin [2])) {
+
+                        vec4  coord = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                    
+                        s    = shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                        shadow = s * 0.25;
+                    
+                        #ifdef DEBUG
+                            gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                        #endif
+                
+                    } else {
+        
+                        // TRANSITION
+                        if ((depth > depthmin [2]) && (depth < depthmax [1])) {
+                    
+                            vec4  coord1 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                            vec4  coord2 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                        
+                            s1   = shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            s2   = shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            shadow = (mix (s1, s2, (depth - depthmin [2]) / (depthmax [1] - depthmin [2])) * 0.25);
+                        
+                            #ifdef DEBUG
+                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                            #endif
+                                
+                        } else {
+                    
+                            if ((depth > depthmax [1]) && (depth < depthmin [3])) {
+                        
+                                vec4  coord = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+
+                                s    = shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                shadow = s * 0.25;
+                            
+                                #ifdef DEBUG
+                                    gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                #endif
+                                            
+                            } else {
+
+                                // TRANSITION
+                                if ((depth > depthmin [3]) && (depth < depthmax [2])) {
+                            
+                                    vec4  coord1 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                    vec4  coord2 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                
+                                    s1   = shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    s2   = shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    shadow = (mix (s1, s2, (depth - depthmin [3]) / (depthmax [2] - depthmin [3])) * 0.25);
+                                
+                                    #ifdef DEBUG
+                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                    #endif
+                                        
+                                } else {
+                    
+                                    if ((depth > depthmax [2]) && (depth < depthmin [4])) {
+                                
+                                        vec4  coord = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                        s    = shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                        shadow = s * 0.25;
+                                    
+                                        #ifdef DEBUG
+                                            gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                                        #endif
+                                                    
+                                    } else {
+
+                                        // TRANSITION
+                                        if ((depth > depthmin [4]) && (depth < depthmax [3])) {
+                                    
+                                            vec4  coord1 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                            vec4  coord2 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                            s1   = shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            s2   = shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            shadow = (mix (s1, s2, (depth - depthmin [4]) / (depthmax [3] - depthmin [4])) * 0.25);
+                                        
+                                            #ifdef DEBUG
+                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                            #endif
+                                                
+                                        } else {
+                                
+                                            if ((depth > depthmax [3]) && (depth < depthend)) {
+                                        
+                                                vec4  coord = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                            
+                                                s    = shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                shadow = s * 0.25;
+                                            
+                                                #ifdef DEBUG
+                                                    gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                                                #endif
+                                            
                                             } else {
+
+                                                // TRANSITION
+                                                if ((depth > depthend) && (depth < depthmax [4])) {
                                             
-                                                shadow = 1.0;                                        
+                                                    vec4  coord1 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                
+                                                    s1   = shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                    shadow = (mix (s1, 4.0, (depth - depthend) / (depthmax [4] - depthend)) * 0.25);
+                                                
+                                                    #ifdef DEBUG
+                                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                    #endif
+                                                
+                                                } else {
+                                            
+                                                    shadow = 1.0;
+
+                                                    #ifdef DEBUG
+                                                        gl_FragColor = vec4 (0.2, 0.2, 0.2, 1.0); return;
+                                                    #endif
+                                                }
                                             }
                                         }
                                     }
@@ -262,27 +586,889 @@ void main ()
                         }
                     }
                 }
-            }            
-        }
+            }
+
+        #endif
+
+        #if SPLITS == 6
+
+            if ((depth > depthmin [0]) && (depth < depthmin [1])) {
+
+                vec4  coord = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+            
+                s    = shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                shadow = s * 0.25;
+            
+                #ifdef DEBUG
+                    gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                #endif
+        
+            } else {
+
+                // TRANSITION
+                if ((depth > depthmin [1]) && (depth < depthmax [0])) {
+            
+                    vec4  coord1 = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                    vec4  coord2 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                
+                    s1   = shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    s2   = shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    shadow = (mix (s1, s2, (depth - depthmin [1]) / (depthmax [0] - depthmin [1])) * 0.25);
+
+                    #ifdef DEBUG
+                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                    #endif
+            
+                } else {
+
+                    if ((depth > depthmax [0]) && (depth < depthmin [2])) {
+
+                        vec4  coord = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                    
+                        s    = shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                        shadow = s * 0.25;
+                    
+                        #ifdef DEBUG
+                            gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                        #endif
+                
+                    } else {
+        
+                        // TRANSITION
+                        if ((depth > depthmin [2]) && (depth < depthmax [1])) {
+                    
+                            vec4  coord1 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                            vec4  coord2 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                        
+                            s1   = shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            s2   = shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            shadow = (mix (s1, s2, (depth - depthmin [2]) / (depthmax [1] - depthmin [2])) * 0.25);
+                        
+                            #ifdef DEBUG
+                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                            #endif
+                                
+                        } else {
+                    
+                            if ((depth > depthmax [1]) && (depth < depthmin [3])) {
+                        
+                                vec4  coord = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+
+                                s    = shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                shadow = s * 0.25;
+                            
+                                #ifdef DEBUG
+                                    gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                #endif
+                                            
+                            } else {
+
+                                // TRANSITION
+                                if ((depth > depthmin [3]) && (depth < depthmax [2])) {
+                            
+                                    vec4  coord1 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                    vec4  coord2 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                
+                                    s1   = shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    s2   = shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    shadow = (mix (s1, s2, (depth - depthmin [3]) / (depthmax [2] - depthmin [3])) * 0.25);
+                                
+                                    #ifdef DEBUG
+                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                    #endif
+                                        
+                                } else {
+                    
+                                    if ((depth > depthmax [2]) && (depth < depthmin [4])) {
+                                
+                                        vec4  coord = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                        s    = shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                        shadow = s * 0.25;
+                                    
+                                        #ifdef DEBUG
+                                            gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                                        #endif
+                                                    
+                                    } else {
+
+                                        // TRANSITION
+                                        if ((depth > depthmin [4]) && (depth < depthmax [3])) {
+                                    
+                                            vec4  coord1 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                            vec4  coord2 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                            s1   = shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            s2   = shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            shadow = (mix (s1, s2, (depth - depthmin [4]) / (depthmax [3] - depthmin [4])) * 0.25);
+                                        
+                                            #ifdef DEBUG
+                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                            #endif
+                                                
+                                        } else {
+
+                                            if ((depth > depthmax [3]) && (depth < depthmin [5])) {
+                                
+                                                vec4  coord = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                                s    = shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                shadow = s * 0.25;
+                                    
+                                                #ifdef DEBUG
+                                                    gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                                                #endif
+                                                    
+                                            } else {
+
+                                                // TRANSITION
+                                                if ((depth > depthmin [5]) && (depth < depthmax [4])) {
+                                    
+                                                    vec4  coord1 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                    vec4  coord2 = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                                    s1   = shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                    s2   = shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                    shadow = (mix (s1, s2, (depth - depthmin [5]) / (depthmax [4] - depthmin [5])) * 0.25);
+                                        
+                                                    #ifdef DEBUG
+                                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                    #endif
+                                                
+                                                } else {
+                                
+                                                    if ((depth > depthmax [4]) && (depth < depthend)) {
+                                        
+                                                        vec4  coord = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                            
+                                                        s    = shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                        shadow = s * 0.25;
+                                            
+                                                        #ifdef DEBUG
+                                                            gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                                        #endif
+                                            
+                                                    } else {
+
+                                                        // TRANSITION
+                                                        if ((depth > depthend) && (depth < depthmax [5])) {
+                                            
+                                                            vec4  coord1 = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                
+                                                            s1   = shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                            shadow = (mix (s1, 4.0, (depth - depthend) / (depthmax [5] - depthend)) * 0.25);
+                                                
+                                                            #ifdef DEBUG
+                                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                            #endif
+                                                
+                                                        } else {
+                                            
+                                                            shadow = 1.0;
+
+                                                            #ifdef DEBUG
+                                                                gl_FragColor = vec4 (0.2, 0.2, 0.2, 1.0); return;
+                                                            #endif
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        #endif
+
+        #if SPLITS == 7
+
+            if ((depth > depthmin [0]) && (depth < depthmin [1])) {
+
+                vec4  coord = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+            
+                s    = shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                shadow = s * 0.25;
+            
+                #ifdef DEBUG
+                    gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                #endif
+        
+            } else {
+
+                // TRANSITION
+                if ((depth > depthmin [1]) && (depth < depthmax [0])) {
+            
+                    vec4  coord1 = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                    vec4  coord2 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                
+                    s1   = shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    s2   = shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    shadow = (mix (s1, s2, (depth - depthmin [1]) / (depthmax [0] - depthmin [1])) * 0.25);
+
+                    #ifdef DEBUG
+                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                    #endif
+            
+                } else {
+
+                    if ((depth > depthmax [0]) && (depth < depthmin [2])) {
+
+                        vec4  coord = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                    
+                        s    = shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                        shadow = s * 0.25;
+                    
+                        #ifdef DEBUG
+                            gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                        #endif
+                
+                    } else {
+        
+                        // TRANSITION
+                        if ((depth > depthmin [2]) && (depth < depthmax [1])) {
+                    
+                            vec4  coord1 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                            vec4  coord2 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                        
+                            s1   = shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            s2   = shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            shadow = (mix (s1, s2, (depth - depthmin [2]) / (depthmax [1] - depthmin [2])) * 0.25);
+                        
+                            #ifdef DEBUG
+                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                            #endif
+                                
+                        } else {
+                    
+                            if ((depth > depthmax [1]) && (depth < depthmin [3])) {
+                        
+                                vec4  coord = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+
+                                s    = shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                shadow = s * 0.25;
+                            
+                                #ifdef DEBUG
+                                    gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                #endif
+                                            
+                            } else {
+
+                                // TRANSITION
+                                if ((depth > depthmin [3]) && (depth < depthmax [2])) {
+                            
+                                    vec4  coord1 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                    vec4  coord2 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                
+                                    s1   = shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    s2   = shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    shadow = (mix (s1, s2, (depth - depthmin [3]) / (depthmax [2] - depthmin [3])) * 0.25);
+                                
+                                    #ifdef DEBUG
+                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                    #endif
+                                        
+                                } else {
+                    
+                                    if ((depth > depthmax [2]) && (depth < depthmin [4])) {
+                                
+                                        vec4  coord = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                        s    = shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                        shadow = s * 0.25;
+                                    
+                                        #ifdef DEBUG
+                                            gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                                        #endif
+                                                    
+                                    } else {
+
+                                        // TRANSITION
+                                        if ((depth > depthmin [4]) && (depth < depthmax [3])) {
+                                    
+                                            vec4  coord1 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                            vec4  coord2 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                            s1   = shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            s2   = shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            shadow = (mix (s1, s2, (depth - depthmin [4]) / (depthmax [3] - depthmin [4])) * 0.25);
+                                        
+                                            #ifdef DEBUG
+                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                            #endif
+                                                
+                                        } else {
+
+                                            if ((depth > depthmax [3]) && (depth < depthmin [5])) {
+                                
+                                                vec4  coord = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                                s    = shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                shadow = s * 0.25;
+                                    
+                                                #ifdef DEBUG
+                                                    gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                                                #endif
+                                                    
+                                            } else {
+
+                                                // TRANSITION
+                                                if ((depth > depthmin [5]) && (depth < depthmax [4])) {
+                                    
+                                                    vec4  coord1 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                    vec4  coord2 = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                                    s1   = shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                    s2   = shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                    shadow = (mix (s1, s2, (depth - depthmin [5]) / (depthmax [4] - depthmin [5])) * 0.25);
+                                        
+                                                    #ifdef DEBUG
+                                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                    #endif
+                                                
+                                                } else {
+
+                                                    if ((depth > depthmax [4]) && (depth < depthmin [6])) {
+                                
+                                                        vec4  coord = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                                        s    = shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                        shadow = s * 0.25;
+                                    
+                                                        #ifdef DEBUG
+                                                            gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                                        #endif
+                                                    
+                                                    } else {
+
+                                                        // TRANSITION
+                                                        if ((depth > depthmin [6]) && (depth < depthmax [5])) {
+                                    
+                                                            vec4  coord1 = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                            vec4  coord2 = matrix [6] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                                            s1   = shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                            s2   = shadow2D (tex_shadow [6], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                            s2  += shadow2D (tex_shadow [6], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                            s2  += shadow2D (tex_shadow [6], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                            s2  += shadow2D (tex_shadow [6], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                            shadow = (mix (s1, s2, (depth - depthmin [6]) / (depthmax [5] - depthmin [6])) * 0.25);
+                                        
+                                                            #ifdef DEBUG
+                                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                            #endif
+                                                
+                                                        } else {
+                                
+                                                            if ((depth > depthmax [5]) && (depth < depthend)) {
+                                        
+                                                                vec4  coord = matrix [6] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                            
+                                                                s    = shadow2D (tex_shadow [6], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                                s   += shadow2D (tex_shadow [6], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                                s   += shadow2D (tex_shadow [6], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                                s   += shadow2D (tex_shadow [6], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                                shadow = s * 0.25;
+                                            
+                                                                #ifdef DEBUG
+                                                                    gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                                                                #endif
+                                            
+                                                            } else {
+
+                                                                // TRANSITION
+                                                                if ((depth > depthend) && (depth < depthmax [6])) {
+                                            
+                                                                    vec4  coord1 = matrix [6] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                
+                                                                    s1   = shadow2D (tex_shadow [6], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                                    s1  += shadow2D (tex_shadow [6], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                                    s1  += shadow2D (tex_shadow [6], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                                    s1  += shadow2D (tex_shadow [6], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                                    shadow = (mix (s1, 4.0, (depth - depthend) / (depthmax [6] - depthend)) * 0.25);
+                                                
+                                                                    #ifdef DEBUG
+                                                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                                    #endif
+                                                
+                                                                } else {
+                                            
+                                                                    shadow = 1.0;
+
+                                                                    #ifdef DEBUG
+                                                                        gl_FragColor = vec4 (0.2, 0.2, 0.2, 1.0); return;
+                                                                    #endif
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        #endif
+
+        #if SPLITS == 8
+
+            if ((depth > depthmin [0]) && (depth < depthmin [1])) {
+
+                vec4  coord = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+            
+                s    = shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                s   += shadow2D (tex_shadow [0], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                shadow = s * 0.25;
+            
+                #ifdef DEBUG
+                    gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                #endif
+        
+            } else {
+
+                // TRANSITION
+                if ((depth > depthmin [1]) && (depth < depthmax [0])) {
+            
+                    vec4  coord1 = matrix [0] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                    vec4  coord2 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                
+                    s1   = shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s1  += shadow2D (tex_shadow [0], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    s2   = shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                    s2  += shadow2D (tex_shadow [1], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                    shadow = (mix (s1, s2, (depth - depthmin [1]) / (depthmax [0] - depthmin [1])) * 0.25);
+
+                    #ifdef DEBUG
+                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                    #endif
+            
+                } else {
+
+                    if ((depth > depthmax [0]) && (depth < depthmin [2])) {
+
+                        vec4  coord = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                    
+                        s    = shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                        s   += shadow2D (tex_shadow [1], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                        shadow = s * 0.25;
+                    
+                        #ifdef DEBUG
+                            gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                        #endif
+                
+                    } else {
+        
+                        // TRANSITION
+                        if ((depth > depthmin [2]) && (depth < depthmax [1])) {
+                    
+                            vec4  coord1 = matrix [1] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                            vec4  coord2 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                        
+                            s1   = shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s1  += shadow2D (tex_shadow [1], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            s2   = shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                            s2  += shadow2D (tex_shadow [2], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                            shadow = (mix (s1, s2, (depth - depthmin [2]) / (depthmax [1] - depthmin [2])) * 0.25);
+                        
+                            #ifdef DEBUG
+                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                            #endif
+                                
+                        } else {
+                    
+                            if ((depth > depthmax [1]) && (depth < depthmin [3])) {
+                        
+                                vec4  coord = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+
+                                s    = shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                s   += shadow2D (tex_shadow [2], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                shadow = s * 0.25;
+                            
+                                #ifdef DEBUG
+                                    gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                #endif
+                                            
+                            } else {
+
+                                // TRANSITION
+                                if ((depth > depthmin [3]) && (depth < depthmax [2])) {
+                            
+                                    vec4  coord1 = matrix [2] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                    vec4  coord2 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                
+                                    s1   = shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s1  += shadow2D (tex_shadow [2], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    s2   = shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                    s2  += shadow2D (tex_shadow [3], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                    shadow = (mix (s1, s2, (depth - depthmin [3]) / (depthmax [2] - depthmin [3])) * 0.25);
+                                
+                                    #ifdef DEBUG
+                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                    #endif
+                                        
+                                } else {
+                    
+                                    if ((depth > depthmax [2]) && (depth < depthmin [4])) {
+                                
+                                        vec4  coord = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                        s    = shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                        s   += shadow2D (tex_shadow [3], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                        shadow = s * 0.25;
+                                    
+                                        #ifdef DEBUG
+                                            gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                                        #endif
+                                                    
+                                    } else {
+
+                                        // TRANSITION
+                                        if ((depth > depthmin [4]) && (depth < depthmax [3])) {
+                                    
+                                            vec4  coord1 = matrix [3] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                            vec4  coord2 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                            s1   = shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s1  += shadow2D (tex_shadow [3], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            s2   = shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                            s2  += shadow2D (tex_shadow [4], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                            shadow = (mix (s1, s2, (depth - depthmin [4]) / (depthmax [3] - depthmin [4])) * 0.25);
+                                        
+                                            #ifdef DEBUG
+                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                            #endif
+                                                
+                                        } else {
+
+                                            if ((depth > depthmax [3]) && (depth < depthmin [5])) {
+                                
+                                                vec4  coord = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                                s    = shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                s   += shadow2D (tex_shadow [4], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                shadow = s * 0.25;
+                                    
+                                                #ifdef DEBUG
+                                                    gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                                                #endif
+                                                    
+                                            } else {
+
+                                                // TRANSITION
+                                                if ((depth > depthmin [5]) && (depth < depthmax [4])) {
+                                    
+                                                    vec4  coord1 = matrix [4] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                    vec4  coord2 = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                                    s1   = shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                    s1  += shadow2D (tex_shadow [4], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                    s2   = shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                    s2  += shadow2D (tex_shadow [5], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                    shadow = (mix (s1, s2, (depth - depthmin [5]) / (depthmax [4] - depthmin [5])) * 0.25);
+                                        
+                                                    #ifdef DEBUG
+                                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                    #endif
+                                                
+                                                } else {
+
+                                                    if ((depth > depthmax [4]) && (depth < depthmin [6])) {
+                                
+                                                        vec4  coord = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                                        s    = shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                        s   += shadow2D (tex_shadow [5], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                        shadow = s * 0.25;
+                                    
+                                                        #ifdef DEBUG
+                                                            gl_FragColor = vec4 (0.0, 0.0, 1.0, 1.0); return;
+                                                        #endif
+                                                    
+                                                    } else {
+
+                                                        // TRANSITION
+                                                        if ((depth > depthmin [6]) && (depth < depthmax [5])) {
+                                    
+                                                            vec4  coord1 = matrix [5] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                            vec4  coord2 = matrix [6] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                                            s1   = shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                            s1  += shadow2D (tex_shadow [5], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                            s2   = shadow2D (tex_shadow [6], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                            s2  += shadow2D (tex_shadow [6], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                            s2  += shadow2D (tex_shadow [6], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                            s2  += shadow2D (tex_shadow [6], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                            shadow = (mix (s1, s2, (depth - depthmin [6]) / (depthmax [5] - depthmin [6])) * 0.25);
+                                        
+                                                            #ifdef DEBUG
+                                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                            #endif
+                                                
+                                                        } else {
+
+                                                            if ((depth > depthmax [5]) && (depth < depthmin [7])) {
+                                
+                                                                vec4  coord = matrix [6] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                    
+                                                                s    = shadow2D (tex_shadow [6], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                                s   += shadow2D (tex_shadow [6], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                                s   += shadow2D (tex_shadow [6], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                                s   += shadow2D (tex_shadow [6], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                                shadow = s * 0.25;
+                                    
+                                                                #ifdef DEBUG
+                                                                    gl_FragColor = vec4 (1.0, 0.0, 0.0, 1.0); return;
+                                                                #endif
+                                                    
+                                                            } else {
+
+                                                                // TRANSITION
+                                                                if ((depth > depthmin [7]) && (depth < depthmax [6])) {
+                                    
+                                                                    vec4  coord1 = matrix [6] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                                    vec4  coord2 = matrix [7] * vec4 (worldpos.xyz, 1.0);   coord2 = coord2 * 0.5 + 0.5;
+                                        
+                                                                    s1   = shadow2D (tex_shadow [6], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                                    s1  += shadow2D (tex_shadow [6], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                                    s1  += shadow2D (tex_shadow [6], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                                    s1  += shadow2D (tex_shadow [6], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                                    s2   = shadow2D (tex_shadow [7], coord2.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                                    s2  += shadow2D (tex_shadow [7], coord2.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                                    s2  += shadow2D (tex_shadow [7], coord2.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                                    s2  += shadow2D (tex_shadow [7], coord2.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                                    shadow = (mix (s1, s2, (depth - depthmin [7]) / (depthmax [6] - depthmin [7])) * 0.25);
+                                        
+                                                                    #ifdef DEBUG
+                                                                        gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                                    #endif
+                                                
+                                                                } else {
+                                
+                                                                    if ((depth > depthmax [6]) && (depth < depthend)) {
+                                        
+                                                                        vec4  coord = matrix [7] * vec4 (worldpos.xyz, 1.0);   coord = coord * 0.5 + 0.5;
+                                            
+                                                                        s    = shadow2D (tex_shadow [7], coord.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                                        s   += shadow2D (tex_shadow [7], coord.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                                        s   += shadow2D (tex_shadow [7], coord.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                                        s   += shadow2D (tex_shadow [7], coord.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                                        shadow = s * 0.25;
+                                            
+                                                                        #ifdef DEBUG
+                                                                            gl_FragColor = vec4 (0.0, 1.0, 0.0, 1.0); return;
+                                                                        #endif
+                                            
+                                                                    } else {
+
+                                                                        // TRANSITION
+                                                                        if ((depth > depthend) && (depth < depthmax [7])) {
+                                            
+                                                                            vec4  coord1 = matrix [7] * vec4 (worldpos.xyz, 1.0);   coord1 = coord1 * 0.5 + 0.5;
+                                                
+                                                                            s1   = shadow2D (tex_shadow [7], coord1.xyz + vec3 (gl_TexCoord [0].x*cosa - gl_TexCoord [0].y*sina, gl_TexCoord [0].y*cosa + gl_TexCoord [0].x*sina, 0.0)).r;
+                                                                            s1  += shadow2D (tex_shadow [7], coord1.xyz + vec3 (gl_TexCoord [1].x*cosa - gl_TexCoord [1].y*sina, gl_TexCoord [1].y*cosa + gl_TexCoord [1].x*sina, 0.0)).r;
+                                                                            s1  += shadow2D (tex_shadow [7], coord1.xyz + vec3 (gl_TexCoord [2].x*cosa - gl_TexCoord [2].y*sina, gl_TexCoord [2].y*cosa + gl_TexCoord [2].x*sina, 0.0)).r;
+                                                                            s1  += shadow2D (tex_shadow [7], coord1.xyz + vec3 (gl_TexCoord [3].x*cosa - gl_TexCoord [3].y*sina, gl_TexCoord [3].y*cosa + gl_TexCoord [3].x*sina, 0.0)).r;
+                                                                            shadow = (mix (s1, 4.0, (depth - depthend) / (depthmax [6] - depthend)) * 0.25);
+                                                
+                                                                            #ifdef DEBUG
+                                                                                gl_FragColor = vec4 (0.0, 0.0, 0.0, 1.0); return;
+                                                                            #endif
+                                                
+                                                                        } else {
+                                            
+                                                                            shadow = 1.0;
+
+                                                                            #ifdef DEBUG
+                                                                                gl_FragColor = vec4 (0.2, 0.2, 0.2, 1.0); return;
+                                                                            #endif
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+        #endif
         
         // little trick to hide some self-shadowing
         // remove shadow on steep slopes
-        
+        //
         // shadow = mix (shadow * slope, slope, max (0.0, min (1.0, 15.0 * slope - 5.0)));
 
         shadow *= slope;
-                        
+        
         if (shadow > 0.0) {
 
-            // SCALE SPECULAR PARAMETERS            
-            float shininess  = floor (G1.a) * 10.0;
-            float gloss      = fract (G1.a) *  2.0       * 5.0;
+            // SCALE SPECULAR PARAMETERS
+            float shininess  = max (G2.a * 100.0, 1.0);
+            float gloss      = max (G1.a *   4.0, 0.1);
                                     
             // SHADING VECTORS
             vec3  eye        = - normalize (viewpos);
                         
             // SHADING
-            gl_FragColor     = saturate * (ambient * color + intensity * shadow * (color + gloss * color * pow (max (dot (reflect (- ray, normal), eye), 0.0), shininess)));
+            gl_FragColor     = ambient * color + intensity * shadow * (color + gloss * color * pow (max (dot (reflect (- ray, normal), eye), 0.0), shininess));
+
+			// INTENSITY
+			float intensity  = dot (gl_FragColor.rgb, vec3 (0.333, 0.333, 0.333));
+
+			// COLOR CORRECTIONS
+			gl_FragColor     = pow (brightness * mix (gl_FragColor, vec4 (intensity, intensity, intensity, 1.0), desaturation), contrast);
             
             // ALPHA
             gl_FragColor.a   = shadow;
@@ -291,11 +1477,21 @@ void main ()
         }
         
         // SHADING
-        gl_FragColor     = saturate * ambient * color;
+        gl_FragColor     = ambient * color;
                 
+		// COLOR CORRECTIONS
+		float intensity  = dot (gl_FragColor.rgb, vec3 (0.333, 0.333, 0.333));
+
+		gl_FragColor     = pow (brightness * mix (gl_FragColor, vec4 (intensity, intensity, intensity, 1.0), desaturation), contrast);
+
         return;
     }
     
     // SHADING
-    gl_FragColor     = saturate * (ambient * color + intensity * slope * color);
+    gl_FragColor     = ambient * color + intensity * slope * color;
+
+	// COLOR CORRECTIONS
+	float intensity  = dot (gl_FragColor.rgb, vec3 (0.333, 0.333, 0.333));
+
+	gl_FragColor     = pow (brightness * mix (gl_FragColor, vec4 (intensity, intensity, intensity, 1.0), desaturation), contrast);
 }

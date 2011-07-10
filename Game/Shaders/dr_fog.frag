@@ -1,20 +1,15 @@
 
 uniform sampler2DRect tex_G2;
-uniform sampler2DRect tex;
 
 varying vec3 view;
 
 void main ()
 {
-
-    // COLOR READ
-    gl_FragColor    = texture2DRect (tex, gl_TexCoord [0].st);
-
     // G2 READ
     vec4  G2        = texture2DRect (tex_G2, gl_TexCoord [0].st);
     
     // DECODE DEPTH
-    float depth     = (G2.z + G2.w) * 0.00001525902;    // 1.0 / 65535.0
+    float depth     = G2.z;
     
     /// TODO : OPTIMIZE, WE NEED ONLY Y WORLD COORD
 
@@ -30,5 +25,5 @@ void main ()
           factor    = log10 (1.0 + factor) / log10 (2.0);
           factor   *= log10 (1.0 + depth)  / log10 (2.0);
 
-    gl_FragColor    = factor * gl_Color + (1.0 - factor) * gl_FragColor;
+    gl_FragColor    = vec4 (gl_Color.rgb, factor);
 }

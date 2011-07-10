@@ -28,15 +28,15 @@ void main ()
                                     vec4 ( co.x*si.z + si.x*si.y*co.z,  co.x*co.z - si.x*si.y*si.z, -si.x*co.y, 0.0) * gl_MultiTexCoord5.w, 
                                     vec4 ( si.x*si.z - co.x*si.y*co.z,  si.x*co.z + co.x*si.y*si.z,  co.x*co.y, 0.0) * gl_MultiTexCoord5.w, 
                                     vec4 (gl_MultiTexCoord4.xyz, 1.0));
-
-    // ANIMATION --------------------------------------------------------------------------------------------------------------------------------------------
-    
-            vec4 v          = gl_Vertex;    v.y = v.y + v.z * gl_MultiTexCoord2.x;
     
     // COMPLETE VIEW TRANSFORM ------------------------------------------------------------------------------------------------------------------------------
                                 
             matrix          = gl_ModelViewMatrix * matrix;
                 
+    // ANIMATION --------------------------------------------------------------------------------------------------------------------------------------------
+    
+            vec4 v          = gl_Vertex;    v.y = v.y + v.z * gl_MultiTexCoord2.x;
+
     // TRANSFORM --------------------------------------------------------------------------------------------------------------------------------------------
     
             gl_ClipVertex   = matrix * v;
@@ -44,15 +44,15 @@ void main ()
 
     // LINEAR DEPTH -----------------------------------------------------------------------------------------------------------------------------------------
     
-            depth           = (- gl_ClipVertex.z / planefar) * 65535.0;
+            depth           = - gl_ClipVertex.z / planefar;
 
     // UV ---------------------------------------------------------------------------------------------------------------------------------------------------
 
             gl_TexCoord [0] = vec4 (gl_MultiTexCoord0.st * uvscale, 0.0, 0.0);
     
     // NORMAL -----------------------------------------------------------------------------------------------------------------------------------------------
-    
-            // normal       = normalize (mat3 (gl_ModelViewMatrix) * vec3 (0.0, 0.0, 1.0));
             
-            normal          = normalize (mat3 (matrix) * vec3 (0.0, 0.0, 1.0));
+			// compromise between normal lighting and direct lighting
+
+            normal			= normalize (normalize (mat3 (matrix) * vec3 (0.0, 0.0, 1.0)) + 0.5 * gl_LightSource [0].position);
 }

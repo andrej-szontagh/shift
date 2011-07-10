@@ -37,11 +37,6 @@ FLOAT_32    delta               = 0;
 
 CHAR        caption [256];
 
-INT_32      width               = 1920;		//1920; //1280; //800; //640;
-INT_32      height              = 1080;		//1080; //800;  //600; //400;
-
-BOOL        fullscreen			= true;
-
 INT_32      debug               = 0;
 
 FLOAT_32    vel;
@@ -57,23 +52,15 @@ BOOL        move_right          = false;
 BOOL        move_up             = false;
 BOOL        move_down           = false;
 
-BOOL        inc_debug_param1    = false;
-BOOL        dec_debug_param1    = false;
-BOOL        inc_debug_param2    = false;
-BOOL        dec_debug_param2    = false;
-
-INT_32      debug_param1        = 0;
-INT_32      debug_param2        = 0;
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // QUIT
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 VOID quit ()
 {
-    #ifdef M_DEBUG
-        debug_Destroy ();
-    #endif
+#ifdef M_DEBUG
+    debug_Destroy ();
+#endif
 
     lo_UnloadWorld ();
 
@@ -114,6 +101,68 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
     SDL_EnableKeyRepeat (10, 20);
 
+    // LOAD USER SETTINGS
+
+    dr_control_gammacorrection			= true;
+    dr_control_autoexposure				= true;
+    dr_control_fog						= true;
+    dr_control_aa						= true;
+
+    dr_control_bloom_enable			    = true;
+    dr_control_bloom_enable_vblur       = true;
+    dr_control_bloom_enable_hblur       = true;
+    dr_control_bloom_strength			= 1.0f;
+    dr_control_bloom_res				= 0;
+
+    dr_control_ssao_enable				= true;
+    dr_control_ssao_res				    = 0;
+
+    dr_control_anisotrophy				= 16;
+
+    dr_control_mip                      = 7;
+
+    dr_control_culling				    = 1;
+
+    dr_control_sun_res			        = 2048;
+    dr_control_sun_splits               = 5;
+    dr_control_sun_offset               = 0.005f;
+    dr_control_sun_transition           = 0.05f;
+    dr_control_sun_distribution         = 10.0f;
+    dr_control_sun_scheme               = 0.9f;
+    dr_control_sun_zoom                 = 1.07f;
+    dr_control_sun_debug                = false;
+
+    dr_control_image_desaturation		= 0.2f;
+    dr_control_image_brightness			= 1.7f;
+    dr_control_image_contrast			= 1.3f;
+
+    dr_control_sky_desaturation			= 0.2f;
+    dr_control_sky_brightness 			= 1.5f;
+    dr_control_sky_contrast				= 0.8f;
+
+    /*
+    dr_level_bloom						= 0.5f;
+
+    dr_level_desaturation				= 0.0f;
+    dr_level_desaturation_sky			= 0.0f;
+    dr_level_brightness					= 1.0f;
+    dr_level_brightness_sky 			= 1.0f;
+    dr_level_contrast					= 1.0f;
+    dr_level_contrast_sky				= 1.0f;
+    */
+
+    dr_control_hdr_exposure				= 0.5f;
+    dr_control_hdr_exposure_scale_min	= 0.5f;
+    dr_control_hdr_exposure_scale_max	= 1.5f;
+    dr_control_hdr_exposure_speed		= 0.001f;
+
+    dr_width							= 1280;		//1920; //1280; //800; //640;
+    dr_height							= 800;		//1080; //800;  //600; //400;
+
+    dr_fullscreen						= false;
+
+    // VIDEO SETUP
+
     SDL_GL_SetAttribute (SDL_GL_RED_SIZE,       8);
     SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE,     8);
     SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE,      8);
@@ -121,9 +170,9 @@ INT_32 main (INT_32 argc, CHARP argv [])
     SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE,     32);
     SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER,   1);
 
-	if (fullscreen) 
-		screen = SDL_SetVideoMode (width, height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN); else
-		screen = SDL_SetVideoMode (width, height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF);
+    if (dr_fullscreen) 
+        screen = SDL_SetVideoMode (dr_width, dr_height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN); else
+        screen = SDL_SetVideoMode (dr_width, dr_height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF);
 
     bkcolor = SDL_MapRGBA (screen->format, 0, 0, 0, 0);
 
@@ -135,9 +184,9 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
     // CREATING LOGFILE
 
-    #ifdef M_DEBUG
-        debug_Init ();
-    #endif
+#ifdef M_DEBUG
+    debug_Init ();
+#endif
 
     // SETTING UP CAMERA
 
@@ -158,13 +207,17 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
     lo_LoadWorld (M_WORLDFILE);
 
-    #ifdef M_DEBUG
+    /*
+    dr_sun_ambient = 0.4;
+    */
+
+#ifdef M_DEBUG
     ///     debug_OctTree (&dr_tree, dr_objects);
-    #endif
+#endif
 
     // INITIALIZING DEFFERED RENDERER
 
-    dr_Init (width, height);
+    dr_Init ();
 
     // INITIALIZING PHYSICS
 
@@ -200,11 +253,6 @@ INT_32 main (INT_32 argc, CHARP argv [])
                         case SDLK_SPACE:    move_up       = false; break;
                         case SDLK_LCTRL:    move_down     = false; break;
 
-                        case SDLK_RIGHT:    inc_debug_param1 = false; break;
-                        case SDLK_LEFT:     dec_debug_param1 = false; break;
-                        case SDLK_UP:       inc_debug_param2 = false; break;
-                        case SDLK_DOWN:     dec_debug_param2 = false; break;
-
                     } break;
 
                 case SDL_KEYDOWN:
@@ -221,11 +269,6 @@ INT_32 main (INT_32 argc, CHARP argv [])
                         case SDLK_SPACE:    move_up       = true; break;
                         case SDLK_LCTRL:    move_down     = true; break;
 
-                        case SDLK_RIGHT:    inc_debug_param1 = true; break;
-                        case SDLK_LEFT:     dec_debug_param1 = true; break;
-                        case SDLK_UP:       inc_debug_param2 = true; break;
-                        case SDLK_DOWN:     dec_debug_param2 = true; break;
-
                         case SDLK_1:    if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   if (debug ==  1) debug = 0; else debug =  1;  } break;
                         case SDLK_2:    if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   if (debug ==  2) debug = 0; else debug =  2;  } break;
                         case SDLK_3:    if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   if (debug ==  3) debug = 0; else debug =  3;  } break;
@@ -237,24 +280,99 @@ INT_32 main (INT_32 argc, CHARP argv [])
                         case SDLK_9:    if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   if (debug ==  9) debug = 0; else debug =  9;  } break;
 
                         case SDLK_o:    if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
-                            
-                                            if (debug == 11) {  debug = 0;  break; }
-                                            if (debug == 10) {  debug = 11; break; } 
 
-                                            debug = 10; break;
+                            if (debug == 11) {  debug = 0;  break; }
+                            if (debug == 10) {  debug = 11; break; } 
+
+                            debug = 10; break;
                                         }
 
-                        case SDLK_j:    if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_enableaa = !dr_enableaa; } break;
+                        case SDLK_KP0:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_aa				    = !dr_control_aa;				    } break;
+                        case SDLK_KP1:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_fog				    = !dr_control_fog;				    } break;
+                        case SDLK_KP2:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_ssao_enable		    = !dr_control_ssao_enable;		    } break;
+                        case SDLK_KP3:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable		    = !dr_control_bloom_enable;		    } break;
+                        case SDLK_KP4:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_autoexposure		    = !dr_control_autoexposure;		    } break;
+
+                        case SDLK_KP5:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_AdjustGamma (!dr_control_gammacorrection);                       } break;
+
+                        case SDLK_KP6:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable_vblur   = !dr_control_bloom_enable_vblur;	} break;
+                        case SDLK_KP7:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable_hblur   = !dr_control_bloom_enable_hblur;	} break;
+
+                        case SDLK_KP_MINUS:		if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   
+
+                            if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_brightness	    -= 0.1f;	else
+                                dr_control_image_brightness		-= 0.1f;	} break;
+
+                        case SDLK_KP_PLUS:		if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
+
+                            if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_brightness	    += 0.1f;	else
+                                dr_control_image_brightness		+= 0.1f;	} break;
+
+                        case SDLK_KP_DIVIDE:	if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   
+
+                            if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_contrast	        -= 0.1f;	else
+                                dr_control_image_contrast		-= 0.1f;	} break;
+
+                        case SDLK_KP_MULTIPLY:	if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
+
+                            if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_contrast	        += 0.1f;	else
+                                dr_control_image_contrast		+= 0.1f;	} break;
+
+                        case SDLK_DOWN:			if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_AdjustAnisotrophy (dr_control_anisotrophy >> 1);    } break;
+                        case SDLK_UP:			if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_AdjustAnisotrophy (dr_control_anisotrophy << 1);    } break;
+
+                        case SDLK_LEFT:			if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
+
+                            if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_desaturation     -= 0.1f;	else
+                                                                    dr_control_image_desaturation	-= 0.1f;	} break;
+
+                        case SDLK_RIGHT:		if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
+
+                            if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_desaturation	    += 0.1f;	else
+                                                                    dr_control_image_desaturation	+= 0.1f;	} break;
+
+                        case SDLK_PAGEDOWN:		if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
+
+                            if (SDL_GetModState () & KMOD_SHIFT)    dr_AdjustBloomRes               (dr_control_bloom_res           - 1);       else
+                            if (SDL_GetModState () & KMOD_LALT)     dr_AdjustSSAORes                (dr_control_ssao_res            - 1);	    else
+                            if (SDL_GetModState () & KMOD_RALT)     dr_AdjustMIP                    (dr_control_mip                 - 1);	    else
+                                                                    dr_AdjustBloomStrength          (dr_control_bloom_strength      - 0.1f);    } break;
+
+                        case SDLK_PAGEUP:		if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
+
+                            if (SDL_GetModState () & KMOD_SHIFT)    dr_AdjustBloomRes               (dr_control_bloom_res           + 1);       else
+                            if (SDL_GetModState () & KMOD_LALT)     dr_AdjustSSAORes                (dr_control_ssao_res            + 1);	    else
+                            if (SDL_GetModState () & KMOD_RALT)     dr_AdjustMIP                    (dr_control_mip                 + 1);	    else
+                                                                    dr_AdjustBloomStrength          (dr_control_bloom_strength      + 0.1f);    } break;
+
+                        case SDLK_END:			if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
+
+                            if (SDL_GetModState () & KMOD_SHIFT)    dr_AdjustShadowsRes             (dr_control_sun_res             >> 1);	    else
+                            if (SDL_GetModState () & KMOD_LALT)     dr_AdjustShadowsDistribution    (dr_control_sun_distribution    - 1.0f);	else
+                            if (SDL_GetModState () & KMOD_RALT)     dr_AdjustShadowsScheme          (dr_control_sun_scheme          - 0.01f);	else
+                                                                    dr_AdjustShadowsSplits          (dr_control_sun_splits          - 1);	    } break;
+
+                        case SDLK_HOME:			if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
+
+                            if (SDL_GetModState () & KMOD_SHIFT)    dr_AdjustShadowsRes             (dr_control_sun_res             << 1);	    else
+                            if (SDL_GetModState () & KMOD_LALT)     dr_AdjustShadowsDistribution    (dr_control_sun_distribution    + 1.0f);	else
+                            if (SDL_GetModState () & KMOD_RALT)     dr_AdjustShadowsScheme          (dr_control_sun_scheme          + 0.01f);	else
+                                                                    dr_AdjustShadowsSplits          (dr_control_sun_splits          + 1);	    } break;
+
+                        case SDLK_DELETE:       if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount (); 
+
+                                dr_AdjustShadowsDebug (!dr_control_sun_debug);
+                            } break;
                     }
 
-                break;
+                    break;
 
                 case SDL_MOUSEBUTTONDOWN:
-                        press = true;
+                    press = true;
                     break;
 
                 case SDL_MOUSEBUTTONUP:
-                        press = false;
+                    press = false;
                     break;
             }
         }
@@ -263,7 +381,7 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
         vel = delta * 0.01f;
 
-        if (SDL_GetModState () & KMOD_SHIFT)    vel = delta * 0.1f;    ///0.05f;
+        if (SDL_GetModState () & KMOD_SHIFT)    vel = delta * 0.1f;
         if (SDL_GetModState () & KMOD_ALT)      vel = delta * 0.0025f;
 
         if (move_forward) {
@@ -298,23 +416,6 @@ INT_32 main (INT_32 argc, CHARP argv [])
             dr_campos [1] -= vel;
         }
 
-        if (inc_debug_param1) {
-            if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();       debug_param1 ++;
-            } 
-        }
-        if (dec_debug_param1) {
-            if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();       debug_param1 --;
-            } 
-        }
-        if (inc_debug_param2) {
-            if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();       debug_param2 ++;
-            } 
-        }
-        if (dec_debug_param2) {
-            if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();       debug_param2 --;
-            } 
-        }
-
         // MOUSE
 
         mouseposold = mousepos;
@@ -328,7 +429,7 @@ INT_32 main (INT_32 argc, CHARP argv [])
             anglex = 0.0f;
             angley = 0.0f;
             anglez = 0.0f;
-            
+
             nx = (mousepos.x + mouseposold.x) * 0.5f;
             ny = (mousepos.y + mouseposold.y) * 0.5f;
 
@@ -367,9 +468,9 @@ INT_32 main (INT_32 argc, CHARP argv [])
             frames = 0;
         }
 
-		M_STATE_TEX0_RECT_CLEAR;
+        M_STATE_TEX0_RECT_CLEAR;
 
-		dr_DrawText (- 0.95f, 0.9f, 0.03f, 0.05f, dr_text, true, caption);
+        dr_DrawText (- 0.95f, 0.9f, 0.03f, 0.05f, dr_text, true, caption);
 
         // SWAP BUFFERS
 

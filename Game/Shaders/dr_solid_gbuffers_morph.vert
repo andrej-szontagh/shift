@@ -58,9 +58,9 @@ void main ()
     ///     We dont scale it from near plane to far plane so it starts at camera with 0 and ends on far plane with 1
     ///     http://www.songho.ca/opengl/gl_projectionmatrix.html
     ///
-    ///     this depth actually hodls view coordinate z (scaled to positive 0..65535.0 camera/farplane)
+    ///     this depth actually hodls view coordinate z
 
-            depth           = (- gl_ClipVertex.z / planefar) * 65535.0;
+            depth           = - gl_ClipVertex.z / planefar;
 
     // UV ---------------------------------------------------------------------------------------------------------------------------------------------------
 

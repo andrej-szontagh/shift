@@ -3,6 +3,8 @@ uniform sampler2DRect   tex_G2;
 uniform sampler2D       tex_rand;
 uniform sampler2DRect   tex_shade;
 
+/// CONSIDER USING ONLY DEPTH (32bit versus 64bit (G2))
+
 uniform float randscale;
 
 varying vec3 view;
@@ -55,7 +57,7 @@ void main ()
     sphere [15] = vec2 (0.51111114, 0.61481482);
 
     // DECODE DEPTH
-    float depth     = (G2.z + G2.w) * 0.00001525902;    // 1.0 / 65535.0
+    float depth     = G2.z;
 
     // VIEW POSITION   
     vec3 viewpos    = depth * view;
@@ -104,7 +106,7 @@ void main ()
         //      vec4 occluder   = texture2DRect (tex_G2, gl_TexCoord [0].xy + vec2 (radius * reflect (sphere [i], randvec)));
 
         // DECODE DEPTH
-        float odepth    = (occluder.z + occluder.w) * 0.00001525902;    // 1.0 / 65535.0  
+        float odepth    = occluder.z;
 
         // VIEW POSITION   
         vec3 oviewpos   = odepth * view;

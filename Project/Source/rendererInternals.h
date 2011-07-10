@@ -11,11 +11,17 @@
 
 #ifdef M_DR_BODY
 
-	FLOAT_32    dr_campos   [3] =   { -144.18692f,       -35.554573f,     -128.09940f     };
-    FLOAT_32    dr_camdir   [3] =   {    0.15276398f,     -0.47443116f,     -0.86693615f  };
-    FLOAT_32    dr_cambi    [3] =   {    0.98482728f,      0.00000000f,      0.17353773f  };
-    FLOAT_32    dr_camup    [3] =   {    0.082331710f,     0.88029265f,     -0.46723273f  };
+    FLOAT_32    dr_campos   [3] =   {  -61.259949f,       86.954887f,     -163.76936f     };
+    FLOAT_32    dr_camdir   [3] =   {   -0.38013774f,     -0.26364070f,      0.88656020f  };
+    FLOAT_32    dr_cambi    [3] =   {   -0.91907620f,      0.00000000f,     -0.39407989f  };
+    FLOAT_32    dr_camup    [3] =   {   -0.10389550f,      0.96462101f,      0.24230589f  };
     FLOAT_32    dr_worldup  [3] =   {    0.0f,             1.0f,             0.0f         };
+
+    //FLOAT_32    dr_campos   [3] =   { -144.18692f,       -35.554573f,     -128.09940f     };
+    //FLOAT_32    dr_camdir   [3] =   {    0.15276398f,     -0.47443116f,     -0.86693615f  };
+    //FLOAT_32    dr_cambi    [3] =   {    0.98482728f,      0.00000000f,      0.17353773f  };
+    //FLOAT_32    dr_camup    [3] =   {    0.082331710f,     0.88029265f,     -0.46723273f  };
+    //FLOAT_32    dr_worldup  [3] =   {    0.0f,             1.0f,             0.0f         };
 
 //    FLOAT_32    dr_campos   [3] =   {  -61.259949f,       86.954887f,     -163.76936f     };
 //    FLOAT_32    dr_camdir   [3] =   {   -0.38013774f,     -0.26364070f,      0.88656020f  };
@@ -48,17 +54,63 @@ M_DR_BODY UINT_32               dr_frame;
 M_DR_BODY FLOAT_32              dr_delta;
 M_DR_BODY FLOAT_32              dr_swing;
 
-// EFFECT CONTROL
-M_DR_BODY BOOL                  dr_enableautoexposure;
-M_DR_BODY BOOL                  dr_enablebloom;
-M_DR_BODY BOOL                  dr_enablessao;
-M_DR_BODY BOOL                  dr_enablefog;
-M_DR_BODY BOOL                  dr_enableaa;
+// GAMMA CONTROL
+M_DR_BODY BOOL                  dr_control_gammacorrection;
 
-// RESOLUTION CONTROL
-M_DR_BODY UINT_32               dr_levelculling;
-M_DR_BODY UINT_32               dr_levelbloom;
-M_DR_BODY UINT_32               dr_levelssao;
+// AUTOEXPOSURE
+M_DR_BODY BOOL                  dr_control_autoexposure;
+
+// FOG CONTROL
+M_DR_BODY BOOL                  dr_control_fog;
+
+// AA CONTROL
+M_DR_BODY BOOL                  dr_control_aa;
+
+// ANISOTROPHY CONTROL
+M_DR_BODY INT_32                dr_control_anisotrophy;
+
+// CULLING CONTROL
+M_DR_BODY UINT_32               dr_control_culling;
+
+// SSAO CONTROL
+M_DR_BODY BOOL                  dr_control_ssao_enable;
+M_DR_BODY UINT_32               dr_control_ssao_res;
+
+// MIP CONTROL
+M_DR_BODY UINT_32               dr_control_mip;
+
+// BOOM CONTROL
+M_DR_BODY BOOL                  dr_control_bloom_enable;
+M_DR_BODY BOOL                  dr_control_bloom_enable_vblur;
+M_DR_BODY BOOL                  dr_control_bloom_enable_hblur;
+M_DR_BODY UINT_32               dr_control_bloom_res;
+M_DR_BODY FLOAT_32              dr_control_bloom_strength;
+
+// SHADOWING CONTROL
+M_DR_BODY UINT_32               dr_control_sun_res;
+M_DR_BODY UINT_32               dr_control_sun_splits;
+M_DR_BODY FLOAT_32              dr_control_sun_offset;
+M_DR_BODY FLOAT_32              dr_control_sun_transition;
+M_DR_BODY FLOAT_32              dr_control_sun_distribution;
+M_DR_BODY FLOAT_32              dr_control_sun_scheme;
+M_DR_BODY FLOAT_32              dr_control_sun_zoom;
+M_DR_BODY BOOL                  dr_control_sun_debug;
+
+// IMAGE CONTROL
+M_DR_BODY FLOAT_32              dr_control_image_desaturation;
+M_DR_BODY FLOAT_32              dr_control_image_brightness;
+M_DR_BODY FLOAT_32              dr_control_image_contrast;
+
+// SKY CONTROL
+M_DR_BODY FLOAT_32              dr_control_sky_desaturation;
+M_DR_BODY FLOAT_32              dr_control_sky_brightness;
+M_DR_BODY FLOAT_32              dr_control_sky_contrast;
+
+// HDR CONTROL
+M_DR_BODY FLOAT_32              dr_control_hdr_exposure;			                    // exposure balanced level
+M_DR_BODY FLOAT_32              dr_control_hdr_exposure_scale_min;	                    // exposure scale minimum boundary
+M_DR_BODY FLOAT_32              dr_control_hdr_exposure_scale_max;	                    // exposure scale maximum boundary
+M_DR_BODY FLOAT_32              dr_control_hdr_exposure_speed;		                    // speed of exposure adaptation
 
 // DETAIL CONTROL
 M_DR_BODY UINT_32               dr_detailculling;
@@ -96,6 +148,18 @@ M_DR_BODY FLOAT_64              dr_debug_profile_depthg;
 M_DR_BODY FLOAT_64              dr_debug_profile_sun;
 M_DR_BODY FLOAT_64              dr_debug_profile_sung;
 
+M_DR_BODY FLOAT_64              dr_debug_profile_aa;
+M_DR_BODY FLOAT_64              dr_debug_profile_aag;
+
+M_DR_BODY FLOAT_64              dr_debug_profile_fog;
+M_DR_BODY FLOAT_64              dr_debug_profile_fogg;
+
+M_DR_BODY FLOAT_64              dr_debug_profile_ssao;
+M_DR_BODY FLOAT_64              dr_debug_profile_ssaog;
+
+M_DR_BODY FLOAT_64              dr_debug_profile_tonemap;
+M_DR_BODY FLOAT_64              dr_debug_profile_tonemapg;
+
 M_DR_BODY FLOAT_64              dr_debug_profile_enviroment;
 M_DR_BODY FLOAT_64              dr_debug_profile_enviromentg;
 
@@ -103,8 +167,8 @@ M_DR_BODY FLOAT_64              dr_debug_profile_enviromentg;
 
 // ENVIROMENT
 
-M_DR_BODY UINT_32               dr_w [M_DR_MIPLEVELS];
-M_DR_BODY UINT_32               dr_h [M_DR_MIPLEVELS];
+M_DR_BODY UINT_32P              dr_w;
+M_DR_BODY UINT_32P              dr_h;
 
 M_DR_BODY UINT_32               dr_width;
 M_DR_BODY UINT_32               dr_height;
@@ -117,6 +181,8 @@ M_DR_BODY UINT_32               dr_renderbuffer_sun;
 
 M_DR_BODY FLOAT_32              dr_matrixp [16];
 M_DR_BODY FLOAT_32              dr_matrixv [16];
+
+M_DR_BODY UINT_32               dr_fullscreen;
 
 // WORLD BBOX
 
@@ -148,37 +214,36 @@ M_DR_BODY FLOAT_64              dr_origin [3];
 
 // SUN
 
-M_DR_BODY FLOAT_64              dr_sun_split_nearh      [M_DR_SUN_SPLITS];
-M_DR_BODY FLOAT_64              dr_sun_split_nearw      [M_DR_SUN_SPLITS];
-M_DR_BODY FLOAT_64              dr_sun_split_farh       [M_DR_SUN_SPLITS];
-M_DR_BODY FLOAT_64              dr_sun_split_farw       [M_DR_SUN_SPLITS];
+M_DR_BODY FLOAT_64P             dr_sun_split_nearh;
+M_DR_BODY FLOAT_64P             dr_sun_split_nearw;
+M_DR_BODY FLOAT_64P             dr_sun_split_farh;
+M_DR_BODY FLOAT_64P             dr_sun_split_farw;
 
 M_DR_BODY UINT_32               dr_sun_frustum_planesc;
 M_DR_BODY FLOAT_64              dr_sun_frustum_planesd  [12][4];
 M_DR_BODY FLOAT_32              dr_sun_frustum_planes   [12][4];
 
-M_DR_BODY UINT_32               dr_sun_split_planesc    [M_DR_SUN_SPLITS];
-M_DR_BODY FLOAT_64              dr_sun_split_planesd    [M_DR_SUN_SPLITS] [12] [4];
-M_DR_BODY FLOAT_32              dr_sun_split_planes     [M_DR_SUN_SPLITS] [12] [4];
-M_DR_BODY FLOAT_64              dr_sun_split_points     [M_DR_SUN_SPLITS]  [8] [3];
-M_DR_BODY UINT_8                dr_sun_split_clip       [M_DR_SUN_SPLITS];
+M_DR_BODY UINT_32P              dr_sun_split_planesc;
+M_DR_BODY FLOAT_64P             dr_sun_split_planesd;
+M_DR_BODY FLOAT_32P             dr_sun_split_planes;
+M_DR_BODY FLOAT_64P             dr_sun_split_points;
+M_DR_BODY UINT_8P               dr_sun_split_clip;
 
-M_DR_BODY UINT_32               dr_sun_count;                                           // count of splits
+M_DR_BODY FLOAT_32              dr_sun_split_finish;                                    // end of all shadows (depth)
+M_DR_BODY FLOAT_64P             dr_sun_split_start;                                     // projection centers distances
+M_DR_BODY FLOAT_64P             dr_sun_split_end;                                       // projection centers distances
 
 M_DR_BODY FLOAT_64              dr_sun_planefar;                                        // defines ortographics projection
-M_DR_BODY FLOAT_64              dr_sun_planesside       [M_DR_SUN_SPLITS];              // defines ortographics projection
+M_DR_BODY FLOAT_64P             dr_sun_planesside;                                      // defines ortographics projection
 
-M_DR_BODY FLOAT_64              dr_sun_view             [M_DR_SUN_SPLITS][16];          // view matrices for each split
-M_DR_BODY FLOAT_64              dr_sun_projection       [M_DR_SUN_SPLITS][16];          // projection matrices for each split
-M_DR_BODY FLOAT_64              dr_sun_splits           [M_DR_SUN_SPLITS][2];           // projection centers distances
-M_DR_BODY FLOAT_64              dr_sun_transitions      [M_DR_SUN_SPLITS];              // transition size for each split
+M_DR_BODY FLOAT_64P             dr_sun_view;                                            // view matrices for each split
+M_DR_BODY FLOAT_64P             dr_sun_projection;                                      // projection matrices for each split
+M_DR_BODY FLOAT_64P             dr_sun_transitions;                                     // transition size for each split
 
-M_DR_BODY FLOAT_32              dr_sun_splitend;                                        // end of all shadows (depth)
-
-M_DR_BODY FLOAT_32              dr_sun_matrices         [M_DR_SUN_SPLITS][16];          // matrices for backward transformation in shader
-M_DR_BODY FLOAT_32              dr_sun_depthmin         [M_DR_SUN_SPLITS];              // minimum linear depth of split
-M_DR_BODY FLOAT_32              dr_sun_depthmax         [M_DR_SUN_SPLITS];              // maximum linear depth of split
-M_DR_BODY FLOAT_32              dr_sun_offsets          [M_DR_SUN_SPLITS];              // sampling depth offsets (shadowmapping)
+M_DR_BODY FLOAT_32P             dr_sun_matrices;                                        // matrices for backward transformation in shader
+M_DR_BODY FLOAT_32P             dr_sun_depthmin;                                        // minimum linear depth of split
+M_DR_BODY FLOAT_32P             dr_sun_depthmax;                                        // maximum linear depth of split
+M_DR_BODY FLOAT_32P             dr_sun_offsets;                                         // sampling depth offsets (shadowmapping)
 
 M_DR_BODY FLOAT_64              dr_sun_distance;                                        // sun distance from 0,0,0
 
@@ -205,18 +270,18 @@ M_DR_BODY UINT_32               dr_stamp;
 // DRAW LISTS
 
 M_DR_BODY UINT_32               dr_quadpot;
-M_DR_BODY UINT_32               dr_quads [M_DR_MIPLEVELS];
+M_DR_BODY UINT_32P              dr_quads;
 M_DR_BODY UINT_32               dr_quad;
 
 // TEXTURES
 
-M_DR_BODY UINT_32               dr_sunshadows [M_DR_SUN_SPLITS];
+M_DR_BODY UINT_32P              dr_sunshadows;
 M_DR_BODY UINT_32               dr_sunshadowtmp;
 
 M_DR_BODY UINT_32               dr_auxhdr1;
 M_DR_BODY UINT_32               dr_auxhdr2;
-M_DR_BODY UINT_32               dr_auxA [M_DR_MIPLEVELS];
-M_DR_BODY UINT_32               dr_auxB [M_DR_MIPLEVELS];
+M_DR_BODY UINT_32P              dr_auxA;
+M_DR_BODY UINT_32P              dr_auxB;
 
 M_DR_BODY UINT_32               dr_depth;
 M_DR_BODY UINT_32               dr_rand;
@@ -239,13 +304,11 @@ M_DR_BODY UINT_32               dr_program_fog;
 M_DR_BODY UINT_32               dr_program_fogv;
 M_DR_BODY UINT_32               dr_program_fogf;
 
-M_DR_BODY UINT_32               dr_program_blur_vpot;
-M_DR_BODY UINT_32               dr_program_blur_vpotv;
-M_DR_BODY UINT_32               dr_program_blur_vpotf;
+// DEBUG SHADERS
 
-M_DR_BODY UINT_32               dr_program_blur_hpot;
-M_DR_BODY UINT_32               dr_program_blur_hpotv;
-M_DR_BODY UINT_32               dr_program_blur_hpotf;
+M_DR_BODY UINT_32               dr_program_debug_shadow;
+M_DR_BODY UINT_32               dr_program_debug_shadowv;
+M_DR_BODY UINT_32               dr_program_debug_shadowf;
 
 // SPECIFIC SHADERS
 
@@ -323,11 +386,6 @@ M_DR_BODY UINT_32               dr_program_grass_depth_normal;
 M_DR_BODY UINT_32               dr_program_grass_depth_normalv;
 M_DR_BODY UINT_32               dr_program_grass_depth_normalf;
 
-/// !!!!!!!!!!!!
-M_DR_BODY UINT_32               dr_program_grass_depth_shadow;
-M_DR_BODY UINT_32               dr_program_grass_depth_shadowv;
-M_DR_BODY UINT_32               dr_program_grass_depth_shadowf;
-
 // AA SHADERS
 
 M_DR_BODY UINT_32               dr_program_aa_blurvert;
@@ -386,6 +444,7 @@ M_DR_BODY UINT_32               dr_state_tex6;
 M_DR_BODY UINT_32               dr_state_tex7;
 M_DR_BODY UINT_32               dr_state_tex8;
 M_DR_BODY UINT_32               dr_state_tex9;
+M_DR_BODY UINT_32               dr_state_tex10;
 
 M_DR_BODY UINT_32               dr_state_tex0_rect;
 M_DR_BODY UINT_32               dr_state_tex1_rect;
@@ -417,6 +476,7 @@ M_DR_BODY UINT_8P               dr_intensitydata;
 // RADIX
 
 M_DR_BODY TRadix                dr_radix;
+M_DR_BODY TRadix                dr_radix_instanced;
 
 // CONTEXT
 
@@ -527,7 +587,7 @@ M_DR_BODY UINT_32P              dr_list_objects4;
 M_DR_BODY UINT_32P              dr_list_objects_view;
 M_DR_BODY UINT_32               dr_list_objects_viewc;
 
-M_DR_BODY UINT_32P              dr_list_objects_shadow_split    [M_DR_SUN_SPLITS];
-M_DR_BODY UINT_32               dr_list_objects_shadow_splitc   [M_DR_SUN_SPLITS];
+M_DR_BODY UINT_32PP             dr_list_objects_shadow_split;
+M_DR_BODY UINT_32P              dr_list_objects_shadow_splitc;
 
 #endif
