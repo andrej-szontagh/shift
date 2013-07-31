@@ -111,7 +111,7 @@ VOID dr_ClipAdd (UINT_32 object)
 
 #if 1
 
-INLINE VOID dr_ClipInitNode  (TNode *node, TNode *parent, FLOAT_32 xmin, FLOAT_32 ymin, FLOAT_32 zmin, FLOAT_32 xmax, FLOAT_32 ymax, FLOAT_32 zmax)
+VOID dr_ClipInitNode  (TNode *node, TNode *parent, FLOAT_32 xmin, FLOAT_32 ymin, FLOAT_32 zmin, FLOAT_32 xmax, FLOAT_32 ymax, FLOAT_32 zmax)
 {
     node->depth     = parent->depth + 1;
     node->chain     = NULL;
@@ -389,7 +389,7 @@ VOID dr_ClipAddRecursive (TNode *node, UINT_32 object)
 
 #if 1
 
-INLINE UINT_8 dr_ClipView (
+UINT_8 dr_ClipView (
                      
                 TBoundary * boundary
     )
@@ -485,7 +485,7 @@ INLINE UINT_8 dr_ClipView (
 
 #if 1
 
-INLINE UINT_8 dr_ClipShadow (
+UINT_8 dr_ClipShadow (
                      
                 TBoundary * boundary
     )
@@ -741,7 +741,7 @@ INLINE UINT_8 dr_ClipShadow (
 
 #if 1
 
-INLINE VOID dr_ClipViewGrabAllRecursive (
+VOID dr_ClipViewGrabAllRecursive (
 
                 TNode * node
     )
@@ -794,7 +794,7 @@ INLINE VOID dr_ClipViewGrabAllRecursive (
 
 #if 1
 
-INLINE VOID dr_ClipViewRecursive (
+VOID dr_ClipViewRecursive (
 
                 TNode * node, UINT_8 clip
     )
@@ -867,7 +867,7 @@ INLINE VOID dr_ClipViewRecursive (
 
 #if 1
 
-INLINE VOID dr_ClipShadowGrabAllRecursive (
+VOID dr_ClipShadowGrabAllRecursive (
 
                 TNode * node
     )
@@ -954,7 +954,7 @@ INLINE VOID dr_ClipShadowGrabAllRecursive (
 
 #if 1
 
-INLINE VOID dr_ClipShadowRecursive (
+VOID dr_ClipShadowRecursive (
 
                 TNode * node, UINT_8 clip
     )
@@ -1036,7 +1036,7 @@ INLINE VOID dr_ClipShadowRecursive (
 
 #if 1
 
-INLINE VOID dr_ClipCombinedGrabAllRecursive (
+VOID dr_ClipCombinedGrabAllRecursive (
 
                 TNode * node
     )

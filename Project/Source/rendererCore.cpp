@@ -5,7 +5,7 @@
 
 #if 1
 
-INLINE VOID dr_Matrices ()
+VOID dr_Matrices ()
 {
 
     // VIEW MATRIX
@@ -66,9 +66,7 @@ VOID    dr_Render (FLOAT_32 delta)
     GLuint target1 = dr_auxhdr1;
     GLuint target2 = dr_auxhdr2;
 
-    #ifdef M_DEBUG
-        debug_StartTimer (255);
-    #endif
+    debug_StartTimer (255);
 
     //////////////////////////////////////////////
     // CLEAR TAGS
@@ -108,14 +106,13 @@ VOID    dr_Render (FLOAT_32 delta)
     // CLIPPING
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     // init counters
-    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++)
+    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++) {
 
-            dr_list_objects_shadow_splitc [i] = 0;
+        dr_list_objects_shadow_splitc [i] = 0;
+    }
 
     // init counters
     dr_list_objects_viewc = 0;
@@ -123,17 +120,13 @@ VOID    dr_Render (FLOAT_32 delta)
     // clip all tree nodes
     dr_ClipCombinedRecursive (&dr_tree.root, M_CLIP_COLLIDING, M_CLIP_COLLIDING);
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "Clipper        : ", dr_debug_profile_clip, dr_debug_profile_clipg);
-    #endif
+    debug_EndTimerQuery (0, "Clipper        : ", dr_debug_profile_clip, dr_debug_profile_clipg);
 
     //////////////////////////////////////////////
     // LOD AND DISTANCE
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     // time stamp
     do dr_stamp ++; while (!dr_stamp);  // zero reserved
@@ -178,9 +171,7 @@ VOID    dr_Render (FLOAT_32 delta)
         }
     }
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "Detail         : ", dr_debug_profile_detail, dr_debug_profile_detailg);
-    #endif
+    debug_EndTimerQuery (0, "Detail         : ", dr_debug_profile_detail, dr_debug_profile_detailg);
 
     //////////////////////////////////////////////
     // FBO DEPTH ONLY
@@ -194,9 +185,7 @@ VOID    dr_Render (FLOAT_32 delta)
     // OCCLUSION CULLING
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     // using only part
     glViewport (0, 0, dr_w [dr_control_culling], dr_h [dr_control_culling]);
@@ -210,14 +199,14 @@ VOID    dr_Render (FLOAT_32 delta)
     // clear only part of buffer
     glEnable  (GL_SCISSOR_TEST);    glClear (GL_DEPTH_BUFFER_BIT);
     glDisable (GL_SCISSOR_TEST);
-
+/*
     // draw
     dr_DrawOcclusions ();
     
     #ifdef M_DEBUG
         debug_EndTimerQuery (0, "Occlusion Cull.: ", dr_debug_profile_occlusion, dr_debug_profile_occlusiong);
     #endif
-
+*/
     //////////////////////////////////////////////
     // SET MATERIAL COUNTERS FOR VIEW
     //////////////////////////////////////////////
@@ -243,17 +232,13 @@ VOID    dr_Render (FLOAT_32 delta)
     // SUN SHADOWMAPS
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     glViewport (0, 0, dr_control_sun_res, dr_control_sun_res);
 
     dr_SunShadows ();
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "Shadows        : ", dr_debug_profile_shadows, dr_debug_profile_shadowsg);
-    #endif
+    debug_EndTimerQuery (0, "Shadows        : ", dr_debug_profile_shadows, dr_debug_profile_shadowsg);
 
     // DEBUG
 
@@ -318,15 +303,11 @@ VOID    dr_Render (FLOAT_32 delta)
     // SORTING AND CULLING
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     dr_Sort ();
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "Sorting        : ", dr_debug_profile_sort, dr_debug_profile_sortg);
-    #endif
+    debug_EndTimerQuery (0, "Sorting        : ", dr_debug_profile_sort, dr_debug_profile_sortg);
 
     //////////////////////////////////////////////
     // GEOMETRY PASSES
@@ -351,14 +332,13 @@ VOID    dr_Render (FLOAT_32 delta)
     glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_depth,  0);
     glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, 0,         0);
     glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_TEXTURE_RECTANGLE_ARB, 0,         0);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT, GL_TEXTURE_RECTANGLE_ARB, 0,         0);
 
     //////////////////////////////////////////////
     // DEPTH PASS
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     // depth mode
     M_STATE_DEPTHMASK_SET;  glDepthFunc (GL_LESS);
@@ -372,9 +352,7 @@ VOID    dr_Render (FLOAT_32 delta)
     // draw
     dr_DrawDepth ();
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "DepthPass      : ", dr_debug_profile_depth, dr_debug_profile_depthg);
-    #endif
+    debug_EndTimerQuery (0, "DepthPass      : ", dr_debug_profile_depth, dr_debug_profile_depthg);
 
     //////////////////////////////////////////////
     // RENDERING COLOR BACK
@@ -386,42 +364,46 @@ VOID    dr_Render (FLOAT_32 delta)
     // G-BUFFERS PASS
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_G1, 0);
     glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_G2, 0);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_G3, 0);
 
     // render targets
-    GLenum buffers [2] = {  GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT };   glDrawBuffers  (2, buffers);
+
+    GLenum buffers [3] = {  GL_COLOR_ATTACHMENT0_EXT, GL_COLOR_ATTACHMENT1_EXT, GL_COLOR_ATTACHMENT2_EXT };     glDrawBuffers  (3, buffers);
 
     // early-z culling
+
     M_STATE_DEPTHMASK_CLEAR;    glDepthFunc (GL_EQUAL);
 
-    //  glEnable  (GL_POLYGON_OFFSET_FILL); glPolygonOffset (-1.0f, -1.0f);
+    // draw
 
     dr_Draw ();
 
-    // BACK
-
-    //  glDisable (GL_POLYGON_OFFSET_FILL);
+    // restore
 
     M_STATE_DEPTHMASK_SET;      glDepthFunc (GL_LEQUAL);
 
     glDrawBuffers (1, buffers);
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "GBuffers       : ", dr_debug_profile_gbuffers, dr_debug_profile_gbuffersg);
-    #endif
+    debug_EndTimerQuery (0, "GBuffers       : ", dr_debug_profile_gbuffers, dr_debug_profile_gbuffersg);
 
     // DEBUG
 
     #ifdef M_DEBUG
 
-        if ((debug >= 1) && (debug <= 2)) {
+        if ((debug >= 1) && (debug <= 3)) {
 
-            glUseProgram  (0);
+            glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT,  GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0, 0);
+            glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0, 0);
+            glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0, 0);
+            glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT2_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0, 0);
+
+            glUseProgram (0);
+
+		    glDrawBuffer (GL_BACK); glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
             glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
@@ -430,6 +412,7 @@ VOID    dr_Render (FLOAT_32 delta)
             //  M_STATE_TEX0_RECT_CLEAR;
             M_STATE_TEX1_RECT_CLEAR;
             M_STATE_TEX2_RECT_CLEAR;
+            M_STATE_TEX3_RECT_CLEAR;
 
 			M_STATE_TEX0_CLEAR;
 			M_STATE_TEX1_CLEAR;
@@ -442,19 +425,26 @@ VOID    dr_Render (FLOAT_32 delta)
 			M_STATE_TEX8_CLEAR;
 			M_STATE_TEX9_CLEAR;
 			M_STATE_TEX10_CLEAR;
+			M_STATE_TEX12_CLEAR;
+			M_STATE_TEX13_CLEAR;
+			M_STATE_TEX14_CLEAR;
 
             M_STATE_CULLFACE_CLEAR;
             M_STATE_DEPTHTEST_CLEAR;
+            M_STATE_DEPTHMASK_CLEAR;
 
             M_STATE_MATRIXMODE_MODELVIEW;	glLoadIdentity ();
             M_STATE_MATRIXMODE_PROJECTION;	glLoadIdentity ();
 
+            glActiveTexture (GL_TEXTURE0);
+
+            glColor4f (1.0, 1.0, 1.0, 1.0);
+
             switch (debug) {
 
-                case 1:     glColor4f (1.0, 1.0, 1.0, 1.0);
-                    M_STATE_TEX0_RECT_SET (dr_G1);      break;
-                case 2:     glColor4f (1.0, 1.0, 1.0, 1.0);
-                    M_STATE_TEX0_RECT_SET (dr_G2);      break;
+                case 1: M_STATE_TEX0_RECT_SET (dr_G1);  break;
+                case 2: M_STATE_TEX0_RECT_SET (dr_G2);  break;
+                case 3: M_STATE_TEX0_RECT_SET (dr_G2);  break;
             }
 
             glCallList (dr_quads [0]);
@@ -468,39 +458,35 @@ VOID    dr_Render (FLOAT_32 delta)
     // SUN
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     // states
 
-    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, target1,    0);
-    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT1_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0,          0);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT,  GL_DEPTH_ATTACHMENT_EXT,    GL_TEXTURE_RECTANGLE_ARB, 0,        0);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT,  GL_COLOR_ATTACHMENT0_EXT,   GL_TEXTURE_RECTANGLE_ARB, target1,  0);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT,  GL_COLOR_ATTACHMENT1_EXT,   GL_TEXTURE_RECTANGLE_ARB, 0,        0);
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT,  GL_COLOR_ATTACHMENT2_EXT,   GL_TEXTURE_RECTANGLE_ARB, 0,        0);
 
-    // early z cull
+    // depth test off
 
     M_STATE_CULLFACE_CLEAR;
-    M_STATE_DEPTHMASK_CLEAR;    M_STATE_DEPTHTEST_SET;
-
-    glDepthRange (1.0, 1.0);    glDepthFunc (GL_GREATER);
+    M_STATE_DEPTHMASK_CLEAR;    M_STATE_DEPTHTEST_CLEAR;
 
     // draw
 
     dr_SunDraw ();
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "Sun            : ", dr_debug_profile_sun, dr_debug_profile_sung);
-    #endif
+    debug_EndTimerQuery (0, "Sun            : ", dr_debug_profile_sun, dr_debug_profile_sung);
 
     //////////////////////////////////////////////
     // ENVIROMENT OBJECT
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-        debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
     // early z cull
+
+    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT,  GL_DEPTH_ATTACHMENT_EXT,    GL_TEXTURE_RECTANGLE_ARB, dr_depth, 0);
 
     M_STATE_CULLFACE_CLEAR;
     M_STATE_DEPTHMASK_CLEAR;    M_STATE_DEPTHTEST_SET;
@@ -531,10 +517,13 @@ VOID    dr_Render (FLOAT_32 delta)
     M_STATE_TEX8_CLEAR;
     M_STATE_TEX9_CLEAR;
     M_STATE_TEX10_CLEAR;
+    M_STATE_TEX11_CLEAR;
+    M_STATE_TEX12_CLEAR;
 
     M_STATE_TEX0_RECT_SET   (dr_enviroment_material->diffuse);
     M_STATE_TEX1_RECT_CLEAR;
     M_STATE_TEX2_RECT_CLEAR;
+    M_STATE_TEX3_RECT_CLEAR;
 
     // special projection
 
@@ -568,31 +557,34 @@ VOID    dr_Render (FLOAT_32 delta)
 
     M_STATE_MATRIXMODE_PROJECTION;  glPopMatrix ();
 
-    glBindBufferARB (GL_ELEMENT_ARRAY_BUFFER_ARB, 0);
-    glBindBufferARB (GL_ARRAY_BUFFER_ARB, 0);
+    M_STATE_INDICES_CLEAR;
 
-    glDepthRange (0.0, 1.0);    glDepthFunc (GL_LESS);
+    glBindBufferARB (GL_ARRAY_BUFFER_ARB, 0);           /// HOW TO USE THIS GLOBALLY ?????????????????????
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "Enviroment     : ", dr_debug_profile_enviroment, dr_debug_profile_enviromentg);
-    #endif
+    glDepthRange (0.0, 1.0);    glDepthFunc (GL_LEQUAL);
+
+    M_STATE_DEPTHTEST_CLEAR;
+
+    debug_EndTimerQuery (0, "Enviroment     : ", dr_debug_profile_enviroment, dr_debug_profile_enviromentg);
+
+    //////////////////////////////////////////////
+    // NO DEPTH OPERATIONS FROM THIS POINT
+    //////////////////////////////////////////////
+
+    glFramebufferTexture2DEXT   (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_RECTANGLE_ARB, 0, 0);
+
+    // depth test off
+
+    M_STATE_CULLFACE_CLEAR;
+    M_STATE_DEPTHTEST_CLEAR;    M_STATE_DEPTHMASK_CLEAR;
 
     //////////////////////////////////////////////
     // SSAO
     //////////////////////////////////////////////
 
+    debug_StartTimerQuery (0);
+
     if (dr_control_ssao_enable) {
-
-        #ifdef M_DEBUG
-			debug_StartTimerQuery (0);
-        #endif
-
-        // early z cull
-
-        M_STATE_CULLFACE_CLEAR;
-        M_STATE_DEPTHMASK_CLEAR;    M_STATE_DEPTHTEST_SET;
-
-        glDepthRange (1.0, 1.0);    glDepthFunc (GL_GREATER);
 
         // SSAO
 
@@ -600,49 +592,44 @@ VOID    dr_Render (FLOAT_32 delta)
 
         glViewport (0, 0, dr_w [dr_control_ssao_res], dr_h [dr_control_ssao_res]);
 
-        // clear
-
-        glClear (GL_COLOR_BUFFER_BIT);  glClearColor (1.0, 1.0, 1.0, 1.0);
-
         // program
 
         glUseProgram  (dr_program_ssao);
 
         // textures
 
-        M_STATE_TEX1_SET (dr_rand);
-
-        M_STATE_TEX0_RECT_SET   (dr_G2);
+        M_STATE_TEX0_RECT_SET   (dr_depth);
         M_STATE_TEX1_RECT_CLEAR;
-        M_STATE_TEX2_RECT_SET   (target1);
+        M_STATE_TEX1_SET        (dr_rand);
+        M_STATE_TEX2_RECT_SET   (dr_G2);
+
+        // draw
 
         glCallList (dr_quads [0]);
 
-        // depth test off
-
-        M_STATE_DEPTHTEST_CLEAR;
-
-        glDepthRange (0.0, 1.0);    glDepthFunc (GL_LESS);
-
-        // VERTICAL BILATERAL BLUR
-
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [dr_control_ssao_res], 0);
-        glUseProgram  (dr_program_ssao_blurvert);
+        // clear
 
         M_STATE_TEX1_CLEAR;
-
-        M_STATE_TEX0_RECT_SET   (dr_auxA [dr_control_ssao_res]);
-        M_STATE_TEX1_RECT_SET   (dr_G2);
         M_STATE_TEX2_RECT_CLEAR;
 
-        glCallList (dr_quads [dr_control_ssao_res]);
+        // VERTICAL BILATERAL BLUR & UPSCALE
+
+        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxB [0], 0);
+        glUseProgram  (dr_program_ssao_blurvert);
+
+        glViewport (0, 0, dr_width, dr_height);
+
+        M_STATE_TEX1_RECT_SET   (dr_auxA [dr_control_ssao_res]);
+
+        glCallList (dr_quads [0]);
 
         // DEBUG
 
         #ifdef M_DEBUG
-                  
+
             if ((debug >= 11) && (debug <= 11)) {
 
+                // clear raw image to white so combined image will contain only SSAO
                 glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, target1, 0);
                 glViewport (0, 0, dr_width, dr_height);
 
@@ -657,48 +644,71 @@ VOID    dr_Render (FLOAT_32 delta)
         glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, target2, 0);
         glUseProgram  (dr_program_ssao_blurhblend);
 
-        glViewport (0, 0, dr_width, dr_height);
-
-        M_STATE_TEX0_RECT_SET   (dr_auxB [dr_control_ssao_res]);
         M_STATE_TEX1_RECT_SET   (target1);
-        M_STATE_TEX2_RECT_SET   (dr_G2);
+        M_STATE_TEX2_RECT_SET   (dr_auxB [0]);
 
         glCallList (dr_quads [0]);
-
-        #ifdef M_DEBUG
-	        debug_EndTimerQuery (0, "SSAO           : ", dr_debug_profile_ssao, dr_debug_profile_ssaog);
-        #endif
-
+  
         // DEBUG
 
         #ifdef M_DEBUG
                   
             if ((debug >= 10) && (debug <= 11)) {
 
-                glUseProgram  (dr_program_ssao_debug);
+                glUseProgram (0);
 
                 glBindFramebufferEXT (GL_FRAMEBUFFER_EXT, 0);
 
+		        glDrawBuffer (GL_BACK); glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+                //  M_STATE_TEX0_RECT_CLEAR;
+                M_STATE_TEX1_RECT_CLEAR;
+                M_STATE_TEX2_RECT_CLEAR;
+
+			    M_STATE_TEX0_CLEAR;
+			    M_STATE_TEX1_CLEAR;
+			    M_STATE_TEX2_CLEAR;
+			    M_STATE_TEX3_CLEAR;
+			    M_STATE_TEX4_CLEAR;
+			    M_STATE_TEX5_CLEAR;
+			    M_STATE_TEX6_CLEAR;
+			    M_STATE_TEX7_CLEAR;
+			    M_STATE_TEX8_CLEAR;
+			    M_STATE_TEX9_CLEAR;
+			    M_STATE_TEX10_CLEAR;
+			    M_STATE_TEX11_CLEAR;
+			    M_STATE_TEX12_CLEAR;
+
+                M_STATE_CULLFACE_CLEAR;
+                M_STATE_DEPTHTEST_CLEAR;    M_STATE_DEPTHMASK_CLEAR;
+
+                M_STATE_MATRIXMODE_MODELVIEW;	glLoadIdentity ();
+                M_STATE_MATRIXMODE_PROJECTION;	glLoadIdentity ();
+
                 glViewport (0, 0, dr_width, dr_height);
 
-                glActiveTexture (GL_TEXTURE0); glEnable (GL_TEXTURE_RECTANGLE_ARB);
+                glColor4f (1.0, 1.0, 1.0, 1.0);
 
 				switch (debug) {
-					case 10:	glBindTexture (GL_TEXTURE_RECTANGLE_ARB, dr_auxA [dr_control_ssao_res]);	glCallList (dr_quads [dr_control_ssao_res]);	break;
-					case 11:	glBindTexture (GL_TEXTURE_RECTANGLE_ARB, target2);	                        glCallList (dr_quads [0]);	                    break;
+					case 10:	M_STATE_TEX0_RECT_SET (dr_auxA [dr_control_ssao_res]);	glCallList (dr_quads [dr_control_ssao_res]);	break;
+					case 11:	M_STATE_TEX0_RECT_SET (target2);                        glCallList (dr_quads [0]);	                    break;
 				}
-
-                glDisable (GL_TEXTURE_RECTANGLE_ARB);
-
-                M_STATE_DEPTHMASK_SET;
-
-                M_STATE_MATRIXMODE_PROJECTION;	glPopMatrix ();
-                M_STATE_MATRIXMODE_MODELVIEW;	glPopMatrix (); 
                 
+                M_STATE_TEX0_RECT_CLEAR;
+
+                debug_EndTimerQuery (0, "SSAO           : ", dr_debug_profile_ssao, dr_debug_profile_ssaog);
+
                 return;
             }
 
         #endif
+
+        // clear
+
+        M_STATE_TEX1_RECT_CLEAR;
+        M_STATE_TEX2_RECT_CLEAR;
+        
+        // swap targets
 
         GLuint tmp;
 
@@ -707,142 +717,129 @@ VOID    dr_Render (FLOAT_32 delta)
                         target2 = tmp;
     }
 
+    debug_EndTimerQuery (0, "SSAO           : ", dr_debug_profile_ssao, dr_debug_profile_ssaog);
+
     //////////////////////////////////////////////
     // FOG
     //////////////////////////////////////////////
 
     if (dr_control_fog) {
 
-        #ifdef M_DEBUG
-			debug_StartTimerQuery (0);
-        #endif
+        debug_StartTimerQuery (0);
 
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_depth,    0);
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, target1,     0);
+        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, target1, 0);
 
-        M_STATE_DEPTHTEST_SET;
-
-        // early z cull
-
-        M_STATE_DEPTHMASK_CLEAR;    glDepthFunc (GL_NOTEQUAL);
-
-        // all depths 1.0
-
-        glDepthRange (1.0, 1.0);
+        // program
 
         glUseProgram (dr_program_fog);
         
         // textures
 
-        M_STATE_TEX0_RECT_CLEAR;
+        M_STATE_TEX0_RECT_SET (dr_depth);
         M_STATE_TEX1_RECT_CLEAR;
-        M_STATE_TEX2_RECT_SET   (dr_G2);
+        M_STATE_TEX2_RECT_CLEAR;
 
-        glColor3fv (dr_fog_color);
+        // blending
 
-		glEnable (GL_BLEND);	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable (GL_BLEND);	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);     glColor3fv (dr_fog_color);
+
+        // draw
 
         glCallList (dr_quads [0]);
 
-		glDisable (GL_BLEND);
+        // restore
 
-		// restore
-
-        glColor3f (1.0, 1.0, 1.0);
-
-        glDepthRange (0.0, 1.0);
-
-        #ifdef M_DEBUG
-            debug_EndTimerQuery (0, "Fog            : ", dr_debug_profile_fog, dr_debug_profile_fogg);
-        #endif
+		glDisable (GL_BLEND);   glColor3f (1.0, 1.0, 1.0);
     }
+
+    debug_EndTimerQuery (0, "Fog            : ", dr_debug_profile_fog, dr_debug_profile_fogg);
 
     //////////////////////////////////////////////
     // BLENDED OBJECTS
     //////////////////////////////////////////////
-/*
-    #ifdef M_DEBUG
-        debug_StartTimer (0);
-    #endif
 
-    // states
+    //#ifdef M_DEBUG
+    //    debug_StartTimer (0);
+    //#endif
 
-    glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_depth, 0);
+    //// states
 
-    M_STATE_DEPTHTEST_SET;
+    //glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, dr_depth, 0);
 
-    // early z cull
+    //M_STATE_DEPTHTEST_SET;
 
-    M_STATE_DEPTHMASK_CLEAR; glDepthFunc (GL_LESS);
+    //// early z cull
 
-    M_STATE_MATRIXMODE_PROJECTION;  glPushMatrix ();    glLoadMatrixf (dr_matrixp);
-    M_STATE_MATRIXMODE_MODELVIEW;   glPushMatrix ();    glLoadMatrixf (dr_matrixv);
+    //M_STATE_DEPTHMASK_CLEAR; glDepthFunc (GL_LESS);
 
-    // shadow matrix
+    //M_STATE_MATRIXMODE_PROJECTION;  glPushMatrix ();    glLoadMatrixf (dr_matrixp);
+    //M_STATE_MATRIXMODE_MODELVIEW;   glPushMatrix ();    glLoadMatrixf (dr_matrixv);
 
-    glActiveTexture  (GL_TEXTURE0);
-    M_STATE_MATRIXMODE_TEXTURE;     glPushMatrix ();    glLoadMatrixd (&dr_sun.matrices [0]);
+    //// shadow matrix
 
-    // lighting params
+    //glActiveTexture  (GL_TEXTURE0);
+    //M_STATE_MATRIXMODE_TEXTURE;     glPushMatrix ();    glLoadMatrixd (&dr_sun.matrices [0]);
 
-    glMultiTexCoord3f (GL_TEXTURE1, dr_sun.intensity, dr_sun.ambient, (FLOAT_32) dr_sun.offsets  [0]);
+    //// lighting params
 
-    // fog params
+    //glMultiTexCoord3f (GL_TEXTURE1, dr_sun.intensity, dr_sun.ambient, (FLOAT_32) dr_sun.offsets  [0]);
 
-    glSecondaryColor3fv (dr_fog.color);
+    //// fog params
 
-    // blending on
-    glEnable (GL_BLEND);
+    //glSecondaryColor3fv (dr_fog.color);
 
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //// blending on
+    //glEnable (GL_BLEND);
 
-    dr_DrawBegin ();    dr_DrawBlend ();    dr_DrawEnd ();
+    //glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glActiveTexture (GL_TEXTURE0);
+    //dr_DrawBegin ();    dr_DrawBlend ();    dr_DrawEnd ();
 
-    M_STATE_MATRIXMODE_TEXTURE;      glPopMatrix ();
-    M_STATE_MATRIXMODE_MODELVIEW;    glPopMatrix ();
-    M_STATE_MATRIXMODE_PROJECTION;   glPopMatrix ();
+    //glActiveTexture (GL_TEXTURE0);
 
-    #ifdef M_DEBUG
-        debug_EndTimer (0, "Blended        : ");
-    #endif
-*/
+    //M_STATE_MATRIXMODE_TEXTURE;      glPopMatrix ();
+    //M_STATE_MATRIXMODE_MODELVIEW;    glPopMatrix ();
+    //M_STATE_MATRIXMODE_PROJECTION;   glPopMatrix ();
+
+    //#ifdef M_DEBUG
+    //    debug_EndTimer (0, "Blended        : ");
+    //#endif
+
     //////////////////////////////////////////////
     // AA
     //////////////////////////////////////////////
 
+    debug_StartTimerQuery (0);
+
     if (dr_control_aa) {
-
-        #ifdef M_DEBUG
-			debug_StartTimerQuery (0);
-        #endif
-
-        M_STATE_DEPTHTEST_CLEAR;
-
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,   GL_TEXTURE_RECTANGLE_ARB, 0,          0);
-        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, target2,    0);
 
         // textures
 
-        M_STATE_TEX0_RECT_SET   (target1);
-        M_STATE_TEX1_RECT_SET   (dr_depth);
+        M_STATE_TEX0_RECT_SET   (dr_depth);
         M_STATE_TEX2_RECT_CLEAR;
+
+        // horizontal bilateral blur
+
+        glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, target2,    0);
+
+        M_STATE_TEX1_RECT_SET   (target1);
 
         glUseProgram  (dr_program_aa_blurhoriz);
 
         glCallList (dr_quads [0]);
 
+        // vertical bilateral blur
+
         glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,  GL_TEXTURE_RECTANGLE_ARB, target1,	0);
+
+        M_STATE_TEX1_RECT_SET   (target2);
 
         glUseProgram  (dr_program_aa_blurvert);
 
         glCallList (dr_quads [0]);
-
-        #ifdef M_DEBUG
-            debug_EndTimerQuery (0, "AA             : ", dr_debug_profile_aa, dr_debug_profile_aag);
-        #endif
     }
+
+    debug_EndTimerQuery (0, "AA             : ", dr_debug_profile_aa, dr_debug_profile_aag);
 
     //////////////////////////////////////////////
     // MATRICES FOR FIXED PIPELINE PROCESSING
@@ -855,9 +852,7 @@ VOID    dr_Render (FLOAT_32 delta)
     // TONEMAPPING
     //////////////////////////////////////////////
 
-    #ifdef M_DEBUG
-		debug_StartTimerQuery (0);
-    #endif
+    debug_StartTimerQuery (0);
 
 	FLOAT_32 newscale = 1.0;
 
@@ -865,7 +860,6 @@ VOID    dr_Render (FLOAT_32 delta)
 
 		// HI-PASS
 
-		glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,  GL_TEXTURE_RECTANGLE_ARB, 0, 0);
 		glFramebufferTexture2DEXT (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_TEXTURE_RECTANGLE_ARB, dr_auxA [0], 0);
 
         M_STATE_DEPTHTEST_CLEAR;
@@ -1039,6 +1033,21 @@ VOID    dr_Render (FLOAT_32 delta)
 		M_STATE_TEX0_RECT_SET (target1);
         M_STATE_TEX1_RECT_CLEAR;
         M_STATE_TEX2_RECT_CLEAR;
+        M_STATE_TEX3_RECT_CLEAR;
+
+        M_STATE_TEX0_CLEAR;
+        M_STATE_TEX1_CLEAR;
+        M_STATE_TEX2_CLEAR;
+        M_STATE_TEX3_CLEAR;
+        M_STATE_TEX4_CLEAR;
+        M_STATE_TEX5_CLEAR;
+        M_STATE_TEX6_CLEAR;
+        M_STATE_TEX7_CLEAR;
+        M_STATE_TEX8_CLEAR;
+        M_STATE_TEX9_CLEAR;
+        M_STATE_TEX10_CLEAR;
+        M_STATE_TEX11_CLEAR;
+        M_STATE_TEX12_CLEAR;
 
 		glColor3f (dr_intensityscale, dr_intensityscale, dr_intensityscale);
 
@@ -1057,9 +1066,7 @@ VOID    dr_Render (FLOAT_32 delta)
 
 	dr_intensityscale = newscale;
 
-    #ifdef M_DEBUG
-        debug_EndTimerQuery (0, "Tonemapping    : ", dr_debug_profile_tonemap, dr_debug_profile_tonemapg);
-    #endif
+    debug_EndTimerQuery (0, "Tonemapping    : ", dr_debug_profile_tonemap, dr_debug_profile_tonemapg);
 
     //////////////////////////////////////////////
     // GUI
@@ -1076,6 +1083,7 @@ VOID    dr_Render (FLOAT_32 delta)
         M_STATE_TEX0_RECT_CLEAR;
         M_STATE_TEX1_RECT_CLEAR;
         M_STATE_TEX2_RECT_CLEAR;
+        M_STATE_TEX3_RECT_CLEAR;
 
         CHAR text [4096];
         
@@ -1096,15 +1104,19 @@ VOID    dr_Render (FLOAT_32 delta)
         sprintf (text, "%s - culled    : %i \n",   text, dr_debug_culled);
         sprintf (text, "%s - missed    : %i \n\n", text, dr_debug_missed);
 
-        sprintf (text, "%s - PROFILER  : Sorting        : %Lf ms / %Lf ms \n", text, dr_debug_profile_sort,       dr_debug_profile_sortg);
-        sprintf (text, "%s - PROFILER  : Clipping       : %Lf ms / %Lf ms \n", text, dr_debug_profile_clip,       dr_debug_profile_clipg);
-        sprintf (text, "%s - PROFILER  : Occlusion      : %Lf ms / %Lf ms \n", text, dr_debug_profile_occlusion,  dr_debug_profile_occlusiong);
-        sprintf (text, "%s - PROFILER  : Details        : %Lf ms / %Lf ms \n", text, dr_debug_profile_detail,     dr_debug_profile_detailg);
-        sprintf (text, "%s - PROFILER  : Shadows        : %Lf ms / %Lf ms \n", text, dr_debug_profile_shadows,    dr_debug_profile_shadowsg);
-        sprintf (text, "%s - PROFILER  : G-Buffers      : %Lf ms / %Lf ms \n", text, dr_debug_profile_gbuffers,   dr_debug_profile_gbuffersg);
-        sprintf (text, "%s - PROFILER  : Depth          : %Lf ms / %Lf ms \n", text, dr_debug_profile_depth,      dr_debug_profile_depthg);
-        sprintf (text, "%s - PROFILER  : Sun            : %Lf ms / %Lf ms \n", text, dr_debug_profile_sun,        dr_debug_profile_sung);
-        sprintf (text, "%s - PROFILER  : Enviroment     : %Lf ms / %Lf ms \n", text, dr_debug_profile_enviroment, dr_debug_profile_enviromentg);
+        sprintf (text, "%s - PROFILER  : Sorting        : %f ms / %f ms \n", text, dr_debug_profile_sort,         dr_debug_profile_sortg);
+        sprintf (text, "%s - PROFILER  : Clipping       : %f ms / %f ms \n", text, dr_debug_profile_clip,         dr_debug_profile_clipg);
+        sprintf (text, "%s - PROFILER  : Occlusion      : %f ms / %f ms \n", text, dr_debug_profile_occlusion,    dr_debug_profile_occlusiong);
+        sprintf (text, "%s - PROFILER  : Details        : %f ms / %f ms \n", text, dr_debug_profile_detail,       dr_debug_profile_detailg);
+        sprintf (text, "%s - PROFILER  : Shadows        : %f ms / %f ms \n", text, dr_debug_profile_shadows,      dr_debug_profile_shadowsg);
+        sprintf (text, "%s - PROFILER  : G-Buffers      : %f ms / %f ms \n", text, dr_debug_profile_gbuffers,     dr_debug_profile_gbuffersg);
+        sprintf (text, "%s - PROFILER  : Depth          : %f ms / %f ms \n", text, dr_debug_profile_depth,        dr_debug_profile_depthg);
+        sprintf (text, "%s - PROFILER  : Sun            : %f ms / %f ms \n", text, dr_debug_profile_sun,          dr_debug_profile_sung);
+        sprintf (text, "%s - PROFILER  : Enviroment     : %f ms / %f ms \n", text, dr_debug_profile_enviroment,   dr_debug_profile_enviromentg);
+        sprintf (text, "%s - PROFILER  : SSAO           : %f ms / %f ms \n", text, dr_debug_profile_ssao,         dr_debug_profile_ssaog);
+        sprintf (text, "%s - PROFILER  : Tonemapping    : %f ms / %f ms \n", text, dr_debug_profile_tonemap,      dr_debug_profile_tonemapg);
+        sprintf (text, "%s - PROFILER  : Fog            : %f ms / %f ms \n", text, dr_debug_profile_fog,          dr_debug_profile_fogg);
+        sprintf (text, "%s - PROFILER  : AA             : %f ms / %f ms \n", text, dr_debug_profile_aa,           dr_debug_profile_aag);
 
         sprintf (text, "%s\n\n", text);
 

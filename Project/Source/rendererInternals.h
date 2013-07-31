@@ -11,29 +11,11 @@
 
 #ifdef M_DR_BODY
 
-    FLOAT_32    dr_campos   [3] =   {  -61.259949f,       86.954887f,     -163.76936f     };
-    FLOAT_32    dr_camdir   [3] =   {   -0.38013774f,     -0.26364070f,      0.88656020f  };
-    FLOAT_32    dr_cambi    [3] =   {   -0.91907620f,      0.00000000f,     -0.39407989f  };
-    FLOAT_32    dr_camup    [3] =   {   -0.10389550f,      0.96462101f,      0.24230589f  };
+    FLOAT_32    dr_campos   [3] =   {   89.403015f,       13.763757f,      121.25739f     };
+    FLOAT_32    dr_camdir   [3] =   {    0.87422132f,     -0.33092949f,     -0.35527843f  };
+    FLOAT_32    dr_cambi    [3] =   {    0.37649167f,      0.00000000f,      0.92642003f  };
+    FLOAT_32    dr_camup    [3] =   {    0.30657971f,      0.94365549f,     -0.12459219f  };
     FLOAT_32    dr_worldup  [3] =   {    0.0f,             1.0f,             0.0f         };
-
-    //FLOAT_32    dr_campos   [3] =   { -144.18692f,       -35.554573f,     -128.09940f     };
-    //FLOAT_32    dr_camdir   [3] =   {    0.15276398f,     -0.47443116f,     -0.86693615f  };
-    //FLOAT_32    dr_cambi    [3] =   {    0.98482728f,      0.00000000f,      0.17353773f  };
-    //FLOAT_32    dr_camup    [3] =   {    0.082331710f,     0.88029265f,     -0.46723273f  };
-    //FLOAT_32    dr_worldup  [3] =   {    0.0f,             1.0f,             0.0f         };
-
-//    FLOAT_32    dr_campos   [3] =   {  -61.259949f,       86.954887f,     -163.76936f     };
-//    FLOAT_32    dr_camdir   [3] =   {   -0.38013774f,     -0.26364070f,      0.88656020f  };
-//    FLOAT_32    dr_cambi    [3] =   {   -0.91907620f,      0.00000000f,     -0.39407989f  };
-//    FLOAT_32    dr_camup    [3] =   {   -0.10389550f,      0.96462101f,      0.24230589f  };
-//    FLOAT_32    dr_worldup  [3] =   {    0.0f,             1.0f,             0.0f         };
-
-//    FLOAT_32    dr_campos   [3] =   {  -95.784744f,       74.410210f,     -115.75385f     };
-//    FLOAT_32    dr_camdir   [3] =   {    0.76815635f,      0.062062062f,     0.63724738f  };
-//    FLOAT_32    dr_cambi    [3] =   {   -0.63847816f,      0.00000000f,      0.76963997f  };
-//    FLOAT_32    dr_camup    [3] =   {   -0.047765445f,     0.99807239f,     -0.039625272f };
-//    FLOAT_32    dr_worldup  [3] =   {    0.0f,             1.0f,             0.0f         };
 
 #else
 
@@ -288,6 +270,7 @@ M_DR_BODY UINT_32               dr_rand;
 M_DR_BODY UINT_32               dr_text;
 M_DR_BODY UINT_32               dr_G1;
 M_DR_BODY UINT_32               dr_G2;
+M_DR_BODY UINT_32               dr_G3;
 
 // GENERAL SHADERS
 
@@ -314,29 +297,7 @@ M_DR_BODY UINT_32               dr_program_debug_shadowf;
 
 // SOLID
 
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_normal;
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_normalv;
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_normalf;
-
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_morph;
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_morphv;
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_morphf;
-
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_shrink;
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_shrinkv;
-M_DR_BODY UINT_32               dr_program_solid_gbuffers_shrinkf;
-
-M_DR_BODY UINT_32               dr_program_solid_depth_normal;
-M_DR_BODY UINT_32               dr_program_solid_depth_normalv;
-M_DR_BODY UINT_32               dr_program_solid_depth_normalf;
-
-M_DR_BODY UINT_32               dr_program_solid_depth_morph;
-M_DR_BODY UINT_32               dr_program_solid_depth_morphv;
-M_DR_BODY UINT_32               dr_program_solid_depth_morphf;
-
-M_DR_BODY UINT_32               dr_program_solid_depth_shrink;
-M_DR_BODY UINT_32               dr_program_solid_depth_shrinkv;
-M_DR_BODY UINT_32               dr_program_solid_depth_shrinkf;
+M_DR_BODY UINT_32               dr_program_solid [256];
 
 // TERRAIN
 
@@ -360,21 +321,7 @@ M_DR_BODY UINT_32               dr_program_terrain_depth_morphf;
 
 // FOLIAGE
 
-M_DR_BODY UINT_32               dr_program_foliage_gbuffers_grow;
-M_DR_BODY UINT_32               dr_program_foliage_gbuffers_growv;
-M_DR_BODY UINT_32               dr_program_foliage_gbuffers_growf;
-
-M_DR_BODY UINT_32               dr_program_foliage_gbuffers_shrink;
-M_DR_BODY UINT_32               dr_program_foliage_gbuffers_shrinkv;
-M_DR_BODY UINT_32               dr_program_foliage_gbuffers_shrinkf;
-
-M_DR_BODY UINT_32               dr_program_foliage_depth_grow;
-M_DR_BODY UINT_32               dr_program_foliage_depth_growv;
-M_DR_BODY UINT_32               dr_program_foliage_depth_growf;
-
-M_DR_BODY UINT_32               dr_program_foliage_depth_shrink;
-M_DR_BODY UINT_32               dr_program_foliage_depth_shrinkv;
-M_DR_BODY UINT_32               dr_program_foliage_depth_shrinkf;
+M_DR_BODY UINT_32				dr_program_foliage [256];
 
 // GRASS
 
@@ -424,10 +371,6 @@ M_DR_BODY UINT_32               dr_program_ssao_blurvert;
 M_DR_BODY UINT_32               dr_program_ssao_blurvertv;
 M_DR_BODY UINT_32               dr_program_ssao_blurvertf;
 
-M_DR_BODY UINT_32               dr_program_ssao_debug;
-M_DR_BODY UINT_32               dr_program_ssao_debugv;
-M_DR_BODY UINT_32               dr_program_ssao_debugf;
-
 M_DR_BODY UINT_32               dr_program_ssao_blurhblend;
 M_DR_BODY UINT_32               dr_program_ssao_blurhblendv;
 M_DR_BODY UINT_32               dr_program_ssao_blurhblendf;
@@ -445,10 +388,17 @@ M_DR_BODY UINT_32               dr_state_tex7;
 M_DR_BODY UINT_32               dr_state_tex8;
 M_DR_BODY UINT_32               dr_state_tex9;
 M_DR_BODY UINT_32               dr_state_tex10;
+M_DR_BODY UINT_32               dr_state_tex11;
+M_DR_BODY UINT_32               dr_state_tex12;
+M_DR_BODY UINT_32               dr_state_tex13;
+M_DR_BODY UINT_32               dr_state_tex14;
+M_DR_BODY UINT_32               dr_state_tex15;
+M_DR_BODY UINT_32               dr_state_tex16;
 
 M_DR_BODY UINT_32               dr_state_tex0_rect;
 M_DR_BODY UINT_32               dr_state_tex1_rect;
 M_DR_BODY UINT_32               dr_state_tex2_rect;
+M_DR_BODY UINT_32               dr_state_tex3_rect;
 
 M_DR_BODY UINT_32               dr_state_tex0_coord;
 M_DR_BODY UINT_32               dr_state_tex1_coord;

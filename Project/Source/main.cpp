@@ -6,9 +6,7 @@
 #include             <io.h>
 
 #include           "glee.h"
-
-#include            "SDL.h"
-#include     "SDL_opengl.h"
+#include            "SDL.h"    
 
 #include          "types.h"
 #include          "macro.h"
@@ -26,31 +24,34 @@
 // GLOBALS
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-FLOAT_64    fps                 = 0;
-UINT_32     frame               = 0;
-UINT_32     frames              = 1;	// to avoid delta corruption
-UINT_32     framen              = 0;
-UINT_32     tstart              = 0;
-UINT_32     frametime           = 0;
-UINT_32     frametimeo          = 0;
-FLOAT_32    delta               = 0;
+FLOAT_64        fps                 = 0;
+UINT_32         frame               = 0;
+UINT_32         frames              = 1;	// to avoid delta corruption
+UINT_32         framen              = 0;
+UINT_32         tstart              = 0;
+UINT_64         frametime           = 0;
+UINT_64         frametimeo          = 0;
+FLOAT_32        delta               = 0;
 
-CHAR        caption [256];
+CHAR            caption [256];
 
-INT_32      debug               = 0;
+INT_32          debug               = 0;
 
-FLOAT_32    vel;
+FLOAT_32        vel;
 
-FLOAT_32    anglex              = 0.0;
-FLOAT_32    angley              = 0.0;
-FLOAT_32    anglez              = 0.0;
+FLOAT_32        anglex              = 0.0;
+FLOAT_32        angley              = 0.0;
+FLOAT_32        anglez              = 0.0;
 
-BOOL        move_forward        = false;
-BOOL        move_backward       = false;
-BOOL        move_left           = false;
-BOOL        move_right          = false;
-BOOL        move_up             = false;
-BOOL        move_down           = false;
+BOOL            move_forward        = false;
+BOOL            move_backward       = false;
+BOOL            move_left           = false;
+BOOL            move_right          = false;
+BOOL            move_up             = false;
+BOOL            move_down           = false;
+
+SDL_Window*		window              = NULL;
+SDL_GLContext	glcontext           = NULL;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // QUIT
@@ -58,14 +59,17 @@ BOOL        move_down           = false;
 
 VOID quit ()
 {
-#ifdef M_DEBUG
+    
     debug_Destroy ();
-#endif
 
     lo_UnloadWorld ();
 
     dr_Free ();
     ph_Free ();
+
+	SDL_GL_DeleteContext (glcontext);
+
+	SDL_DestroyWindow (window);
 
     SDL_Quit ();
 }
@@ -76,37 +80,22 @@ VOID quit ()
 
 INT_32 main (INT_32 argc, CHARP argv [])
 {
-
-    SDL_Event event;
-    SDL_Surface *screen;
-
-    POINT mousepos;
-    POINT mouseposold;
-
-    BOOL press = false;
-
-    UINT_32 bkcolor;
-
-    if (SDL_Init (SDL_INIT_VIDEO) < 0 ) {
-
-        MessageBox (NULL, "SDL INIT ERROR", "Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
-        return - 1;
-    }
-
     atexit (quit);
 
-    sprintf (caption, "SHIFTe. Tech-Demo");
+    // LOGGING
 
-    SDL_WM_SetCaption (caption, caption);
-
-    SDL_EnableKeyRepeat (10, 20);
-
+    if (debug_Init () < 0) {
+        
+        MessageBox (NULL, "LOGGING INITIALIZATION FAILED", "Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+        return - 1;
+    }
+    
     // LOAD USER SETTINGS
 
     dr_control_gammacorrection			= true;
     dr_control_autoexposure				= true;
     dr_control_fog						= true;
-    dr_control_aa						= true;
+    dr_control_aa						= false;
 
     dr_control_bloom_enable			    = true;
     dr_control_bloom_enable_vblur       = true;
@@ -140,53 +129,80 @@ INT_32 main (INT_32 argc, CHARP argv [])
     dr_control_sky_brightness 			= 1.5f;
     dr_control_sky_contrast				= 0.8f;
 
-    /*
-    dr_level_bloom						= 0.5f;
+    
+    //dr_level_bloom					= 0.5f;
 
-    dr_level_desaturation				= 0.0f;
-    dr_level_desaturation_sky			= 0.0f;
-    dr_level_brightness					= 1.0f;
-    dr_level_brightness_sky 			= 1.0f;
-    dr_level_contrast					= 1.0f;
-    dr_level_contrast_sky				= 1.0f;
-    */
-
+    //dr_level_desaturation				= 0.0f;
+    //dr_level_desaturation_sky			= 0.0f;
+    //dr_level_brightness				= 1.0f;
+    //dr_level_brightness_sky 			= 1.0f;
+    //dr_level_contrast					= 1.0f;
+    //dr_level_contrast_sky				= 1.0f;
+    
     dr_control_hdr_exposure				= 0.5f;
     dr_control_hdr_exposure_scale_min	= 0.5f;
     dr_control_hdr_exposure_scale_max	= 1.5f;
     dr_control_hdr_exposure_speed		= 0.001f;
 
-    dr_width							= 1280;		//1920; //1280; //800; //640;
-    dr_height							= 800;		//1080; //800;  //600; //400;
+    dr_width							= 1280;		//1920; //1600 //1280; //800; //640;
+    dr_height							= 800;		//1080; //900  //800;  //600; //400;
 
     dr_fullscreen						= false;
 
-    // VIDEO SETUP
+    // SDL SETUP
+
+    //SDL_EnableKeyRepeat (10, 20);
+
+    if (SDL_Init (SDL_INIT_VIDEO) < 0 ) {
+
+        MessageBox (NULL, "SDL INIT ERROR", "Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+        return - 1;
+    }
 
     SDL_GL_SetAttribute (SDL_GL_RED_SIZE,       8);
     SDL_GL_SetAttribute (SDL_GL_GREEN_SIZE,     8);
     SDL_GL_SetAttribute (SDL_GL_BLUE_SIZE,      8);
     SDL_GL_SetAttribute (SDL_GL_ALPHA_SIZE,     8);
-    SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE,     32);
+    SDL_GL_SetAttribute (SDL_GL_DEPTH_SIZE,     24);
     SDL_GL_SetAttribute (SDL_GL_DOUBLEBUFFER,   1);
 
-    if (dr_fullscreen) 
-        screen = SDL_SetVideoMode (dr_width, dr_height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF | SDL_FULLSCREEN); else
-        screen = SDL_SetVideoMode (dr_width, dr_height, 0, SDL_OPENGL | SDL_HWSURFACE | SDL_DOUBLEBUF);
+	SDL_SetHint (SDL_HINT_FRAMEBUFFER_ACCELERATION, "opengl");
+	SDL_SetHint (SDL_HINT_RENDER_DRIVER,			"opengl");
+	SDL_SetHint (SDL_HINT_RENDER_OPENGL_SHADERS,	"1");
+	SDL_SetHint (SDL_HINT_RENDER_VSYNC,				"0");
 
-    bkcolor = SDL_MapRGBA (screen->format, 0, 0, 0, 0);
+    SDL_Event event;
 
-    SDL_FillRect (screen, NULL, bkcolor);
+    sprintf (caption, "SHIFT. Tech-Demo");
+
+	UINT_32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS | SDL_WINDOW_MOUSE_FOCUS;
+
+    SDL_SetRelativeMouseMode (SDL_TRUE);
+
+    if (dr_fullscreen)
+
+		window = SDL_CreateWindow (caption, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, dr_width, dr_height, flags | SDL_WINDOW_FULLSCREEN);    else
+		window = SDL_CreateWindow (caption, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, dr_width, dr_height, flags);
+
+    // Create an OpenGL context associated with the window.
+    glcontext = SDL_GL_CreateContext (window);	
+
+    // Init GLee
+    GLeeInit ();
+
+    if (!GLEE_VERSION_3_0) {
+
+        MessageBox (NULL, "Your system do not support OpenGL 3.0 standard", "Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
+        return - 1;
+    }
+
+    SDL_Surface *screen = SDL_GetWindowSurface (window);
+
+    SDL_FillRect (screen, NULL, SDL_MapRGBA (screen->format, 0, 0, 0, 0));
 
     // INITIALIZING RANDOM GENERATOR
 
     randSeed ();
-
-    // CREATING LOGFILE
-
-#ifdef M_DEBUG
-    debug_Init ();
-#endif
 
     // SETTING UP CAMERA
 
@@ -205,15 +221,11 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
     // LOADING WORLD
 
-    lo_LoadWorld (M_WORLDFILE);
+    if (lo_LoadWorld (M_WORLDFILE) < 0) return -1;
+    
+    //dr_sun_ambient = 0.4;
 
-    /*
-    dr_sun_ambient = 0.4;
-    */
-
-#ifdef M_DEBUG
-    ///     debug_OctTree (&dr_tree, dr_objects);
-#endif
+    //debug_OctTree (&dr_tree, dr_objects);
 
     // INITIALIZING DEFFERED RENDERER
 
@@ -229,11 +241,9 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
     // FPS
 
-    frametimeo  = SDL_GetTicks ();
+    frametimeo  = SDL_GetPerformanceCounter ();
 
-    // GET MOUSE
-
-    GetCursorPos (&mousepos);
+    BOOL press = false;
 
     while (true) {
 
@@ -281,42 +291,42 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
                         case SDLK_o:    if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
 
-                            if (debug == 11) {  debug = 0;  break; }
-                            if (debug == 10) {  debug = 11; break; } 
+                                            if (debug == 11) {  debug = 0;  break; }
+                                            if (debug == 10) {  debug = 11; break; } 
 
-                            debug = 10; break;
+                                            debug = 10; break;
                                         }
 
-                        case SDLK_KP0:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_aa				    = !dr_control_aa;				    } break;
-                        case SDLK_KP1:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_fog				    = !dr_control_fog;				    } break;
-                        case SDLK_KP2:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_ssao_enable		    = !dr_control_ssao_enable;		    } break;
-                        case SDLK_KP3:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable		    = !dr_control_bloom_enable;		    } break;
-                        case SDLK_KP4:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_autoexposure		    = !dr_control_autoexposure;		    } break;
+                        case SDLK_KP_0: if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_aa				    = !dr_control_aa;				    } break;
+                        case SDLK_KP_1: if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_fog				    = !dr_control_fog;				    } break;
+                        case SDLK_KP_2: if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_ssao_enable		    = !dr_control_ssao_enable;		    } break;
+                        case SDLK_KP_3: if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable		    = !dr_control_bloom_enable;		    } break;
+                        case SDLK_KP_4: if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_autoexposure		    = !dr_control_autoexposure;		    } break;
 
-                        case SDLK_KP5:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_AdjustGamma (!dr_control_gammacorrection);                       } break;
+                        case SDLK_KP_5: if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_AdjustGamma (!dr_control_gammacorrection);                       } break;
 
-                        case SDLK_KP6:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable_vblur   = !dr_control_bloom_enable_vblur;	} break;
-                        case SDLK_KP7:  if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable_hblur   = !dr_control_bloom_enable_hblur;	} break;
+                        case SDLK_KP_6: if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable_vblur   = !dr_control_bloom_enable_vblur;	} break;
+                        case SDLK_KP_7: if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_control_bloom_enable_hblur   = !dr_control_bloom_enable_hblur;	} break;
 
                         case SDLK_KP_MINUS:		if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   
 
                             if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_brightness	    -= 0.1f;	else
-                                dr_control_image_brightness		-= 0.1f;	} break;
+                                                                    dr_control_image_brightness		-= 0.1f;	} break;
 
                         case SDLK_KP_PLUS:		if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
 
                             if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_brightness	    += 0.1f;	else
-                                dr_control_image_brightness		+= 0.1f;	} break;
+                                                                    dr_control_image_brightness		+= 0.1f;	} break;
 
                         case SDLK_KP_DIVIDE:	if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   
 
                             if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_contrast	        -= 0.1f;	else
-                                dr_control_image_contrast		-= 0.1f;	} break;
+                                                                    dr_control_image_contrast		-= 0.1f;	} break;
 
                         case SDLK_KP_MULTIPLY:	if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();
 
                             if (SDL_GetModState () & KMOD_SHIFT)	dr_control_sky_contrast	        += 0.1f;	else
-                                dr_control_image_contrast		+= 0.1f;	} break;
+                                                                    dr_control_image_contrast		+= 0.1f;	} break;
 
                         case SDLK_DOWN:			if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_AdjustAnisotrophy (dr_control_anisotrophy >> 1);    } break;
                         case SDLK_UP:			if ((GetTickCount () - tstart) > 200) { tstart = GetTickCount ();   dr_AdjustAnisotrophy (dr_control_anisotrophy << 1);    } break;
@@ -418,23 +428,15 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
         // MOUSE
 
-        mouseposold = mousepos;
+        if (press || dr_fullscreen) {
 
-        GetCursorPos (&mousepos);
+            INT_32 nx, ny;
 
-        FLOAT_32 nx, ny;
+            SDL_GetRelativeMouseState (&nx, &ny);
 
-        if (press) {
-
-            anglex = 0.0f;
-            angley = 0.0f;
+            anglex = (FLOAT_32) - nx * 0.5f;
+            angley = (FLOAT_32) - ny * 0.5f;
             anglez = 0.0f;
-
-            nx = (mousepos.x + mouseposold.x) * 0.5f;
-            ny = (mousepos.y + mouseposold.y) * 0.5f;
-
-            anglex = (GLfloat) (mouseposold.x - nx);
-            angley = (GLfloat) (mouseposold.y - ny);
 
             vFLY (dr_camdir, dr_worldup, dr_cambi, (- anglex * 0.01f), (angley * 0.01f), (anglez * 0.01f));
 
@@ -456,13 +458,15 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
         // FPS
 
-        frametime  = SDL_GetTicks ();
+        frametime  = SDL_GetPerformanceCounter ();
 
-        if ((frametime - frametimeo) > 200) {
+		FLOAT_64 seconds = (frametime - frametimeo) / (FLOAT_64) SDL_GetPerformanceFrequency ();
 
-            fps = (frames * 1000.0 / (FLOAT_64) (delta = (FLOAT_32) frametime - frametimeo));   delta /= frames;
+        if (seconds > 0.2) {
 
-            sprintf (caption, "FPS %6.2f", fps);        // SDL_WM_SetCaption (caption, caption);
+            fps = (frames / seconds);   delta = (FLOAT_32) (1000 * seconds / frames);	// delta is in miliseconds
+
+            sprintf (caption, "FPS %6.2f", fps);
 
             frametimeo = frametime;
             frames = 0;
@@ -474,10 +478,15 @@ INT_32 main (INT_32 argc, CHARP argv [])
 
         // SWAP BUFFERS
 
-        SDL_GL_SwapBuffers ();
+        SDL_GL_SwapWindow (window);
 
         frame ++;  framen ++;   frames ++;
     }
 
     return 0;
+}
+
+INT_32 WINAPI WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
+{    
+    return main (0, NULL);
 }

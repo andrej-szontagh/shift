@@ -1,27 +1,104 @@
+
+- NOVEMBER 10.11.2011
+
+- Tree generator
+    - PRIORITY
+        1. funkcnost (generovanie stromov pre hru a export do OBJ)
+        2. prerabanie prostredia a kodu (zjednodusenie)
+            - premenovat klasy zdrojaky a premenne
+            - zredukovat pocet zdrojakov
+            - odstranit zbytocne klassy radsej hodit kod tam kde ma byt
+            - separovat generovanie stromu (mesh) od zvysku programu
+            - rozbehat nak to aj funguje lebo teraz je to fakt zle
+            - odstranit obrazky ktore niesu potrebne ...
+        3. prerabka do samostatneho noveho generatora ktory moze byt publikovany
+        
+    - FRAMEWORK
+        - http://www.mono-project.com
+        - http://www.wxwidgets.org
+        - BLENDER ??
+    
+- Blender plugins
+    - PRIORITY
+        1. test existing scripts
+        2. fix all other script according to Vector () * Matrix () change.
+        3. create new dedicated blog 
+        4. add more plugins
+            - normal tools
+            - ...
+        5. promote
+            - http://www.blendernation.com/
+            - http://www.blenderartists.org/forum/
+            - http://www.blenderguru.com/
+            - http://www.blender3d.cz/drupal/index.php
+            - http://blenderunderground.com/
+            - http://www.blender-materials.org/
+        
+- Flash game
+    - start protorype new project
+
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // TO DO SHIT STACK
 //
 ///////////////////////////////////////////////////////////////////////////////
 // OVERALL
 //
-// - BUSH prototype mesh and texture
+// - FOLIAGE : 
+//	-DIFFUSES TEXTURES OF BRANCHCES AND LEAVES USING LIGHTING AND SHADOW
+//      -ADJUST BRANCHES SO THEY WILL NOT APPEAR SO FLAT (ROTATE LEAVES MORE)
+//	-NORMALIZE RENDERED NORMAL-MAPS (CAUSING ERRORS) !!
+//      -ADD VERTEX COLOR FOR FOLIAGE AND SOLID SHADERS !!!
+//      -ADD WIND ANIMATION PARAMETERS
+//      -ADD SUBSURFACESCATTERING PARAMTERS
+//      -TRY TRANSLUCENCY TEXTURE FOR FOLIAGE
+//      -CONSIDER USING MODULATION COLOR FOR LEAVES BACK-SIDE
 //
-// - FIX GRASS LOD, use more different textures (now all sides use the same one)
-//   	make sure there are seamless lod switches
+// - FOLIAGE DIFFUSE TEXTURES SHOULD HAVE GREEN BACKGROUND COLOR
+//
+// - ADD VEGETATION ANIMATION PARAMETERS
+//
+// - ADD SUPPORT FOR VERTEX COLOR INTO FOLIAGE MATERIAL
+//
+// - G-BUFFER NORMAL SEEMS TO BE CORRUPTED !!! (SEEN ON VEGETATION BY MOVING VIEW AND NORMALS CHANGE)
+//
+// - CONSIDER USING MATERIAL INDEX INTO G-BUFFERS TO USE DIFFERENT LIGHTING ON VEGETATION, GRASS, SOLID
+//      - THIS MAYBE CAN SOLVE SSAO PROBLEM !!!  (NORMAL MODIFICATION IN LIGHTING PHASE)
+//
+// - SSAO ON VEGATATION IS FUKCED-UP CAUSE OF MODIFIED NORMALS
+//
+// - ADD VERTEX COLOR SUPPORT FOR FOLIAGE !!!!!!!!!!!!!!!!!!
+//    - PAINTED COLOR VARIATIONS (FOR AGE OF LEAVES)
+//    - PAINTED AO
+//
+// - REMOVE 'shader' property from model ... Use only different materials
+//    - we consider that material is linked to model and there is no reason 
+//	for using different shaders and materials on the same model
+//
+// - FIX TEXTURES (SHININESS AND GLOSS)
+//
+// - CONSIDER TRYING CLIPPING INDIVIDUAL GRASS INSTANCES WHILE GRASS SHADOW RENDERING
+//
+// - SPEED UP SSAO
+//
+// - SOLVE INSUFFICIENT ACCUTANCY FOR SHININESS COMPONENT OF G-BUFFERS
+//
+// - IMPLEMENT PROPER ANTI-ALIASING !
+//
+// - ADD ADJUST FUNCTIONS FOR RENDERING RESOLUTION/FULLSCREEN CHANGES
+//
+// - ADD ADJUST FUNCTIONS FOR VIEW NEAR-FAR PLANE 
+//
+// - ADD ADJUST FUNCTIONS FOR SSAO PARAMETERS (+ SHIFT AKA 0.8*AO + 0.2)
+//
+// - BUSH prototype mesh and texture
 //
 // - TREE prototype mesh and texture
 //
 // - MAKE LOD FOR ALL GEOMETRY
 //
 // - SOLVE POOR DISTANT VIEWS (missing grass)
-//
-// - ADD CONTROL FOR SHADOWING IN REALTIME
-//
-//	- NUMBER OF SPLITS
-//      - SPLIT SCHEME CURVE
-//      - WIDTH OF TRANSITIONS
-//      - NUMBER OF SAMPLES FOR FILTERING
-//      - RESOLUTION OF SHADOWMAP
 //
 // - ADD LOD CONTROL ON FLY 
 //      - MULTIPLIER FOR ALL LOD DISTANCES OR OBJECT DISTANCES TO ACHIEVE LOD ADJUSTMENT
@@ -46,6 +123,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 // BLENDER
+//
+//  - PROPERTY TOOLS : 
+//	- REMOVE SEARCH HISTORY
+//      - ADD MULTIPLE TABS UP TO 8 OR 16 all with 16 property values
+//
+//  *** USE CAMERA OBJECT TO SPECIFY PLAYER POSITION (START VIEW POSITION AND DIRECTION)
 //
 //  *** SPLITTING DO NOT COPY CUSTOM PROPERTIES FOR CREATED MESHES !!!!!!!!!!!!!!!!!!
 //
@@ -107,6 +190,8 @@
 //  - add option for special model used on shadowing or set starting minimal LOD used when shadowing (for grass)
 //  - add option to set shadow rendering skipping for instanced objects (use factor and array of random nubmers if applicable)
 //
+//
+//  *** VERTICALY FLIP IMAGE AFTER DDS LOAD (http://users.telenet.be/tfautre/softdev/ddsload/explanation.htm)
 //
 //
 //  *** CONSIDER GEOMETRY RENDERING IN MULTIPLE PASSES, EACH MATERIAL HAS ITS PASS NUMBER. SO YOU CAN CONTROLL THE ORDER OF RENDERING 

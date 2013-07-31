@@ -5,7 +5,7 @@
 
 #if 1
 
-INLINE VOID dr_GrabSame (
+VOID dr_GrabSame (
                                         
                     UINT_32     &propn, 
                     UINT_32     &prop, 
@@ -67,7 +67,7 @@ INLINE VOID dr_GrabSame (
 
 #if 1
 
-INLINE VOID dr_GrabSameStop (
+VOID dr_GrabSameStop (
                                         
                     UINT_32     &propn, 
                     UINT_32     &prop, 
@@ -136,7 +136,7 @@ INLINE VOID dr_GrabSameStop (
 
 #if 1
 
-INLINE VOID dr_GrabSameCall (
+VOID dr_GrabSameCall (
                                         
                     VOID       (&func) (UINT_32&, UINT_32&),
                     UINT_32     &param1,
@@ -190,6 +190,49 @@ INLINE VOID dr_GrabSameCall (
     }
 }
 
+#define M_DR_GRAB_SAME_DRAW1(func_prepare, func_draw, param1, propn, prop, stamps, listprop, listin, listinc, search, next) {   \
+    \
+    /* GRAB OBJECTS WITH THE SAME MATERIAL */   \
+                                                \
+    propn = prop;   next = false;               \
+                                                \
+    /* traverse thru all visible objects and store those with selected material */  \
+    for (UINT_32 n = search; n < listinc; n ++) {                                   \
+                                                                                    \
+        register UINT_32 ID = listin [n];   propn = listprop [ID];                  \
+                                                                                    \
+        if (propn == prop) {                \
+                                            \
+            /* draw */                      \
+            func_prepare    (ID);           \
+            func_draw       (ID, param1);   \
+                                            \
+        } else {                            \
+                                            \
+            if (stamps [propn] != dr_stamp) {                                   \
+                                                                                \
+                /* we have found new material */                                \
+                stamps [propn]  = dr_stamp; search = n;    next = true;         \
+                                                                                \
+                /* continue without overhead */                                 \
+                for (; n < listinc; n ++) {             \
+                                                        \
+                    register UINT_32 ID = listin [n];   \
+                                                        \
+                    if (listprop [ID] == prop) {        \
+                                                        \
+                        /* draw */                      \
+                        func_prepare    (ID);           \
+                        func_draw       (ID, param1);   \
+                    }                                   \
+                }                                       \
+                                \
+                break;          \
+            }                   \
+        }                       \
+    }                           \
+}
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -198,7 +241,7 @@ INLINE VOID dr_GrabSameCall (
 
 #if 1
 
-INLINE VOID dr_GrabSameCall (
+VOID dr_GrabSameCall (
                                         
                     VOID       (&func) (UINT_32&, UINT_32&, UINT_32&),
                     UINT_32     &param1,
@@ -253,6 +296,49 @@ INLINE VOID dr_GrabSameCall (
     }
 }
 
+#define M_DR_GRAB_SAME_DRAW2(func_prepare, func_draw, param1, param2, propn, prop, stamps, listprop, listin, listinc, search, next) {   \
+    \
+    /* GRAB OBJECTS WITH THE SAME MATERIAL */   \
+                                                \
+    propn = prop;   next = false;               \
+                                                \
+    /* traverse thru all visible objects and store those with selected material */  \
+    for (UINT_32 n = search; n < listinc; n ++) {                                   \
+                                                                                    \
+        register UINT_32 ID = listin [n];   propn = listprop [ID];                  \
+                                                                                    \
+        if (propn == prop) {                \
+                                            \
+            /* draw */                              \
+            func_prepare    (ID);                   \
+            func_draw       (ID, param1, param2);   \
+                                                    \
+        } else {                                    \
+                                                    \
+            if (stamps [propn] != dr_stamp) {                                   \
+                                                                                \
+                /* we have found new material */                                \
+                stamps [propn]  = dr_stamp; search = n;    next = true;         \
+                                                                                \
+                /* continue without overhead */                                 \
+                for (; n < listinc; n ++) {             \
+                                                        \
+                    register UINT_32 ID = listin [n];   \
+                                                        \
+                    if (listprop [ID] == prop) {        \
+                                                        \
+                        /* draw */                              \
+                        func_prepare    (ID);                   \
+                        func_draw       (ID, param1, param2);   \
+                    }                                           \
+                }                                               \
+                                \
+                break;          \
+            }                   \
+        }                       \
+    }                           \
+}
+
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -261,7 +347,7 @@ INLINE VOID dr_GrabSameCall (
 
 #if 1
 
-INLINEF VOID dr_SortDistanceInsert (
+VOID dr_SortDistanceInsert (
 
               UINT_32P &list,
               UINT_32  &count
@@ -297,7 +383,7 @@ INLINEF VOID dr_SortDistanceInsert (
 
 #if 1
 
-INLINEF VOID dr_SortDistanceInsertMove (
+VOID dr_SortDistanceInsertMove (
 
             UINT_32P    &listin,
             UINT_32P    &listout,
@@ -339,7 +425,7 @@ INLINEF VOID dr_SortDistanceInsertMove (
 
 #if 1
 
-INLINEF VOID dr_SortDistanceInsertMoveCall (
+VOID dr_SortDistanceInsertMoveCall (
 
             BOOL       (&func) (UINT_32&),
             UINT_32P    &listin,
@@ -390,7 +476,7 @@ INLINEF VOID dr_SortDistanceInsertMoveCall (
 
 #if 1
 
-INLINE UINT_32P dr_RadixSort (UINT_32P input, UINT_32 count)
+UINT_32P dr_RadixSort (UINT_32P input, UINT_32 count)
 {
 
     // shortcuts

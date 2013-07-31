@@ -1,27 +1,5 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// MACRO
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#define M_DR_SET_SHADER_CULLON(shader) {    \
-                                            \
-    if (shader != dr_state_shader) {        \
-        glUseProgram (dr_state_shader = shader);    \
-                                                    \
-        M_STATE_CULLFACE_SET;   \
-    }   \
-}
-
-#define M_DR_SET_SHADER_CULLOFF(shader) {   \
-                                            \
-    if (shader != dr_state_shader) {        \
-        glUseProgram (dr_state_shader = shader);    \
-                                                    \
-        M_STATE_CULLFACE_CLEAR;   \
-    }   \
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // dr_Draw
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -60,61 +38,9 @@ VOID dr_Draw (
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
                     
-                    TContextModel * conmod = &conmat->list [j];
-
-                    UINT_32 mi = conmod->model; TModel * model = &dr_models [mi];
-
-                    register UINT_32P p = conmod->list;
-                    register UINT_32  c = conmod->count;
-
-                    register UINT_32 model_mode  = model->mode;
-                    register UINT_32 model_count = model->count;
-
-                    switch (dr_model_shaders [mi]) {
-
-                        case M_MODEL_SHADER_NORMAL:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_gbuffers_normal);
-
-                            // model
-                            dr_SetModelSolidNormal (model);
-
-                            // draw
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawSolidNormal (p [k], model_mode, model_count);
-
-                            break;
-
-                        case M_MODEL_SHADER_MORPH:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_gbuffers_morph);
-
-                            /// shader attributes MOVE
-                            glMultiTexCoord3f (GL_TEXTURE2, model->param1, model->param2, model->param3);
-                            glMultiTexCoord3f (GL_TEXTURE3, 0.0f, 0.0f, model->param1);
-
-                            // model
-                            dr_SetModelSolidMorph (model);
-
-                            // draw
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawSolidMorph (p [k], model_mode, model_count);
-
-                            break;
-
-                        case M_MODEL_SHADER_SHRINK:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_gbuffers_shrink);
-
-                            // model
-                            dr_SetModelSolidNormal (model);
-
-                            // draw
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawSolidShrink (p [k], model_mode, model_count);
-
-                            break;
-                    }
+                    TContextModel * conmod = &conmat->list [j];		UINT_32 mi = conmod->model; 
+					
+					dr_DrawSolid (&dr_models [mi], mi, conmod->list, conmod->count, false);
                 }
 
                 break;
@@ -139,7 +65,7 @@ VOID dr_Draw (
                     register UINT_32 model_mode  = model->mode;
                     register UINT_32 model_count = model->count;
 
-                    switch (dr_model_shaders [mi]) {
+                    switch (dr_model_shaders [mi] & 0x07) {
 
                         case M_MODEL_SHADER_NORMAL:
 
@@ -188,41 +114,15 @@ VOID dr_Draw (
             case M_MATERIAL_TYPE_FOLIAGE: {
 
                 ///
-                ///continue;
+                //continue;
 
                 dr_SetMaterialFoliage (material);
                 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
-                    TContextModel * conmod = &conmat->list [j];
-
-                    UINT_32 mi = conmod->model; TModel * model = &dr_models [mi];
-
-                    register UINT_32P p = conmod->list;
-                    register UINT_32  c = conmod->count;
-
-                    register UINT_32 model_list  = model->list;
-
-                    switch (dr_model_shaders [mi]) {
-
-                        case M_MODEL_SHADER_GROW:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLOFF (dr_program_foliage_gbuffers_grow);
-
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawFoliageGrow (p [k], model_list);
-
-                            break;
-
-                        case M_MODEL_SHADER_SHRINK:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLOFF (dr_program_foliage_gbuffers_shrink);
-
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawFoliageShrink (p [k], model_list);
-
-                            break;
-                    }
+                    TContextModel * conmod = &conmat->list [j];		UINT_32 mi = conmod->model; 
+					
+					dr_DrawFoliage (&dr_models [mi], mi, conmod->list, conmod->count, false);
                 }
 
                 break;
@@ -323,60 +223,9 @@ VOID dr_DrawDepth (
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
-                    TContextModel * conmod = &conmat->list [j];
-
-                    UINT_32 mi = conmod->model; TModel * model = &dr_models [mi];
-
-                    register UINT_32P p = conmod->list;
-                    register UINT_32  c = conmod->count;
-
-                    register UINT_32 model_mode  = model->mode;
-                    register UINT_32 model_count = model->count;
-
-                    switch (dr_model_shaders [mi]) {
-
-                        case M_MODEL_SHADER_NORMAL:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_depth_normal);
-
-                            // model
-                            dr_SetModelDepthSolidNormal (model);
-
-                            // draw
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawSolidNormal (p [k], model_mode, model_count);
-
-                            break;
-
-                        case M_MODEL_SHADER_MORPH:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_depth_morph);
-
-                            // shader attributes
-                            glMultiTexCoord3f   (GL_TEXTURE2, model->param1, model->param2, model->param3);
-
-                            // model
-                            dr_SetModelDepthSolidMorph (model);
-
-                            // draw
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawSolidMorph (p [k], model_mode, model_count);
-
-                            break;
-
-                        case M_MODEL_SHADER_SHRINK:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_depth_shrink);
-
-                            // model
-                            dr_SetModelDepthSolidNormal (model);
-
-                            // draw
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawSolidShrink (p [k], model_mode, model_count);
-
-                            break;
-                    }
+                    TContextModel * conmod = &conmat->list [j];		UINT_32 mi = conmod->model; 
+					
+					dr_DrawSolid (&dr_models [mi], mi, conmod->list, conmod->count, true);
                 }
 
                 break;
@@ -402,7 +251,7 @@ VOID dr_DrawDepth (
                     register UINT_32 model_mode  = model->mode;
                     register UINT_32 model_count = model->count;
 
-                    switch (dr_model_shaders [mi]) {
+                    switch (dr_model_shaders [mi] & 0x07) {
 
                         case M_MODEL_SHADER_NORMAL:
 
@@ -441,42 +290,16 @@ VOID dr_DrawDepth (
             case M_MATERIAL_TYPE_FOLIAGE: {
 
                 ///
-                ///continue;
+                //continue;
 
                 // set material
                 dr_SetMaterialFoliageDepth (material);
 
                 for (UINT_32 j = 0; j < modelc; j ++) {
 
-                    TContextModel * conmod = &conmat->list [j];
-
-                    UINT_32 mi = conmod->model; TModel * model = &dr_models [mi];
-
-                    register UINT_32P p = conmod->list;
-                    register UINT_32  c = conmod->count;
-
-                    register UINT_32 model_list  = model->list;
-
-                    switch (dr_model_shaders [mi]) {
-
-                        case M_MODEL_SHADER_GROW:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLOFF (dr_program_foliage_depth_grow);
-
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawFoliageGrow (p [k], model_list);
-
-                            break;
-
-                        case M_MODEL_SHADER_SHRINK:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLOFF (dr_program_foliage_depth_shrink);
-
-                            for (UINT_32 k = 0; k < c; k ++)    dr_DrawFoliageShrink (p [k], model_list);
-
-                            break;
-                    }
+                    TContextModel * conmod = &conmat->list [j];		UINT_32 mi = conmod->model; 
+					
+					dr_DrawFoliage (&dr_models [mi], mi, conmod->list, conmod->count, true);
                 }
 
                 break;
@@ -575,7 +398,7 @@ VOID dr_DrawShadows (
             case M_MATERIAL_TYPE_SOLID: {
 
                 ///
-                ///break;
+                //break;
 
                 // set material
                 dr_SetMaterialSolidDepth (ma);
@@ -588,57 +411,9 @@ VOID dr_DrawShadows (
 
                     nextmo = false;
 
-                    TModel * m = &dr_models [model];
-
                     register UINT_32 modeln;
 
-                    register UINT_32 model_mode  = m->mode;
-                    register UINT_32 model_count = m->count;
-
-                    switch (dr_model_shaders [model]) {
-
-                        case M_MODEL_SHADER_NORMAL:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_depth_normal);
-
-                            // model
-                            dr_SetModelDepthSolidNormal (m);
-
-                            // grab objects with the same model
-                            dr_GrabSameCall (dr_DrawSolidNormal, model_mode, model_count, \
-                                modeln, model, dr_model_stamps, dr_object_models, dr_list_objects1, count, search2, nextmo);
-
-                            break;
-
-                        case M_MODEL_SHADER_MORPH:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_depth_morph);
-
-                            // model
-                            dr_SetModelDepthSolidMorph (m);
-
-                            // grab objects with the same model
-                            dr_GrabSameCall (dr_DrawSolidMorph, model_mode, model_count, \
-                                modeln, model, dr_model_stamps, dr_object_models, dr_list_objects1, count, search2, nextmo);
-
-                            break;
-
-                        case M_MODEL_SHADER_SHRINK:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLON (dr_program_solid_depth_shrink);
-
-                            // model
-                            dr_SetModelDepthSolidNormal (m);
-
-                            // grab objects with the same model
-                            dr_GrabSameCall (dr_DrawSolidShrink, model_mode, model_count, \
-                                modeln, model, dr_model_stamps, dr_object_models, dr_list_objects1, count, search2, nextmo);
-
-                            break;
-                    }
+                    dr_DrawSolidShadow (modeln, model, dr_list_objects1, count, search2, nextmo);
 
                     // finished
                     if (!nextmo) break;
@@ -673,7 +448,7 @@ VOID dr_DrawShadows (
                     register UINT_32 model_mode  = m->mode;
                     register UINT_32 model_count = m->count;
 
-                    switch (dr_model_shaders [model]) {
+                    switch (dr_model_shaders [model] & 0x07) {
 
                         case M_MODEL_SHADER_NORMAL:
 
@@ -720,7 +495,7 @@ VOID dr_DrawShadows (
             case M_MATERIAL_TYPE_FOLIAGE: {
 
                 ///
-                ///break;
+                //break;
 
                 // set material
                 dr_SetMaterialFoliageDepth (ma);
@@ -733,37 +508,9 @@ VOID dr_DrawShadows (
 
                     nextmo = false;
 
-                    TModel * m = &dr_models [model];
-
                     register UINT_32 modeln;
 
-                    // shortcut
-                    register UINT_32 model_list = m->list;
-
-                    switch (dr_model_shaders [model]) {
-
-                        case M_MODEL_SHADER_GROW:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLOFF (dr_program_foliage_depth_grow);
-
-                            // grab objects with the same model
-                            dr_GrabSameCall (dr_DrawFoliageGrow, model_list, \
-                                modeln, model, dr_model_stamps, dr_object_models, dr_list_objects1, count, search2, nextmo);
-
-                            break;
-
-                        case M_MODEL_SHADER_SHRINK:
-
-                            // shader
-                            M_DR_SET_SHADER_CULLOFF (dr_program_foliage_depth_shrink);
-
-                            // grab objects with the same model
-                            dr_GrabSameCall (dr_DrawFoliageShrink, model_list, \
-                                modeln, model, dr_model_stamps, dr_object_models, dr_list_objects1, count, search2, nextmo);
-
-                            break;
-                    }
+                    dr_DrawFoliageShadow (modeln, model, dr_list_objects1, count, search2, nextmo);
 
                     // finished
                     if (!nextmo) break;
@@ -970,7 +717,7 @@ VOID dr_DrawOcclusions (
                 // SOLID
                 // ---------------------------------------------------------------------
                 case M_MATERIAL_TYPE_SOLID: {
-
+/*
                     // pick first model
                     register UINT_32 model = dr_object_models [dr_list_objects3 [0]];  dr_model_stamps [model] = dr_stamp;
 
@@ -992,7 +739,7 @@ VOID dr_DrawOcclusions (
                         register UINT_32 model_mode  = m->mode;
                         register UINT_32 model_count = m->count;
 
-                        switch (dr_model_shaders [model]) {
+                        switch (dr_model_shaders [model] & 0x07) {
 
                             case M_MODEL_SHADER_NORMAL:
 
@@ -1040,7 +787,7 @@ VOID dr_DrawOcclusions (
                         // set new model
                         model = modeln;
                     }
-
+*/
                     break;
                 }
 
@@ -1070,7 +817,7 @@ VOID dr_DrawOcclusions (
                         register UINT_32 model_mode  = m->mode;
                         register UINT_32 model_count = m->count;
 
-                        switch (dr_model_shaders [model]) {
+                        switch (dr_model_shaders [model] & 0x07) {
 
                             case M_MODEL_SHADER_NORMAL:
 

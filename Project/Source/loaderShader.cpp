@@ -1,9 +1,104 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// lo_LoadShaders
+// lo_PrintShadersLog
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#if 1
+VOID lo_PrintShadersLog	(UINT_32 id) {
+
+    INT_32 buflen;
+
+    glGetShaderiv (id, GL_INFO_LOG_LENGTH, &buflen);
+
+    if (buflen > 1) {
+
+        CHARP log_string = (CHARP) malloc (buflen + 1);
+
+        glGetShaderInfoLog (id, buflen, 0, log_string);
+
+        debug_Print (log_string);
+
+        free (log_string);
+    }        
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// lo_LoadShader
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+UINT_32 lo_LoadShader	(
+                         
+                 CHARP		file,
+                 CHARP		prefix,
+                 UINT_32    type,
+                 UINT_32P	id
+    )
+{
+    
+    debug_PrintIntend ("Loading ", file);
+    
+    // open shader file
+    FILE * f = fopen (file, "rb");
+    
+    if (f == NULL) {
+        
+        debug_Print (" .. FAILED\n");
+        return -1;
+    }
+    
+    debug_Print (" .. OK");
+    
+    // get the file size
+    fseek (f, 0, SEEK_END); 
+    
+    UINT_32 l = ftell (f);  rewind (f);
+
+    CHARP str1 = (CHARP) malloc (l + 1);
+
+    // read shader file
+    fread ((VOIDP) str1, 1, l, f);	str1 [l] = 0;
+
+    fclose (f);
+
+    // adding prefix into shader (for macros)
+    CHARP str2 = (CHARP) malloc (strlen (prefix) + strlen (str1) + 1);
+        
+    sprintf ((CHARP) str2, "%s%s", prefix, str1);
+
+    // creating shader
+    * id  = glCreateShader (type);
+
+    // compiling
+    glShaderSource (* id, 1, (const CHARPP) &str2, NULL);
+    
+    debug_Print ("    Compiling");
+    
+    glCompileShader (* id);    
+    
+    INT_32 status;    
+    glGetShaderiv (* id, GL_COMPILE_STATUS, &status);
+    
+    if (status == GL_FALSE) {
+        
+        debug_Print (" .. FAILED\n\n");
+        
+        lo_PrintShadersLog (* id);
+        
+        return -1;
+    }
+    
+    debug_Print (" .. OK\n");
+    
+    lo_PrintShadersLog (* id);
+    
+    free (str1);
+    free (str2);
+    
+    return (* id);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// lo_LoadShaders
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 UINT_32 lo_LoadShaders	(
                          
@@ -15,65 +110,37 @@ UINT_32 lo_LoadShaders	(
                  UINT_32P	idf
     )
 {
-    UINT_32 l;
-
-    FILE *f;
-
-    CHARP vv;	CHARP ff;
-    CHARP vs;	CHARP fs;
-
-    // reading vertex shader file
-    if ((f = fopen (filev, "rb")) == NULL)	return -1;
-
-    vs = (CHARP) malloc (l = _filelength (_fileno(f)) + 1);
-
-    fread ((VOIDP) vs, 1, l - 1, f);	vs [l - 1] = 0;
-
-    fclose (f);
-
-    // reading fragment shader file
-    if ((f = fopen (filef, "rb")) == NULL)	return -1;
-
-    fs = (CHARP) malloc (l = _filelength (_fileno(f)) + 1);
-
-    fread ((VOIDP) fs, 1, l - 1, f);	fs [l - 1] = 0;
-
-    fclose (f);
-
-    // adding prefix (for macros)
-    ff = (CHARP) malloc (strlen (prefix) + strlen (fs) + 1);	vv = vs;
-        
-    sprintf ((CHARP) ff, "%s%s", prefix, fs);
-
-    // creating shaders
-    * idv  = glCreateShader (GL_VERTEX_SHADER);
-    * idf  = glCreateShader (GL_FRAGMENT_SHADER);	
-
-    // compiling
-    glShaderSource (* idv, 1, (const CHARPP) &vv, NULL); free (vs);
-    glShaderSource (* idf, 1, (const CHARPP) &ff, NULL); free (fs); free (ff);
     
-    glCompileShader (* idv);
-    glCompileShader (* idf);
+    lo_LoadShader (filev, prefix, GL_VERTEX_SHADER,     idv);
+    lo_LoadShader (filef, prefix, GL_FRAGMENT_SHADER,   idf);
     
     * idp = glCreateProgram ();
     
     glAttachShader (* idp, * idv);
     glAttachShader (* idp, * idf);
     
-    // linking
+    // linking    
+    debug_PrintIntend ("Linking Program");
+    
     glLinkProgram (* idp);
-
-    return (* idp);
+    
+    INT_32 status;
+    glGetProgramiv (* idp, GL_LINK_STATUS, &status);
+    
+    if (status == GL_FALSE) {
+        
+        debug_Print (" .. FAILED\n\n");
+        return -1;
+    }
+    
+    debug_Print (" .. OK\n\n");
+        
+    return (* idp);    
 }
-
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // lo_UnloadShaders
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#if 1
 
 VOID lo_UnloadShaders (
 
@@ -90,6 +157,3 @@ VOID lo_UnloadShaders (
 
     glDeleteProgram (prog);
 }
-
-#endif
-

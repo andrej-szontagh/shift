@@ -213,6 +213,8 @@ INT_32 lo_LoadImage (CHARP filename, TImage *image)
         // data
         fseek (file, size + 4, SEEK_SET);
         fread (image->data, 1, sizel, file);
+        
+        /// VERTICALY FLIP IMAGE AFTER DDS LOAD (http://users.telenet.be/tfautre/softdev/ddsload/explanation.htm)
 
         return 0;
 	}

@@ -98,21 +98,26 @@ VOID    dr_SunLoad ()
 
     INT_32P units = (INT_32P) malloc (SIZE_INT_32 * dr_control_sun_splits);
 
-    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++)  units [i] = 3 + i;
+    for (UINT_32 i = 0; i < dr_control_sun_splits; i ++)  units [i] = 5 + i;
 
     glUseProgram    (dr_program_sun);
     glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_G1"),       0);
     glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_G2"),       1);
-    glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_rand"),     2);
+    glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_G3"),       2);
+    glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_depth"),    3);
+    glUniform1i     (glGetUniformLocation (dr_program_sun, "tex_rand"),     4);
     glUniform1iv    (glGetUniformLocation (dr_program_sun, "tex_shadow"),   dr_control_sun_splits, units);
     glUniform1f     (glGetUniformLocation (dr_program_sun, "intensity"),    dr_sun_intensity);
     glUniform1f     (glGetUniformLocation (dr_program_sun, "ambient"),      dr_sun_ambient);
     glUniform1f     (glGetUniformLocation (dr_program_sun, "width"),        (FLOAT_32) dr_width);
     glUniform1f     (glGetUniformLocation (dr_program_sun, "height"),       (FLOAT_32) dr_height);
     glUniform1f     (glGetUniformLocation (dr_program_sun, "invsize"),      1.0f / (FLOAT_32) dr_control_sun_res);
-    glUniform1f     (glGetUniformLocation (dr_program_sun, "farplane"),     dr_planefar);
     glUniform1f     (glGetUniformLocation (dr_program_sun, "farw"),         (FLOAT_32) dr_farw);
     glUniform1f     (glGetUniformLocation (dr_program_sun, "farh"),         (FLOAT_32) dr_farh);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "farplane"),     dr_planefar);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "nearw"),        (FLOAT_32) dr_nearw);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "nearh"),        (FLOAT_32) dr_nearh);
+    glUniform1f     (glGetUniformLocation (dr_program_sun, "nearplane"),    dr_planenear);
 
     dr_program_sun_matrix = glGetUniformLocation (dr_program_sun, "matrix");
 
@@ -1231,68 +1236,70 @@ VOID    dr_SunDraw ()
     // shadowmaps
     M_STATE_TEX0_RECT_SET   (dr_G1);
     M_STATE_TEX1_RECT_SET   (dr_G2);
-    M_STATE_TEX2_SET        (dr_rand);
+    M_STATE_TEX2_RECT_SET   (dr_G3);
+    M_STATE_TEX3_RECT_SET   (dr_depth);
+    M_STATE_TEX4_SET        (dr_rand);
 
     switch (dr_control_sun_splits) {
         case 3:
-            M_STATE_TEX3_SET        (dr_sunshadows [0]);
-            M_STATE_TEX4_SET        (dr_sunshadows [1]);
-            M_STATE_TEX5_SET        (dr_sunshadows [2]);
-            M_STATE_TEX6_CLEAR;
-            M_STATE_TEX7_CLEAR;
+            M_STATE_TEX5_SET        (dr_sunshadows [0]);
+            M_STATE_TEX6_SET        (dr_sunshadows [1]);
+            M_STATE_TEX7_SET        (dr_sunshadows [2]);
             M_STATE_TEX8_CLEAR;
             M_STATE_TEX9_CLEAR;
             M_STATE_TEX10_CLEAR;
+            M_STATE_TEX11_CLEAR;
+            M_STATE_TEX12_CLEAR;
             break;
         case 4:
-            M_STATE_TEX3_SET        (dr_sunshadows [0]);
-            M_STATE_TEX4_SET        (dr_sunshadows [1]);
-            M_STATE_TEX5_SET        (dr_sunshadows [2]);
-            M_STATE_TEX6_SET        (dr_sunshadows [3]);
-            M_STATE_TEX7_CLEAR;
-            M_STATE_TEX8_CLEAR;
+            M_STATE_TEX5_SET        (dr_sunshadows [0]);
+            M_STATE_TEX6_SET        (dr_sunshadows [1]);
+            M_STATE_TEX7_SET        (dr_sunshadows [2]);
+            M_STATE_TEX8_SET        (dr_sunshadows [3]);
             M_STATE_TEX9_CLEAR;
             M_STATE_TEX10_CLEAR;
+            M_STATE_TEX11_CLEAR;
+            M_STATE_TEX12_CLEAR;
             break;
         case 5:
-            M_STATE_TEX3_SET        (dr_sunshadows [0]);
-            M_STATE_TEX4_SET        (dr_sunshadows [1]);
-            M_STATE_TEX5_SET        (dr_sunshadows [2]);
-            M_STATE_TEX6_SET        (dr_sunshadows [3]);
-            M_STATE_TEX7_SET        (dr_sunshadows [4]);
-            M_STATE_TEX8_CLEAR;
-            M_STATE_TEX9_CLEAR;
+            M_STATE_TEX5_SET        (dr_sunshadows [0]);
+            M_STATE_TEX6_SET        (dr_sunshadows [1]);
+            M_STATE_TEX7_SET        (dr_sunshadows [2]);
+            M_STATE_TEX8_SET        (dr_sunshadows [3]);
+            M_STATE_TEX9_SET        (dr_sunshadows [4]);
             M_STATE_TEX10_CLEAR;
+            M_STATE_TEX11_CLEAR;
+            M_STATE_TEX12_CLEAR;
             break;
         case 6:
-            M_STATE_TEX3_SET        (dr_sunshadows [0]);
-            M_STATE_TEX4_SET        (dr_sunshadows [1]);
-            M_STATE_TEX5_SET        (dr_sunshadows [2]);
-            M_STATE_TEX6_SET        (dr_sunshadows [3]);
-            M_STATE_TEX7_SET        (dr_sunshadows [4]);
-            M_STATE_TEX8_SET        (dr_sunshadows [5]);
-            M_STATE_TEX9_CLEAR;
-            M_STATE_TEX10_CLEAR;
+            M_STATE_TEX5_SET        (dr_sunshadows [0]);
+            M_STATE_TEX6_SET        (dr_sunshadows [1]);
+            M_STATE_TEX7_SET        (dr_sunshadows [2]);
+            M_STATE_TEX8_SET        (dr_sunshadows [3]);
+            M_STATE_TEX9_SET        (dr_sunshadows [4]);
+            M_STATE_TEX10_SET       (dr_sunshadows [5]);
+            M_STATE_TEX11_CLEAR;
+            M_STATE_TEX12_CLEAR;
             break;
         case 7:
-            M_STATE_TEX3_SET        (dr_sunshadows [0]);
-            M_STATE_TEX4_SET        (dr_sunshadows [1]);
-            M_STATE_TEX5_SET        (dr_sunshadows [2]);
-            M_STATE_TEX6_SET        (dr_sunshadows [3]);
-            M_STATE_TEX7_SET        (dr_sunshadows [4]);
-            M_STATE_TEX8_SET        (dr_sunshadows [5]);
-            M_STATE_TEX9_SET        (dr_sunshadows [6]);
-            M_STATE_TEX10_CLEAR;
+            M_STATE_TEX5_SET        (dr_sunshadows [0]);
+            M_STATE_TEX6_SET        (dr_sunshadows [1]);
+            M_STATE_TEX7_SET        (dr_sunshadows [2]);
+            M_STATE_TEX8_SET        (dr_sunshadows [3]);
+            M_STATE_TEX9_SET        (dr_sunshadows [4]);
+            M_STATE_TEX10_SET       (dr_sunshadows [5]);
+            M_STATE_TEX11_SET       (dr_sunshadows [6]);
+            M_STATE_TEX12_CLEAR;
             break;
         case 8:
-            M_STATE_TEX3_SET        (dr_sunshadows [0]);
-            M_STATE_TEX4_SET        (dr_sunshadows [1]);
-            M_STATE_TEX5_SET        (dr_sunshadows [2]);
-            M_STATE_TEX6_SET        (dr_sunshadows [3]);
-            M_STATE_TEX7_SET        (dr_sunshadows [4]);
-            M_STATE_TEX8_SET        (dr_sunshadows [5]);
-            M_STATE_TEX9_SET        (dr_sunshadows [6]);
-            M_STATE_TEX10_SET       (dr_sunshadows [7]);
+            M_STATE_TEX5_SET        (dr_sunshadows [0]);
+            M_STATE_TEX6_SET        (dr_sunshadows [1]);
+            M_STATE_TEX7_SET        (dr_sunshadows [2]);
+            M_STATE_TEX8_SET        (dr_sunshadows [3]);
+            M_STATE_TEX9_SET        (dr_sunshadows [4]);
+            M_STATE_TEX10_SET       (dr_sunshadows [5]);
+            M_STATE_TEX11_SET       (dr_sunshadows [6]);
+            M_STATE_TEX12_SET       (dr_sunshadows [7]);
             break;
     }
 

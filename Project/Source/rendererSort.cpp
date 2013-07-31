@@ -5,7 +5,7 @@
 
 #if 1
 
-INLINEF BOOL dr_CheckOcclusionQuery (UINT_32 &ID)
+BOOL dr_CheckOcclusionQuery (UINT_32 &ID)
 {
     register UINT_32 query = dr_object_queries [ID];
 

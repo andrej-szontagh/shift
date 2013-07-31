@@ -26,6 +26,10 @@
 #define M_MODEL_SHADER_GROW         0x01            // model using growing
 #define M_MODEL_SHADER_MORPH        0x02            // model using morphing
 #define M_MODEL_SHADER_SHRINK       0x03            // model using shrinking
+#define M_MODEL_SHADER_INSTANCED	0x08            // model using instancing	(can combine with other shaders)
+
+#define M_SHADER_DEPTH				0x10            // depth shader				(can combine with other shaders)
+#define M_SHADER_SHADOW				0x20            // shadow shader			(can combine with other shaders)
 
 #define M_TAG_CLEAR                 0x0000          // clear all tags
 #define M_TAG_SHADOWSPLIT1          0x0001          // object is in shadow split 1

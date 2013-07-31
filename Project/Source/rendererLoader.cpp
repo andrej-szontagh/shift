@@ -114,7 +114,7 @@ VOID	dr_Init ()
     glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D     (GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA16F, dr_width, dr_height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexImage2D     (GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, dr_width, dr_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
     // G2
 
@@ -124,7 +124,17 @@ VOID	dr_Init ()
     glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D     (GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA16F, dr_width, dr_height, 0, GL_RGBA, GL_FLOAT, NULL);
+    glTexImage2D     (GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, dr_width, dr_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+
+    // G3
+
+    glGenTextures    (1, &dr_G3);
+    glBindTexture    (GL_TEXTURE_RECTANGLE_ARB, dr_G3);
+    glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D     (GL_TEXTURE_RECTANGLE_ARB, 0, GL_RGBA8, dr_width, dr_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
     // AUXILIARY HDR 1
 
@@ -202,6 +212,7 @@ VOID	dr_Init ()
         &dr_program_enviromentf);
 
     glUseProgram    (dr_program_enviroment);
+    
     glUniform1i     (glGetUniformLocation (dr_program_enviroment, "tex_enviroment"), 0);
     glUniform2f     (glGetUniformLocation (dr_program_enviroment, "uvscale"),
         ((FLOAT_32) dr_enviroment_material->width  * 10.0f) / 32767.0f,
@@ -216,10 +227,11 @@ VOID	dr_Init ()
         &dr_program_fogf);
 
     glUseProgram    (dr_program_fog);
-    glUniform1i     (glGetUniformLocation (dr_program_fog, "tex_G2"),       2);
-    glUniform1f     (glGetUniformLocation (dr_program_fog, "farplane"),     dr_planefar);
+    glUniform1i     (glGetUniformLocation (dr_program_fog, "tex_depth"),    0);
     glUniform1f     (glGetUniformLocation (dr_program_fog, "farw"),         (FLOAT_32) dr_farw);
     glUniform1f     (glGetUniformLocation (dr_program_fog, "farh"),         (FLOAT_32) dr_farh);
+    glUniform1f     (glGetUniformLocation (dr_program_fog, "farplane"),     dr_planefar);
+    glUniform1f     (glGetUniformLocation (dr_program_fog, "nearplane"),    dr_planenear);
 
     //////////////////////////////////////////////////////////////////////////////
     // DEBUG SHADERS
@@ -258,8 +270,8 @@ VOID	dr_Init ()
         &dr_program_aa_blurvertf);
 
     glUseProgram    (dr_program_aa_blurvert);
-    glUniform1i     (glGetUniformLocation (dr_program_aa_blurvert,     "tex"),          0);
-    glUniform1i     (glGetUniformLocation (dr_program_aa_blurvert,     "tex_depth"),    1);
+    glUniform1i     (glGetUniformLocation (dr_program_aa_blurvert,     "tex_depth"),    0);
+    glUniform1i     (glGetUniformLocation (dr_program_aa_blurvert,     "tex"),          1);
     glUniform1f     (glGetUniformLocation (dr_program_aa_blurvert,     "nom"),          2.0f * dr_planenear);
     glUniform1f     (glGetUniformLocation (dr_program_aa_blurvert,     "denom1"),       dr_planefar + dr_planenear);
     glUniform1f     (glGetUniformLocation (dr_program_aa_blurvert,     "denom2"),       dr_planefar - dr_planenear);
@@ -273,8 +285,8 @@ VOID	dr_Init ()
         &dr_program_aa_blurhorizf);
 
     glUseProgram    (dr_program_aa_blurhoriz);
-    glUniform1i     (glGetUniformLocation (dr_program_aa_blurhoriz,    "tex"),          0);
-    glUniform1i     (glGetUniformLocation (dr_program_aa_blurhoriz,    "tex_depth"),    1);
+    glUniform1i     (glGetUniformLocation (dr_program_aa_blurhoriz,    "tex_depth"),    0);
+    glUniform1i     (glGetUniformLocation (dr_program_aa_blurhoriz,    "tex"),          1);
     glUniform1f     (glGetUniformLocation (dr_program_aa_blurhoriz,    "nom"),          2.0f * dr_planenear);
     glUniform1f     (glGetUniformLocation (dr_program_aa_blurhoriz,    "denom1"),       dr_planefar + dr_planenear);
     glUniform1f     (glGetUniformLocation (dr_program_aa_blurhoriz,    "denom2"),       dr_planefar - dr_planenear);
@@ -361,16 +373,24 @@ VOID	dr_Init ()
         &dr_program_ssaof);
 
     glUseProgram    (dr_program_ssao);
-    glUniform1i     (glGetUniformLocation (dr_program_ssao,     "tex_G2"),      0);
-    glUniform1i     (glGetUniformLocation (dr_program_ssao,     "tex_rand"),    1);
-    glUniform1i     (glGetUniformLocation (dr_program_ssao,     "tex_shade"),   2);
-    glUniform1f     (glGetUniformLocation (dr_program_ssao,     "randscale"),   M_DR_SSAO_RANDSCALE);
-    glUniform1f     (glGetUniformLocation (dr_program_ssao,     "farplane"),    dr_planefar);
-    glUniform1f     (glGetUniformLocation (dr_program_ssao,     "farw"),        (FLOAT_32) dr_farw);
-    glUniform1f     (glGetUniformLocation (dr_program_ssao,     "farh"),        (FLOAT_32) dr_farh);
+    glUniform1i     (glGetUniformLocation (dr_program_ssao,             "tex_depth"),   0);
+    glUniform1i     (glGetUniformLocation (dr_program_ssao,             "tex_rand"),    1);
+    glUniform1i     (glGetUniformLocation (dr_program_ssao,             "tex_G2"),      2);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "randscale"),   M_DR_SSAO_RANDSCALE);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "farw"),        (FLOAT_32) dr_farw);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "farh"),        (FLOAT_32) dr_farh);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "farplane"),    dr_planefar);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "nearplane"),   dr_planenear);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "hwidth"),      dr_width  * 0.5f);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "hheight"),     dr_height * 0.5f);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "scalex"),      (FLOAT_32) (dr_farw / (dr_width  * 0.5)));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "scaley"),      (FLOAT_32) (dr_farh / (dr_height * 0.5)));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "depth1"),      (FLOAT_32) (2.0 *  dr_planenear));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "depth2"),      (FLOAT_32) (2.0 *  dr_planefar));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao,             "depth3"),      (FLOAT_32) (2.0 * (dr_planefar - dr_planenear)));
 
     /////////////////////////////
-    // vertical blur
+    // vertical blur and upscale
     lo_LoadShaders ("Shaders\\dr_ssao_blurv.vert",
         "Shaders\\dr_ssao_blurv.frag", "\n", 
         &dr_program_ssao_blurvert,
@@ -378,8 +398,13 @@ VOID	dr_Init ()
         &dr_program_ssao_blurvertf);
 
     glUseProgram    (dr_program_ssao_blurvert);
-    glUniform1i     (glGetUniformLocation (dr_program_ssao_blurvert,    "tex"),     0);
-    glUniform1i     (glGetUniformLocation (dr_program_ssao_blurvert,    "tex_G2"),  1);
+    glUniform1i     (glGetUniformLocation (dr_program_ssao_blurvert,    "tex_depth"),   0);
+    glUniform1i     (glGetUniformLocation (dr_program_ssao_blurvert,    "tex"),         1);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurvert,    "depth1"),      (FLOAT_32) (2.0 *  dr_planenear));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurvert,    "depth2"),      (FLOAT_32) (2.0 *  dr_planefar));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurvert,    "depth3"),      (FLOAT_32) (2.0 * (dr_planefar - dr_planenear)));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurvert,    "scalex"),      (FLOAT_32) dr_w [dr_control_ssao_res] / dr_width);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurvert,    "scaley"),      (FLOAT_32) dr_h [dr_control_ssao_res] / dr_height);
 
     /////////////////////////////
     // horizontal blur and blend
@@ -390,22 +415,12 @@ VOID	dr_Init ()
         &dr_program_ssao_blurhblendf);
 
     glUseProgram    (dr_program_ssao_blurhblend);
-    glUniform1i     (glGetUniformLocation (dr_program_ssao_blurhblend,  "tex_vblur"),   0);
+    glUniform1i     (glGetUniformLocation (dr_program_ssao_blurhblend,  "tex_depth"),   0);
     glUniform1i     (glGetUniformLocation (dr_program_ssao_blurhblend,  "tex_raw"),     1);
-    glUniform1i     (glGetUniformLocation (dr_program_ssao_blurhblend,  "tex_G2"),      2);
-    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurhblend,  "scalex"),      (FLOAT_32) dr_w [dr_control_ssao_res] / dr_width);
-    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurhblend,  "scaley"),      (FLOAT_32) dr_h [dr_control_ssao_res] / dr_height);
-
-    /////////////////////////////
-    // debug
-    lo_LoadShaders ("Shaders\\dr_ssao_debug.vert",
-        "Shaders\\dr_ssao_debug.frag", "\n", 
-        &dr_program_ssao_debug,
-        &dr_program_ssao_debugv,
-        &dr_program_ssao_debugf);
-
-    glUseProgram    (dr_program_ssao_debug);
-    glUniform1i     (glGetUniformLocation (dr_program_ssao_debug,       "tex"),     0);
+    glUniform1i     (glGetUniformLocation (dr_program_ssao_blurhblend,  "tex"),         2);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurhblend,  "depth1"),      (FLOAT_32) (2.0 *  dr_planenear));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurhblend,  "depth2"),      (FLOAT_32) (2.0 *  dr_planefar));
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurhblend,  "depth3"),      (FLOAT_32) (2.0 * (dr_planefar - dr_planenear)));
 
     //////////////////////////////////////////////////////////////////////////////
     // RENDER LISTS
@@ -493,44 +508,51 @@ VOID	dr_Init ()
     glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
     //////////////////////////////////////////////////////////////////////////////
-    // STATES
+    // INIT STATES
     //////////////////////////////////////////////////////////////////////////////
 
-    dr_state_color   = 0;
-    dr_state_colors  = 0;
-    dr_state_vertex  = 0;
-    dr_state_normal  = 0;
-    dr_state_indices = 0;
+    glBindBufferARB (GL_ELEMENT_ARRAY_BUFFER_ARB, 0);     dr_state_indices    = 0;
+    glDisableClientState (GL_COLOR_ARRAY);                dr_state_color      = 0;
+    glDisableClientState (GL_SECONDARY_COLOR_ARRAY);      dr_state_colors     = 0;
+    glDisableClientState (GL_VERTEX_ARRAY);               dr_state_vertex     = 0;
+    glDisableClientState (GL_NORMAL_ARRAY);               dr_state_normal     = 0;
 
-    dr_state_tex0 = 0;
-    dr_state_tex1 = 0;
-    dr_state_tex2 = 0;
-    dr_state_tex3 = 0;
-    dr_state_tex4 = 0;
-    dr_state_tex5 = 0;
-    dr_state_tex6 = 0;
-    dr_state_tex7 = 0;
-    dr_state_tex8 = 0;
-    dr_state_tex9 = 0;
+    glClientActiveTexture (GL_TEXTURE0);  glDisableClientState (GL_TEXTURE_COORD_ARRAY);   dr_state_tex0_coord = 0;
+    glClientActiveTexture (GL_TEXTURE1);  glDisableClientState (GL_TEXTURE_COORD_ARRAY);   dr_state_tex1_coord = 0;
+    glClientActiveTexture (GL_TEXTURE2);  glDisableClientState (GL_TEXTURE_COORD_ARRAY);   dr_state_tex2_coord = 0;
 
-    dr_state_tex0_rect = 0;
-    dr_state_tex1_rect = 0;
-    dr_state_tex2_rect = 0;
+    glActiveTexture (GL_TEXTURE0);  glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex0_rect = 0;
+    glActiveTexture (GL_TEXTURE1);  glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex1_rect = 0;
+    glActiveTexture (GL_TEXTURE2);  glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex2_rect = 0;
+    glActiveTexture (GL_TEXTURE3);  glDisable (GL_TEXTURE_RECTANGLE_ARB);  dr_state_tex3_rect = 0;
 
-    dr_state_tex0_coord = 0;
-    dr_state_tex1_coord = 0;
-    dr_state_tex2_coord = 0;
+    glActiveTexture (GL_TEXTURE0);  glDisable (GL_TEXTURE_2D);  dr_state_tex0  = 0;
+    glActiveTexture (GL_TEXTURE1);  glDisable (GL_TEXTURE_2D);  dr_state_tex1  = 0;
+    glActiveTexture (GL_TEXTURE2);  glDisable (GL_TEXTURE_2D);  dr_state_tex2  = 0;
+    glActiveTexture (GL_TEXTURE3);  glDisable (GL_TEXTURE_2D);  dr_state_tex3  = 0;
+    glActiveTexture (GL_TEXTURE4);  glDisable (GL_TEXTURE_2D);  dr_state_tex4  = 0;
+    glActiveTexture (GL_TEXTURE5);  glDisable (GL_TEXTURE_2D);  dr_state_tex5  = 0;
+    glActiveTexture (GL_TEXTURE6);  glDisable (GL_TEXTURE_2D);  dr_state_tex6  = 0;
+    glActiveTexture (GL_TEXTURE7);  glDisable (GL_TEXTURE_2D);  dr_state_tex7  = 0;
+    glActiveTexture (GL_TEXTURE8);  glDisable (GL_TEXTURE_2D);  dr_state_tex8  = 0;
+    glActiveTexture (GL_TEXTURE9);  glDisable (GL_TEXTURE_2D);  dr_state_tex9  = 0;
+    glActiveTexture (GL_TEXTURE10); glDisable (GL_TEXTURE_2D);  dr_state_tex10 = 0;
+    glActiveTexture (GL_TEXTURE11); glDisable (GL_TEXTURE_2D);  dr_state_tex11 = 0;
+    glActiveTexture (GL_TEXTURE12); glDisable (GL_TEXTURE_2D);  dr_state_tex12 = 0;
+    glActiveTexture (GL_TEXTURE13); glDisable (GL_TEXTURE_2D);  dr_state_tex13 = 0;
+    glActiveTexture (GL_TEXTURE14); glDisable (GL_TEXTURE_2D);  dr_state_tex14 = 0;
+    glActiveTexture (GL_TEXTURE15); glDisable (GL_TEXTURE_2D);  dr_state_tex15 = 0;
+    glActiveTexture (GL_TEXTURE16); glDisable (GL_TEXTURE_2D);  dr_state_tex16 = 0;
 
     for (i = 0; i < M_DR_MAX_CLIP_PLANES; i ++) {
 
-        dr_state_planes [i] = 0;
+        glDisable (GL_CLIP_PLANE0 + i); dr_state_planes [i] = false;
     }
 
-    glGetIntegerv (GL_MATRIX_MODE,     (GLint *)     &dr_state_matrixmode);
-    glGetBooleanv (GL_DEPTH_WRITEMASK, (GLboolean *) &dr_state_depthmask);
-
-    dr_state_cullface   = glIsEnabled (GL_CULL_FACE);
-    dr_state_depthtest  = glIsEnabled (GL_DEPTH_TEST);
+    glMatrixMode (GL_MODELVIEW);  dr_state_matrixmode   = GL_MODELVIEW;
+    glDepthMask (GL_TRUE);        dr_state_depthmask    = true;
+    glEnable  (GL_DEPTH_TEST);    dr_state_depthtest    = true;
+    glEnable  (GL_CULL_FACE);     dr_state_cullface     = true;
 }
 
 #endif
@@ -887,8 +909,8 @@ VOID    dr_AdjustSSAORes (UINT_32 res)
     dr_control_ssao_res = res;
 
     glUseProgram    (dr_program_ssao_blurhblend);
-    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurhblend, "scalex"), (FLOAT_32) dr_w [dr_control_ssao_res] / dr_width);
-    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurhblend, "scaley"), (FLOAT_32) dr_h [dr_control_ssao_res] / dr_height);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurvert, "scalex"), (FLOAT_32) dr_w [dr_control_ssao_res] / dr_width);
+    glUniform1f     (glGetUniformLocation (dr_program_ssao_blurvert, "scaley"), (FLOAT_32) dr_h [dr_control_ssao_res] / dr_height);
 }
 
 #endif

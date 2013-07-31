@@ -11,10 +11,15 @@ INT_32 lo_LoadWorld (CHARP filename)
 
     CHAR fname [255];   UINT_32 length;
 
+    // open file
     FILE * f = fopen (filename, "rb");
 
     // file not fount
-    if (f == NULL) return -1;
+    if (f == NULL) {
+
+        debug_Print ("ERROR : Cannot open file : ", filename, true);  
+        return -1;
+    }
 
     // counters
 
@@ -39,6 +44,8 @@ INT_32 lo_LoadWorld (CHARP filename)
     // ---------------------------------------------------------------------------------------
     // TEXTURES
 
+    debug_Print ("Loading Textures ..\n");  
+
     for (i = 0; i < (INT_32) texturesc; i ++) {
 
         TImage image;
@@ -49,10 +56,14 @@ INT_32 lo_LoadWorld (CHARP filename)
         fread ((VOIDP) &length, SIZE_UINT_32, 1, f);    name = (CHARP) malloc (SIZE_CHAR * length);
         fread ((VOIDP) name, SIZE_CHAR, length, f);
 
-        sprintf (fname, "%s%s", M_LOADER_IMAGEPATH, name);
+		sprintf (fname, "%s%s", M_LOADER_IMAGEPATH, name);
+
+		// log
+        debug_PrintIntend ("Loading ", fname);  
 
         if (lo_LoadImage (fname, &image) < 0) {
 
+            debug_Print (" .. ERROR");  fclose (f);
             return - 1;
         }
 
@@ -144,6 +155,12 @@ INT_32 lo_LoadWorld (CHARP filename)
 
             if (compressed) {
 
+				if (image.mipmaps <= 1) {
+
+                    debug_Print (" .. ERROR - missing mipmaps in dds.");  fclose (f);
+		            return - 1;
+				}
+
                 glTexParameteri  (GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_FALSE);
 
                 UINT_32 w = image.width;
@@ -175,8 +192,8 @@ INT_32 lo_LoadWorld (CHARP filename)
             glGenTextures    (1, &id);
             glBindTexture    (GL_TEXTURE_RECTANGLE_ARB, id);
 
-            glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, wraps);
-            glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, wrapt);
+            //glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_S, wraps);
+            //glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_WRAP_T, wrapt);
 
             glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri  (GL_TEXTURE_RECTANGLE_ARB, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -193,10 +210,21 @@ INT_32 lo_LoadWorld (CHARP filename)
 
         // saving texture id
         list_textures [i] = id;
+
+		// log
+        debug_Print (" .. OK\n");
+
+		// check OpenGL error
+		GLenum err = glGetError ();	if (err != GL_NO_ERROR) {	
+			
+            debug_Print ("ERROR OpenGL code : ", err, true);    return -1;
+		};
     }
 
     // ---------------------------------------------------------------------------------------
     // MATERIALS
+
+    debug_Print ("Loading Materials ..\n");
 
     dr_materials    = (TMaterial *) malloc (sizeof (TMaterial) * (dr_materialsc + M_RESERVED_MATERIALS));
 
@@ -212,6 +240,8 @@ INT_32 lo_LoadWorld (CHARP filename)
         // name
         fread ((VOIDP) &length, SIZE_UINT_32, 1, f);    name = (CHARP) malloc (SIZE_CHAR * length);
         fread ((VOIDP) name, SIZE_CHAR, length, f);
+
+        debug_PrintIntend ("Loading ", name);
 
         UINT_32 type;
 
@@ -278,6 +308,15 @@ INT_32 lo_LoadWorld (CHARP filename)
 
         material->name = name;
         material->type = type;
+
+		// log
+        debug_Print (" .. OK\n");
+
+		// check OpenGL error
+		GLenum err = glGetError ();	if (err != GL_NO_ERROR) {	
+			
+            debug_Print ("ERROR OpenGL code : ", err, true);    return -1;
+		};
     }
 
     // release
@@ -285,6 +324,8 @@ INT_32 lo_LoadWorld (CHARP filename)
 
     // ---------------------------------------------------------------------------------------
     // MODELS
+
+    debug_Print ("Loading Models ..\n");
 
     dr_models   = (TModel *) malloc (sizeof (TModel) * (dr_modelsc + M_RESERVED_MODELS));
 
@@ -304,6 +345,14 @@ INT_32 lo_LoadWorld (CHARP filename)
         fread ((VOIDP) &length, SIZE_UINT_32, 1, f);    name = (CHARP) malloc (SIZE_CHAR * length);
         fread ((VOIDP) name, SIZE_CHAR, length, f);
 
+        // file & path
+        CHAR filepath [255];
+
+        sprintf (filepath, "%s%s.mesh", M_LOADER_MESHPATH, name);
+
+		// log
+        debug_PrintIntend ("Loading ", filepath);
+
         // shortcut
         TModel * model = &dr_models [i];
 
@@ -321,13 +370,14 @@ INT_32 lo_LoadWorld (CHARP filename)
         // flags
         fread ((VOIDP) &dr_model_flags      [i], SIZE_UINT_16, 1, f);
 
-        // file & path
-        CHAR filepath [255];
-
-        sprintf (filepath, "%s%s.mesh", M_LOADER_MESHPATH, name);
-
         // open mesh file
-        FILE * fm = fopen (filepath, "rb");     if (fm == NULL) return -1;
+        FILE * fm = fopen (filepath, "rb");     
+        
+        if (fm == NULL) {
+
+            debug_Print (" .. ERROR");  fclose (f);
+            return -1;
+        }
 
         // primitive mode
         fread ((VOIDP) &model->mode, SIZE_UINT_32, 1, fm);
@@ -758,6 +808,15 @@ INT_32 lo_LoadWorld (CHARP filename)
 
         // close mesh file
         fclose (fm);
+
+		// log
+        debug_Print (" .. OK\n");
+
+		// check OpenGL error
+		GLenum err = glGetError ();	if (err != GL_NO_ERROR) {	
+			
+            debug_Print ("ERROR OpenGL code : ", err, true);    return -1;
+		};
     }
 
     // back
@@ -766,6 +825,8 @@ INT_32 lo_LoadWorld (CHARP filename)
 
     // ---------------------------------------------------------------------------------------
     // INSTANCED
+
+    debug_Print ("Loading Instanced ..\n");
 
 	// save number of records
 	UINT_32 ocount = dr_objectsc;
@@ -789,6 +850,8 @@ INT_32 lo_LoadWorld (CHARP filename)
         // reconstruct file name
         sprintf (filepath, "%s%s.inst", M_LOADER_INSTANCESPATH, name);
 
+        debug_PrintIntend ("Loading ", filepath);
+        
         // open file of intances
         FILE * fp = fopen (filepath, "rb");     
 		
@@ -809,9 +872,15 @@ INT_32 lo_LoadWorld (CHARP filename)
 
 		} else {
 
+            debug_Print (" .. SKIPPED\n");
+
 			// file do not exist so we remove object associated with it
 			instanced [i] = NULL;	dr_objectsc --;
+
+			continue;
 		}
+
+        debug_Print (" .. OK\n");
     }
 
     // ---------------------------------------------------------------------------------------
@@ -1003,14 +1072,21 @@ INT_32 lo_LoadWorld (CHARP filename)
 
         } else {
 
+			// shortcut
+            TDetail * detailo = &dr_object_details [index];
+
+			// mark object to use instanced shader
+			dr_model_shaders [dr_object_models	[index]] |= M_MODEL_SHADER_INSTANCED;
+
+			if (detailo->lod1 != 0xffff)	dr_model_shaders [detailo->lod1] |= M_MODEL_SHADER_INSTANCED;
+			if (detailo->lod2 != 0xffff)	dr_model_shaders [detailo->lod2] |= M_MODEL_SHADER_INSTANCED;
+			if (detailo->lod3 != 0xffff)	dr_model_shaders [detailo->lod3] |= M_MODEL_SHADER_INSTANCED;
+
 			// count of instances
             UINT_32 count = (UINT_32) (*((UINT_16P) (instanced [pindex])));
 
 			// shortcut
             CHARP pinstanced = ((CHARP) (instanced [pindex])) + SIZE_UINT_16;
-
-			// shortcut
-            TDetail * detailo = &dr_object_details [index];
 
 			// origin index
             UINT_32 indexo = index;
@@ -1252,46 +1328,46 @@ VOID lo_UnloadWorld ()
 
     // main data structures
 
-    free (dr_models);
-    free (dr_objects);
-    free (dr_materials);
+    if (dr_models)					free (dr_models);
+    if (dr_objects)					free (dr_objects);
+    if (dr_materials)				free (dr_materials);
 
     // model properites
 
-    free (dr_model_flags);
-    free (dr_model_stamps);
-    free (dr_model_occlusions);
+    if (dr_model_flags)				free (dr_model_flags);
+    if (dr_model_stamps)			free (dr_model_stamps);
+    if (dr_model_occlusions)		free (dr_model_occlusions);
 
     // material properites
 
-    free (dr_material_counters);
-    free (dr_material_stamps);
+    if (dr_material_counters)		free (dr_material_counters);
+    if (dr_material_stamps)			free (dr_material_stamps);
 
     // object properties
 
-    free (dr_object_details);
-    free (dr_object_boundaries);
+    if (dr_object_details)			free (dr_object_details);
+    if (dr_object_boundaries)		free (dr_object_boundaries);
 
-    free (dr_object_distances);
-    free (dr_object_distancesq);
-    free (dr_object_distances_sort);
-    free (dr_object_disappear_end);
-    free (dr_object_disappear_start);
-    free (dr_object_disappear_split);
-    free (dr_object_disappear_shadow);
-    free (dr_object_queries);
-    free (dr_object_depths);
-    free (dr_object_flags);
-    free (dr_object_models);
-    free (dr_object_materials);
-    free (dr_object_morph1);
-    free (dr_object_morph2);
-    free (dr_object_transforms);
-    free (dr_object_centers);
+    if (dr_object_distances)		free (dr_object_distances);
+    if (dr_object_distancesq)		free (dr_object_distancesq);
+    if (dr_object_distances_sort)	free (dr_object_distances_sort);
+    if (dr_object_disappear_end)	free (dr_object_disappear_end);
+    if (dr_object_disappear_start)	free (dr_object_disappear_start);
+    if (dr_object_disappear_split)	free (dr_object_disappear_split);
+    if (dr_object_disappear_shadow)	free (dr_object_disappear_shadow);
+    if (dr_object_queries)			free (dr_object_queries);
+    if (dr_object_depths)			free (dr_object_depths);
+    if (dr_object_flags)			free (dr_object_flags);
+    if (dr_object_models)			free (dr_object_models);
+    if (dr_object_materials)		free (dr_object_materials);
+    if (dr_object_morph1)			free (dr_object_morph1);
+    if (dr_object_morph2)			free (dr_object_morph2);
+    if (dr_object_transforms)		free (dr_object_transforms);
+    if (dr_object_centers)			free (dr_object_centers);
 
     // object instances
 
-    free (dr_object_instances);
+    if (dr_object_instances)		free (dr_object_instances);
 
     UINT_32 c = dr_objectsc + M_RESERVED_OBJECTS;
 
@@ -1303,29 +1379,29 @@ VOID lo_UnloadWorld ()
         }
     }
 
-    free (dr_object_instances_transforms);
+    if (dr_object_instances_transforms)	free (dr_object_instances_transforms);
    
     // object tags
 
-    free (dr_object_tags);
+    if (dr_object_tags)	free (dr_object_tags);
 
     // object lists
 
-    free (dr_list_objects1);
-    free (dr_list_objects2);
-    free (dr_list_objects3);
-    free (dr_list_objects_view);
-    free (dr_list_objects_shadow_split [0]);
-    free (dr_list_objects_shadow_split);
-    free (dr_list_objects_shadow_splitc);
+    if (dr_list_objects1)				free (dr_list_objects1);
+    if (dr_list_objects2)				free (dr_list_objects2);
+    if (dr_list_objects3)				free (dr_list_objects3);
+    if (dr_list_objects_view)			free (dr_list_objects_view);
+    if (dr_list_objects_shadow_split)	free (dr_list_objects_shadow_split [0]);
+    if (dr_list_objects_shadow_split)	free (dr_list_objects_shadow_split);
+    if (dr_list_objects_shadow_splitc)	free (dr_list_objects_shadow_splitc);
 
     // nodes
 
-    free (dr_nodes);
+    if (dr_nodes)	free (dr_nodes);
 
     // chains
 
-    free (dr_chains);
+    if (dr_chains)	free (dr_chains);
 
     // radix sorter
 
@@ -1333,8 +1409,8 @@ VOID lo_UnloadWorld ()
 
     // rendering context nodes
 
-    free (dr_context_materials);
-    free (dr_context_models);
+    if (dr_context_materials)	free (dr_context_materials);
+    if (dr_context_models)		free (dr_context_models);
 }
 
 #endif

@@ -6,29 +6,29 @@
 // BASIC TYPES
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-#define INT_8           signed char
-#define INT_8P          signed char *
-#define INT_8PP         signed char **
-#define SIZE_INT_8      sizeof (signed char)
-#define SIZE_INT_8P     sizeof (signed char *)
+#define INT_8           char
+#define INT_8P          char *
+#define INT_8PP         char **
+#define SIZE_INT_8      sizeof (char)
+#define SIZE_INT_8P     sizeof (char *)
 
-#define INT_16          signed short
-#define INT_16P         signed short *
-#define INT_16PP        signed short **
-#define SIZE_INT_16     sizeof (signed short)
-#define SIZE_INT_16P    sizeof (signed short *)
+#define INT_16          short
+#define INT_16P         short *
+#define INT_16PP        short **
+#define SIZE_INT_16     sizeof (short)
+#define SIZE_INT_16P    sizeof (short *)
 
-#define INT_32          signed int
-#define INT_32P         signed int *
-#define INT_32PP        signed int **
-#define SIZE_INT_32     sizeof (signed int)
-#define SIZE_INT_32P    sizeof (signed int *)
+#define INT_32          int
+#define INT_32P         int *
+#define INT_32PP        int **
+#define SIZE_INT_32     sizeof (int)
+#define SIZE_INT_32P    sizeof (int *)
 
-#define INT_64          signed long long
-#define INT_64P         signed long long *
-#define INT_64PP        signed long long **
-#define SIZE_INT_64     sizeof (signed long long)
-#define SIZE_INT_64P    sizeof (signed long long *)
+#define INT_64          long long
+#define INT_64P         long long *
+#define INT_64PP        long long **
+#define SIZE_INT_64     sizeof (long long)
+#define SIZE_INT_64P    sizeof (long long *)
 
 #define UINT_8          unsigned char
 #define UINT_8P         unsigned char *
@@ -85,6 +85,5 @@
 #define SIZE_CHARP      sizeof (char *)
 
 #define INLINE          inline
-#define INLINEF         __forceinline
 
 #endif

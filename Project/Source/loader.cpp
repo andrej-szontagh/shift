@@ -16,6 +16,7 @@
 #include   "skeleton.h"
 #include   "renderer.h"
 #include     "loader.h"
+#include      "debug.h"
 
 #include        "loaderImage.cpp"
 #include        "loaderWorld.cpp"
