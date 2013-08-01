@@ -1,8 +1,13 @@
 
 uniform sampler2DRect   tex_G1;
 uniform sampler2DRect   tex_G2;
+uniform sampler2DRect   tex_G3;
+uniform sampler2DRect   tex_depth;
 uniform sampler2D       tex_rand;
 uniform sampler2DShadow tex_shadow [SPLITS];
+
+uniform float farplane;
+uniform float nearplane;
 
 uniform float intensity;
 uniform float ambient;
@@ -23,49 +28,58 @@ varying vec2 screen;
 varying vec3 view;
 varying vec3 ray;
 
+
 void main ()
 {
 
     // G1 READ
-    vec4  G1         = texture2DRect (tex_G1, screen);
+    vec4  G1        = texture2DRect (tex_G1, screen);
     
     // G2 READ
-    vec4  G2         = texture2DRect (tex_G2, screen);
+    vec4  G2        = texture2DRect (tex_G2, screen);
 
-    // SUB SURFACE SCATTERING
-    float sss        = fract (G2.w);
-    
-    // NORMAL DECODE
-
-        // SPHEREMAP TRANSFORM
-        //
-        // http://aras-p.info/texts/CompactNormalStorage.html#method04spheremap
-        //
-    
-    vec3 normal;
-
-    normal.xy        = G2.xy * 4.0 - 2.0;           float d = dot (normal.xy, normal.xy);
-    
-    normal.xy       *= sqrt (1.0 - d * 0.25);
-    normal.z         =       1.0 - d * 0.5;
-    
-    // COLOR
-    vec4  color      = G1 * gl_LightSource [0].diffuse;    
+    // G3 READ
+    vec4  G3        = texture2DRect (tex_G3, screen);
         
+    // COLOR
+    vec4  color     = G1 * gl_LightSource [0].diffuse;
+    
+    // EMISSION
+    vec4  emission  = G3.z * color;
+
+    // NORMAL
+    vec3  normal;
+
+    normal.xy       = (G2.xy + G2.zw * 0.00392156) * 4.0 - 2.0;    float d = dot (normal.xy, normal.xy);
+
+    normal.xy      *= sqrt (1.0 - d * 0.25);
+    normal.z        =       1.0 - d * 0.5;
+
+    // ADJUST NORMAL FOR FOLIAGE
+
+    if (G3.a == 1.0) {
+
+        if (dot (gl_LightSource [0].position.xyz, normal) < 0.0) 
+
+            normal  = -normal;
+    }
+
     // LIGHT SLOPE
-    float slope      = max (dot (ray, normal) - 0.2, 0.0);
+
+//  float slope     = max (dot (ray, normal) - 0.2, 0.0);
+    float slope     = max (dot (ray, normal),       0.0);
         
     if (slope > 0.0) {
     
         // DECODE DEPTH
-        float depth      = G2.z;
+        float depth      = (2.0 * nearplane) / (farplane + nearplane - (2.0 * texture2DRect (tex_depth, screen).x - 1.0) * (farplane - nearplane));
 
         // VIEW POSITION
         vec3 viewpos     = depth * view;
 
         // WORLD POSITION
         vec4 worldpos    = gl_ModelViewMatrixInverse * vec4 (viewpos, 1.0);
-        
+
         // SHADOW
         float shadow;
          
@@ -1449,49 +1463,41 @@ void main ()
         // remove shadow on steep slopes
         //
         // shadow = mix (shadow * slope, slope, max (0.0, min (1.0, 15.0 * slope - 5.0)));
-
-        shadow *= slope;
         
         if (shadow > 0.0) {
 
-            // SCALE SPECULAR PARAMETERS
-            float shininess  = max (G2.a * 100.0, 1.0);
-            float gloss      = max (G1.a *   4.0, 0.1);
-                                    
             // SHADING VECTORS
-            vec3  eye        = - normalize (viewpos);
-                        
+            vec3  eye       = - normalize (viewpos);
+            
+            // SCALE SPECULAR PARAMETERS
+            float shininess = max (G3.x * 40.0, 1.0);
+            float gloss     = max (G3.y *  4.0, 0.1);
+            float sss       = G1.a;
+
+            shadow *= slope;
+
             // SHADING
-            gl_FragColor     = ambient * color + intensity * shadow * (color + gloss * color * pow (max (dot (reflect (- ray, normal), eye), 0.0), shininess));
+            gl_FragColor    = ambient * color + emission + intensity * shadow * sss * (color + gloss * color * pow (max (dot (reflect (- ray, normal), eye), 0.0), shininess));
 
 			// INTENSITY
-			float intensity  = dot (gl_FragColor.rgb, vec3 (0.333, 0.333, 0.333));
+			float shine     = dot (gl_FragColor.rgb, vec3 (0.333, 0.333, 0.333));
 
 			// COLOR CORRECTIONS
-			gl_FragColor     = pow (brightness * mix (gl_FragColor, vec4 (intensity, intensity, intensity, 1.0), desaturation), contrast);
+			gl_FragColor    = pow (brightness * mix (gl_FragColor, vec4 (shine, shine, shine, 1.0), desaturation), contrast);
             
             // ALPHA
-            gl_FragColor.a   = shadow;
+            gl_FragColor.a  = shadow;
             
             return;
-        }
-        
-        // SHADING
-        gl_FragColor     = ambient * color;
-                
-		// COLOR CORRECTIONS
-		float intensity  = dot (gl_FragColor.rgb, vec3 (0.333, 0.333, 0.333));
-
-		gl_FragColor     = pow (brightness * mix (gl_FragColor, vec4 (intensity, intensity, intensity, 1.0), desaturation), contrast);
-
-        return;
+        }        
     }
     
     // SHADING
-    gl_FragColor     = ambient * color + intensity * slope * color;
+    gl_FragColor    = ambient * color + emission;
+
+    // INTENSITY
+	float shine     = dot (gl_FragColor.rgb, vec3 (0.333, 0.333, 0.333));
 
 	// COLOR CORRECTIONS
-	float intensity  = dot (gl_FragColor.rgb, vec3 (0.333, 0.333, 0.333));
-
-	gl_FragColor     = pow (brightness * mix (gl_FragColor, vec4 (intensity, intensity, intensity, 1.0), desaturation), contrast);
+	gl_FragColor    = pow (brightness * mix (gl_FragColor, vec4 (shine, shine, shine, 1.0), desaturation), contrast);
 }

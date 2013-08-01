@@ -44,7 +44,8 @@ build/Debug/Cygwin_4.x-Windows/_ext/1728301206/main.o: ../Source/main.cpp \
  ../Source/Tools/types.h ../Source/Tools/macro.h ../Source/Tools/random.h \
  ../Source/Tools/sort.h ../Source/skeleton.h ../Source/loader.h \
  ../Source/physics.h ../Source/renderer.h ../Source/rendererGui.h \
- ../Source/rendererClip.h ../Source/rendererInternals.h ../Source/debug.h
+ ../Source/rendererClip.h ../Source/rendererInternals.h ../Source/debug.h \
+ ../Source/Shader/shaderGenerator.h
 
 ../Source/Tools/glee.h:
 
@@ -155,3 +156,5 @@ build/Debug/Cygwin_4.x-Windows/_ext/1728301206/main.o: ../Source/main.cpp \
 ../Source/rendererInternals.h:
 
 ../Source/debug.h:
+
+../Source/Shader/shaderGenerator.h:

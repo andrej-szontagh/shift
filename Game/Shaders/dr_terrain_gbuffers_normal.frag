@@ -6,8 +6,6 @@ uniform sampler2D tex_weights2;
 uniform sampler2D tex_weights3;
 uniform sampler2D tex_weights4;
 
-varying float depth;
-
 varying mat3 tbni;
 
 //      R      G      B             A
@@ -64,28 +62,28 @@ void main ()
                 if (weights1.g > 0.0)   factor1.g = texture2DLod (tex_diffuse, uv_mod + vec2 (0.25, 0.0),  lod_mod).a;
                 if (weights1.b > 0.0)   factor1.b = texture2DLod (tex_diffuse, uv_mod + vec2 (0.5,  0.0),  lod_mod).a;
                 if (weights1.a > 0.0)   factor1.a = texture2DLod (tex_diffuse, uv_mod + vec2 (0.75, 0.0),  lod_mod).a;
-                factor1 = max (factor1, 0.1);   weights1 *= pow (factor1, 3.0);    sum.r = dot (weights1, vec4 (1.0, 1.0, 1.0, 1.0));
+                factor1 = max (1.3 * pow (factor1, 3.0), 0.2);   weights1 *= pow (factor1, 1.0);    sum.r = dot (weights1, vec4 (1.0, 1.0, 1.0, 1.0));
             }
             if (dot (weights2, weights2) > 0.0) {
                 if (weights2.r > 0.0)   factor2.r = texture2DLod (tex_diffuse, uv_mod + vec2 (0.0,  0.25), lod_mod).a;
                 if (weights2.g > 0.0)   factor2.g = texture2DLod (tex_diffuse, uv_mod + vec2 (0.25, 0.25), lod_mod).a;
                 if (weights2.b > 0.0)   factor2.b = texture2DLod (tex_diffuse, uv_mod + vec2 (0.5,  0.25), lod_mod).a;
                 if (weights2.a > 0.0)   factor2.a = texture2DLod (tex_diffuse, uv_mod + vec2 (0.75, 0.25), lod_mod).a;
-                factor2 = max (factor2, 0.1);   weights2 *= pow (factor2, 3.0);    sum.g = dot (weights2, vec4 (1.0, 1.0, 1.0, 1.0));
+                factor2 = max (1.3 * pow (factor2, 3.0), 0.2);   weights2 *= pow (factor2, 1.0);    sum.g = dot (weights2, vec4 (1.0, 1.0, 1.0, 1.0));
             }
             if (dot (weights3, weights3) > 0.0) {
                 if (weights3.r > 0.0)   factor3.r = texture2DLod (tex_diffuse, uv_mod + vec2 (0.0,  0.5),  lod_mod).a;
                 if (weights3.g > 0.0)   factor3.g = texture2DLod (tex_diffuse, uv_mod + vec2 (0.25, 0.5),  lod_mod).a;
                 if (weights3.b > 0.0)   factor3.b = texture2DLod (tex_diffuse, uv_mod + vec2 (0.5,  0.5),  lod_mod).a;
                 if (weights3.a > 0.0)   factor3.a = texture2DLod (tex_diffuse, uv_mod + vec2 (0.75, 0.5),  lod_mod).a;
-                factor3 = max (factor3, 0.1);   weights3 *= pow (factor3, 3.0);    sum.b = dot (weights3, vec4 (1.0, 1.0, 1.0, 1.0));
+                factor3 = max (1.3 * pow (factor3, 3.0), 0.2);   weights3 *= pow (factor3, 1.0);    sum.b = dot (weights3, vec4 (1.0, 1.0, 1.0, 1.0));
             }
             if (dot (weights4, weights4) > 0.0) {
                 if (weights4.r > 0.0)   factor4.r = texture2DLod (tex_diffuse, uv_mod + vec2 (0.0,  0.75), lod_mod).a;
                 if (weights4.g > 0.0)   factor4.g = texture2DLod (tex_diffuse, uv_mod + vec2 (0.25, 0.75), lod_mod).a;
                 if (weights4.b > 0.0)   factor4.b = texture2DLod (tex_diffuse, uv_mod + vec2 (0.5,  0.75), lod_mod).a;
                 if (weights4.a > 0.0)   factor4.a = texture2DLod (tex_diffuse, uv_mod + vec2 (0.75, 0.75), lod_mod).a;
-                factor4 = max (factor4, 0.1);   weights4 *= pow (factor4, 3.0);    sum.a = dot (weights4, vec4 (1.0, 1.0, 1.0, 1.0));
+                factor4 = max (1.3 * pow (factor4, 3.0), 0.2);   weights4 *= pow (factor4, 1.0);    sum.a = dot (weights4, vec4 (1.0, 1.0, 1.0, 1.0));
             }
 
     // NORMALIZING WEIGHTS ----------------------------------------------------------------------------------------------------------------------------------
@@ -172,21 +170,23 @@ void main ()
 
     // G1 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
-            gl_FragData [0] = vec4 (diffuse.rgb, composite.r);
+            gl_FragData [0] = vec4 (diffuse.rgb, 1.0);
 
     // G2 ---------------------------------------------------------------------------------------------------------------------------------------------------            
 
-            vec3 normal  = 2.0 * composite.gaa - 1.0;   normal.z = sqrt (1 - dot (normal.xy, normal.xy));
-            
-            vec3 normalm = normal * tbni;
+            vec3 normal  = 2.0 * composite.gaa - 1.0;   normal.z = sqrt (1 - dot (normal.xy, normal.xy));   normal *= tbni;
 
-    // SPHEREMAP TRANSFORM
-    //
-    // http://aras-p.info/texts/CompactNormalStorage.html#method04spheremap
-    //
+            // SPHEREMAP TRANSFORM
+            //
+            // http://aras-p.info/texts/CompactNormalStorage.html#method04spheremap
+            //
     
-            normalm.xy = normalm.xy / sqrt (normalm.z * 8.0 + 8.0) + 0.5;
+            vec2 normalm    = (normal.xy / sqrt (normal.z * 8.0 + 8.0) + 0.5) * 255.0;
 
-            gl_FragData [1] = vec4 (normalm.x, normalm.y, depth, composite.b);
+            gl_FragData [1] = vec4 (floor (normalm.xy) * 0.00392156, fract (normalm.xy));
+
+    // G3 ---------------------------------------------------------------------------------------------------------------------------------------------------            
+
+            gl_FragData [2] = vec4 (composite.r, composite.b, 0.0, 0.0);
 
 }

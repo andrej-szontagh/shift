@@ -1,8 +1,6 @@
 
 uniform sampler2D tex_diffuse;
 
-varying float depth;
-
 varying vec3 normal;
 
 //      R      G      B             A
@@ -18,17 +16,21 @@ void main ()
 
     // G1 ---------------------------------------------------------------------------------------------------------------------------------------------------
                 
-            gl_FragData [0] = vec4 (diffuse.rgb, 0.01);
+            gl_FragData [0] = vec4 (diffuse.rgb, 1.0);
     
     // G2 ---------------------------------------------------------------------------------------------------------------------------------------------------
 
-    // SPHEREMAP TRANSFORM
-    //
-    // http://aras-p.info/texts/CompactNormalStorage.html#method04spheremap
-    //
+            // SPHEREMAP TRANSFORM
+            //
+            // http://aras-p.info/texts/CompactNormalStorage.html#method04spheremap
+            //
     
-            vec2 normalm = normal.xy / sqrt (normal.z * 8.0 + 8.0) + 0.5;
+            vec2 normalm    = (normal.xy / sqrt (normal.z * 8.0 + 8.0) + 0.5) * 255.0;
 
-            gl_FragData [1] = vec4 (normalm.x, normalm.y, depth, 0.01);
+            gl_FragData [1] = vec4 (floor (normalm.xy) * 0.00392156, fract (normalm.xy));
+
+    // G3 ---------------------------------------------------------------------------------------------------------------------------------------------------            
+
+            gl_FragData [2] = vec4 (0.1, 0.1, 0.0, 0.0);
 
 }

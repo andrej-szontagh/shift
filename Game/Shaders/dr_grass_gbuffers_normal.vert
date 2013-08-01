@@ -3,18 +3,11 @@ uniform vec2 uvscale;
 
 uniform float planefar;
 
-varying float depth;
-
 varying vec3 normal;
 
 // SWING        -> gl_MultiTexCoord2.x
 // TRANSFORM    -> gl_MultiTexCoord4.xyz
 // TRANSFORM    -> gl_MultiTexCoord5.xyzw
-
-//// MODELMATRIX    -> gl_MultiTexCoord4.xyzw
-//// MODELMATRIX    -> gl_MultiTexCoord5.xyzw
-//// MODELMATRIX    -> gl_MultiTexCoord6.xyzw
-//// MODELMATRIX    -> gl_MultiTexCoord7.xyzw
 
 void main ()
 {
@@ -42,10 +35,6 @@ void main ()
             gl_ClipVertex   = matrix * v;
             gl_Position     = gl_ProjectionMatrix * gl_ClipVertex;
 
-    // LINEAR DEPTH -----------------------------------------------------------------------------------------------------------------------------------------
-    
-            depth           = - gl_ClipVertex.z / planefar;
-
     // UV ---------------------------------------------------------------------------------------------------------------------------------------------------
 
             gl_TexCoord [0] = vec4 (gl_MultiTexCoord0.st * uvscale, 0.0, 0.0);
@@ -54,5 +43,5 @@ void main ()
             
 			// compromise between normal lighting and direct lighting
 
-            normal			= normalize (normalize (mat3 (matrix) * vec3 (0.0, 0.0, 1.0)) + 0.5 * gl_LightSource [0].position);
+            normal		    = normalize (normalize (mat3 (matrix) * vec3 (0.0, 0.0, 1.0)) + 0.5 * gl_LightSource [0].position);
 }

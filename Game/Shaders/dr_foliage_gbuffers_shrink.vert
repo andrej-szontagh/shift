@@ -1,13 +1,11 @@
 
 uniform vec2 uvscale;
 
-uniform float planefar;
-
 varying float shininess;
 varying float gloss;
+varying float side;
 
-varying float depth;
-
+varying vec3 color;
 varying vec3 normal;
 varying mat3 tbni;
 
@@ -15,20 +13,38 @@ varying mat3 tbni;
 // ANIM         -> gl_MultiTexCoord1.x
 // GLOSS        -> gl_MultiTexCoord2.x
 // SHININESS    -> gl_MultiTexCoord2.y
+
+// NOT INSTANCED
 // MODELMATRIX  -> gl_MultiTexCoord4.xyzw
 // MODELMATRIX  -> gl_MultiTexCoord5.xyzw
 // MODELMATRIX  -> gl_MultiTexCoord6.xyzw
 // MODELMATRIX  -> gl_MultiTexCoord7.xyzw
+
+// INSTANCED
+// TRANSFORM    -> gl_MultiTexCoord4.xyz
+// TRANSFORM    -> gl_MultiTexCoord5.xyzw
 
 void main ()
 {
 
     // MATRIX -----------------------------------------------------------------------------------------------------------------------------------------------
 
-            mat4 matrix     = mat4 (vec4 (gl_MultiTexCoord4.xyz, 0.0), 
-                                    vec4 (gl_MultiTexCoord5.xyz, 0.0), 
-                                    vec4 (gl_MultiTexCoord6.xyz, 0.0), 
-                                    vec4 (gl_MultiTexCoord7.xyz, 1.0));
+            #ifdef INSTANCED 
+
+                vec3 co = cos (gl_MultiTexCoord5.xyz);
+                vec3 si = sin (gl_MultiTexCoord5.xyz);
+                
+                mat4 matrix     = mat4 (vec4 ( co.y*co.z,                  -co.y*si.z,                   si.y,      0.0) * gl_MultiTexCoord5.w, 
+                                        vec4 ( co.x*si.z + si.x*si.y*co.z,  co.x*co.z - si.x*si.y*si.z, -si.x*co.y, 0.0) * gl_MultiTexCoord5.w, 
+                                        vec4 ( si.x*si.z - co.x*si.y*co.z,  si.x*co.z + co.x*si.y*si.z,  co.x*co.y, 0.0) * gl_MultiTexCoord5.w, 
+                                        vec4 (gl_MultiTexCoord4.xyz, 1.0));
+            #else
+                                    
+                mat4 matrix     = mat4 (vec4 (gl_MultiTexCoord4.xyz, 0.0), 
+                                        vec4 (gl_MultiTexCoord5.xyz, 0.0), 
+                                        vec4 (gl_MultiTexCoord6.xyz, 0.0), 
+                                        vec4 (gl_MultiTexCoord7.xyz, 1.0));                                    
+            #endif
 
     // UV ---------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -45,17 +61,24 @@ void main ()
             vec4 v          = gl_Vertex;  v.xyz *= 1.0 - factors.y;
                     
     // ANIMATION --------------------------------------------------------------------------------------------------------------------------------------------
-    
-            v.xyz           = v.xyz + (0.005 * sin (0.01 * gl_MultiTexCoord1.xxx + 0.5 * v.xyz) + vec3 (0.05, 0.0125, 0.025) * sin (0.005 * gl_MultiTexCoord1.x + 0.5 * v.x)) * gl_TexCoord [0].t;
+/*
+            #define M_WAVE1     0.005
+            #define M_WAVE2X    0.05
+            #define M_WAVE2Y    0.0125
+            #define M_WAVE2Z    0.025
+*/   
+            #define M_WAVE1     0.0025
+            #define M_WAVE2X    0.025
+            #define M_WAVE2Y    0.00625
+            #define M_WAVE2Z    0.0125
+
+            v.xyz           = v.xyz + (       M_WAVE1                       * sin (0.01  * gl_MultiTexCoord1.xxx + 0.5 * v.xyz) + 
+                                        vec3 (M_WAVE2X, M_WAVE2Y, M_WAVE2Z) * sin (0.005 * gl_MultiTexCoord1.x   + 0.5 * v.x)) * gl_TexCoord [0].t;
                         
     // TRANSFORM --------------------------------------------------------------------------------------------------------------------------------------------
     
             gl_ClipVertex   = matrix * v;
             gl_Position     = gl_ProjectionMatrix * gl_ClipVertex;
-
-    // LINEAR DEPTH -----------------------------------------------------------------------------------------------------------------------------------------
-    
-            depth           = - gl_ClipVertex.z / planefar;
 
     // GLOSS ------------------------------------------------------------------------------------------------------------------------------------------------
                 
@@ -65,14 +88,14 @@ void main ()
                             
             shininess       = gl_MultiTexCoord2.y * 0.1;                    // we leave more accurancy to gloss value, step is 10.0
             
+    // COLOR ------------------------------------------------------------------------------------------------------------------------------------------------
+
+            color           = gl_Color.rgb;
+
     // TBN MATRIX -------------------------------------------------------------------------------------------------------------------------------------------
 
                  normal     = normalize (mat3 (matrix) *        gl_Normal);
             vec3 tangent    = normalize (mat3 (matrix) * (2.0 * gl_SecondaryColor.xyz - 1.0));
-
-//                 normal     = normalize (vec3 (gl_ModelViewMatrix * vec4 (0.0, 1.0, 0.0, 0.0)));
-//            vec3 tangent    = normalize (vec3 (gl_ModelViewMatrix * vec4 (1.0, 0.0, 0.0, 0.0)));
-
             vec3 binormal   = cross     (tangent, normal);
             
     ///     Inverted TBN matrix (is orthonormal -> invert = transpose)

@@ -12,6 +12,7 @@
             <make-dep-projects/>
             <sourceRootList>
                 <sourceRootElem>../Source</sourceRootElem>
+                <sourceRootElem>../../Game/Shaders</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>

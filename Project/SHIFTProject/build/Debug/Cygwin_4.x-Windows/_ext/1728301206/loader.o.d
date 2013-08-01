@@ -3,8 +3,8 @@ build/Debug/Cygwin_4.x-Windows/_ext/1728301206/loader.o: \
  ../Source/Tools/sort.h ../Source/Tools/macro.h ../Source/skeleton.h \
  ../Source/renderer.h ../Source/rendererGui.h ../Source/rendererClip.h \
  ../Source/rendererInternals.h ../Source/loader.h ../Source/debug.h \
- ../Source/loaderImage.cpp ../Source/loaderWorld.cpp \
- ../Source/loaderShader.cpp
+ ../Source/Shader/shaderLoader.h ../Source/loaderImage.cpp \
+ ../Source/loaderWorld.cpp
 
 ../Source/Tools/glee.h:
 
@@ -28,8 +28,8 @@ build/Debug/Cygwin_4.x-Windows/_ext/1728301206/loader.o: \
 
 ../Source/debug.h:
 
+../Source/Shader/shaderLoader.h:
+
 ../Source/loaderImage.cpp:
 
 ../Source/loaderWorld.cpp:
-
-../Source/loaderShader.cpp:

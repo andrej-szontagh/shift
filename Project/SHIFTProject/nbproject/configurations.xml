@@ -23,6 +23,12 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
+      <logicalFolder name="Shader" displayName="Shader" projectFiles="true">
+        <itemPath>../Source/Shader/shaderGenerator.cpp</itemPath>
+        <itemPath>../Source/Shader/shaderGenerator.h</itemPath>
+        <itemPath>../Source/Shader/shaderLoader.cpp</itemPath>
+        <itemPath>../Source/Shader/shaderLoader.h</itemPath>
+      </logicalFolder>
       <logicalFolder name="f1" displayName="Shaders" projectFiles="true">
         <itemPath>../../Game/Shaders/dr_aa_blurh.frag</itemPath>
         <itemPath>../../Game/Shaders/dr_aa_blurh.vert</itemPath>
@@ -84,7 +90,6 @@
       <itemPath>../Source/debug.cpp</itemPath>
       <itemPath>../Source/loader.cpp</itemPath>
       <itemPath>../Source/loaderImage.cpp</itemPath>
-      <itemPath>../Source/loaderShader.cpp</itemPath>
       <itemPath>../Source/loaderWorld.cpp</itemPath>
       <itemPath>../Source/main.cpp</itemPath>
       <itemPath>../Source/physics.cpp</itemPath>
@@ -114,6 +119,7 @@
   </logicalFolder>
   <sourceRootList>
     <Elem>../Source</Elem>
+    <Elem>../../Game/Shaders</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -131,6 +137,7 @@
           <incDir>
             <pElem>../Source</pElem>
             <pElem>../Source/Tools</pElem>
+            <pElem>../Source/Shader</pElem>
             <pElem>../Externals/SDL2-2.0.0/include/SDL2</pElem>
           </incDir>
           <commandLine>-Wno-write-strings</commandLine>
@@ -148,6 +155,7 @@
           <incDir>
             <pElem>../Source</pElem>
             <pElem>../Source/Tools</pElem>
+            <pElem>../Source/Shader</pElem>
             <pElem>../Externals/SDL2-2.0.0/include/SDL2</pElem>
           </incDir>
           <commandLine>-Wno-write-strings</commandLine>
@@ -403,6 +411,17 @@
             flavor2="0">
       </item>
       <item path="../../Game/loader.log" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../Source/Shader/shaderGenerator.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../Source/Shader/shaderGenerator.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../Source/Shader/shaderLoader.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../Source/Shader/shaderLoader.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../Source/Tools/glee.cc" ex="false" tool="1" flavor2="0">
       </item>
@@ -701,6 +720,17 @@
       </item>
       <item path="../../Game/loader.log" ex="false" tool="3" flavor2="0">
       </item>
+      <item path="../Source/Shader/shaderGenerator.cpp"
+            ex="false"
+            tool="1"
+            flavor2="0">
+      </item>
+      <item path="../Source/Shader/shaderGenerator.h" ex="false" tool="3" flavor2="0">
+      </item>
+      <item path="../Source/Shader/shaderLoader.cpp" ex="false" tool="1" flavor2="0">
+      </item>
+      <item path="../Source/Shader/shaderLoader.h" ex="false" tool="3" flavor2="0">
+      </item>
       <item path="../Source/Tools/glee.cc" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../Source/Tools/glee.h" ex="false" tool="3" flavor2="0">
@@ -730,8 +760,6 @@
       <item path="../Source/loader.h" ex="false" tool="3" flavor2="0">
       </item>
       <item path="../Source/loaderImage.cpp" ex="false" tool="1" flavor2="0">
-      </item>
-      <item path="../Source/loaderShader.cpp" ex="false" tool="1" flavor2="0">
       </item>
       <item path="../Source/loaderWorld.cpp" ex="false" tool="1" flavor2="0">
       </item>

@@ -35,13 +35,14 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/_ext/1093845578/shaderGenerator.o \
+	${OBJECTDIR}/_ext/1093845578/shaderLoader.o \
 	${OBJECTDIR}/_ext/1626136874/glee.o \
 	${OBJECTDIR}/_ext/1626136874/random.o \
 	${OBJECTDIR}/_ext/1626136874/sort.o \
 	${OBJECTDIR}/_ext/1728301206/debug.o \
 	${OBJECTDIR}/_ext/1728301206/loader.o \
 	${OBJECTDIR}/_ext/1728301206/loaderImage.o \
-	${OBJECTDIR}/_ext/1728301206/loaderShader.o \
 	${OBJECTDIR}/_ext/1728301206/loaderWorld.o \
 	${OBJECTDIR}/_ext/1728301206/main.o \
 	${OBJECTDIR}/_ext/1728301206/physics.o \
@@ -85,6 +86,16 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/shiftproject.exe: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/shiftproject ${OBJECTFILES} ${LDLIBSOPTIONS}
 
+${OBJECTDIR}/_ext/1093845578/shaderGenerator.o: ../Source/Shader/shaderGenerator.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/1093845578
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1093845578/shaderGenerator.o ../Source/Shader/shaderGenerator.cpp
+
+${OBJECTDIR}/_ext/1093845578/shaderLoader.o: ../Source/Shader/shaderLoader.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/1093845578
+	${RM} $@.d
+	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1093845578/shaderLoader.o ../Source/Shader/shaderLoader.cpp
+
 ${OBJECTDIR}/_ext/1626136874/glee.o: ../Source/Tools/glee.cc 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1626136874
 	${RM} $@.d
@@ -114,11 +125,6 @@ ${OBJECTDIR}/_ext/1728301206/loaderImage.o: ../Source/loaderImage.cpp
 	${MKDIR} -p ${OBJECTDIR}/_ext/1728301206
 	${RM} $@.d
 	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/loaderImage.o ../Source/loaderImage.cpp
-
-${OBJECTDIR}/_ext/1728301206/loaderShader.o: ../Source/loaderShader.cpp 
-	${MKDIR} -p ${OBJECTDIR}/_ext/1728301206
-	${RM} $@.d
-	$(COMPILE.cc) -O2 -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/loaderShader.o ../Source/loaderShader.cpp
 
 ${OBJECTDIR}/_ext/1728301206/loaderWorld.o: ../Source/loaderWorld.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1728301206

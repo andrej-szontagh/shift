@@ -24,6 +24,8 @@
     extern      INT_32 debug;
 #endif
 
+#include    "shaderLoader.h"
+    
 #include    "rendererProcess.cpp"
 #include    "rendererRoutines.cpp"
 #include    "rendererSpecificGrass.cpp"

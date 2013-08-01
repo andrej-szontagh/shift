@@ -4,8 +4,6 @@ uniform float planefar;
 uniform vec2 uv1scale;
 uniform vec2 uv2scale;
 
-varying float depth;
-
 varying mat3 tbni;
 
 // UV1          -> gl_MultiTexCoord0.st
@@ -48,21 +46,6 @@ void main ()
 
             gl_ClipVertex   = matrix * v;
             gl_Position     = gl_ProjectionMatrix * gl_ClipVertex;
-
-    // LINEAR DEPTH -----------------------------------------------------------------------------------------------------------------------------------------
-    
-    ///     gl_Position holds clip coordinates
-    ///     http://www.songho.ca/opengl/gl_projectionmatrix.html
-    ///
-    ///     divide gl_Position / gl_Position.w  maps to unit cube BUT depth is not linear !!
-    ///        
-    ///     linear depth is view coordinate which is negative.
-    ///     We dont scale it from near plane to far plane so it starts at camera with 0 and ends on far plane with 1
-    ///     http://www.songho.ca/opengl/gl_projectionmatrix.html
-    ///
-    ///     this depth actually hodls view coordinate z
-
-            depth           = - gl_ClipVertex.z / planefar;
 
     // UV ---------------------------------------------------------------------------------------------------------------------------------------------------
     

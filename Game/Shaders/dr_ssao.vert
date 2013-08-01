@@ -1,7 +1,7 @@
 
+uniform float farplane;
 uniform float farw;
 uniform float farh;
-uniform float farplane;
 
 varying vec3 view;
 

@@ -35,6 +35,8 @@ OBJECTDIR=${CND_BUILDDIR}/${CND_CONF}/${CND_PLATFORM}
 
 # Object Files
 OBJECTFILES= \
+	${OBJECTDIR}/_ext/1093845578/shaderGenerator.o \
+	${OBJECTDIR}/_ext/1093845578/shaderLoader.o \
 	${OBJECTDIR}/_ext/1626136874/glee.o \
 	${OBJECTDIR}/_ext/1626136874/random.o \
 	${OBJECTDIR}/_ext/1626136874/sort.o \
@@ -69,45 +71,55 @@ ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/shiftproject.exe: ${OBJECTFILES}
 	${MKDIR} -p ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}
 	${LINK.cc} -o ${CND_DISTDIR}/${CND_CONF}/${CND_PLATFORM}/shiftproject ${OBJECTFILES} ${LDLIBSOPTIONS}
 
+${OBJECTDIR}/_ext/1093845578/shaderGenerator.o: ../Source/Shader/shaderGenerator.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/1093845578
+	${RM} $@.d
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1093845578/shaderGenerator.o ../Source/Shader/shaderGenerator.cpp
+
+${OBJECTDIR}/_ext/1093845578/shaderLoader.o: ../Source/Shader/shaderLoader.cpp 
+	${MKDIR} -p ${OBJECTDIR}/_ext/1093845578
+	${RM} $@.d
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1093845578/shaderLoader.o ../Source/Shader/shaderLoader.cpp
+
 ${OBJECTDIR}/_ext/1626136874/glee.o: ../Source/Tools/glee.cc 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1626136874
 	${RM} $@.d
-	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1626136874/glee.o ../Source/Tools/glee.cc
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1626136874/glee.o ../Source/Tools/glee.cc
 
 ${OBJECTDIR}/_ext/1626136874/random.o: ../Source/Tools/random.cc 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1626136874
 	${RM} $@.d
-	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1626136874/random.o ../Source/Tools/random.cc
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1626136874/random.o ../Source/Tools/random.cc
 
 ${OBJECTDIR}/_ext/1626136874/sort.o: ../Source/Tools/sort.cc 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1626136874
 	${RM} $@.d
-	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1626136874/sort.o ../Source/Tools/sort.cc
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1626136874/sort.o ../Source/Tools/sort.cc
 
 ${OBJECTDIR}/_ext/1728301206/debug.o: ../Source/debug.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1728301206
 	${RM} $@.d
-	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/debug.o ../Source/debug.cpp
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/debug.o ../Source/debug.cpp
 
 ${OBJECTDIR}/_ext/1728301206/loader.o: ../Source/loader.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1728301206
 	${RM} $@.d
-	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/loader.o ../Source/loader.cpp
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/loader.o ../Source/loader.cpp
 
 ${OBJECTDIR}/_ext/1728301206/main.o: ../Source/main.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1728301206
 	${RM} $@.d
-	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/main.o ../Source/main.cpp
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/main.o ../Source/main.cpp
 
 ${OBJECTDIR}/_ext/1728301206/physics.o: ../Source/physics.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1728301206
 	${RM} $@.d
-	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/physics.o ../Source/physics.cpp
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/physics.o ../Source/physics.cpp
 
 ${OBJECTDIR}/_ext/1728301206/renderer.o: ../Source/renderer.cpp 
 	${MKDIR} -p ${OBJECTDIR}/_ext/1728301206
 	${RM} $@.d
-	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/renderer.o ../Source/renderer.cpp
+	$(COMPILE.cc) -g -DM_DEBUG -DWIN32 -D_NDEBUG -D_WINDOWS -I../Source -I../Source/Tools -I../Source/Shader -I../Externals/SDL2-2.0.0/include/SDL2 -std=c++11 -Wno-write-strings -MMD -MP -MF $@.d -o ${OBJECTDIR}/_ext/1728301206/renderer.o ../Source/renderer.cpp
 
 # Subprojects
 .build-subprojects:

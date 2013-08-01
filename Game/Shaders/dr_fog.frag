@@ -1,15 +1,22 @@
 
-uniform sampler2DRect tex_G2;
+uniform sampler2DRect tex_depth;
+
+uniform float farplane;
+uniform float nearplane;
 
 varying vec3 view;
 
 void main ()
-{
-    // G2 READ
-    vec4  G2        = texture2DRect (tex_G2, gl_TexCoord [0].st);
-    
+{    
+
+    // READ DEPTH
+    float depth      = texture2DRect (tex_depth, gl_TexCoord [0]).x;
+
+    // SKIP ENVIROMENT
+    if (depth == 1.0) discard;
+
     // DECODE DEPTH
-    float depth     = G2.z;
+    depth           = (2.0 * nearplane) / (farplane + nearplane - (2.0 * depth - 1.0) * (farplane - nearplane));
     
     /// TODO : OPTIMIZE, WE NEED ONLY Y WORLD COORD
 

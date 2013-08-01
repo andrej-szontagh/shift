@@ -1,4 +1,15 @@
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <float.h>
+#include <math.h>
+#include <io.h>
+
+#include "glee.h"
+#include "debug.h"
+
+#include "shaderLoader.h"
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // lo_PrintShadersLog
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -19,6 +30,47 @@ VOID lo_PrintShadersLog	(UINT_32 id) {
 
         free (log_string);
     }        
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// lo_LoadShader
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+UINT_32 lo_LoadShader	(
+                         
+                 CHARP		shader,
+                 UINT_32    type,
+                 UINT_32P	id
+    )
+{
+    
+    // creating shader
+    * id  = glCreateShader (type);
+
+    // compiling
+    glShaderSource (* id, 1, (const CHARPP) &shader, NULL);
+    
+    debug_Print ("    Compiling");
+    
+    glCompileShader (* id);    
+    
+    INT_32 status;    
+    glGetShaderiv (* id, GL_COMPILE_STATUS, &status);
+    
+    if (status == GL_FALSE) {
+        
+        debug_Print (" .. FAILED\n\n");
+        
+        lo_PrintShadersLog (* id);
+        
+        return -1;
+    }
+    
+    debug_Print (" .. OK\n");
+    
+    lo_PrintShadersLog (* id);
+    
+    return (* id);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -64,31 +116,8 @@ UINT_32 lo_LoadShader	(
         
     sprintf ((CHARP) str2, "%s%s", prefix, str1);
 
-    // creating shader
-    * id  = glCreateShader (type);
-
-    // compiling
-    glShaderSource (* id, 1, (const CHARPP) &str2, NULL);
-    
-    debug_Print ("    Compiling");
-    
-    glCompileShader (* id);    
-    
-    INT_32 status;    
-    glGetShaderiv (* id, GL_COMPILE_STATUS, &status);
-    
-    if (status == GL_FALSE) {
-        
-        debug_Print (" .. FAILED\n\n");
-        
-        lo_PrintShadersLog (* id);
-        
-        return -1;
-    }
-    
-    debug_Print (" .. OK\n");
-    
-    lo_PrintShadersLog (* id);
+    // load shader
+    lo_LoadShader (str2, type, id);
     
     free (str1);
     free (str2);
@@ -113,6 +142,47 @@ UINT_32 lo_LoadShaders	(
     
     lo_LoadShader (filev, prefix, GL_VERTEX_SHADER,     idv);
     lo_LoadShader (filef, prefix, GL_FRAGMENT_SHADER,   idf);
+    
+    * idp = glCreateProgram ();
+    
+    glAttachShader (* idp, * idv);
+    glAttachShader (* idp, * idf);
+    
+    // linking    
+    debug_PrintIntend ("Linking Program");
+    
+    glLinkProgram (* idp);
+    
+    INT_32 status;
+    glGetProgramiv (* idp, GL_LINK_STATUS, &status);
+    
+    if (status == GL_FALSE) {
+        
+        debug_Print (" .. FAILED\n\n");
+        return -1;
+    }
+    
+    debug_Print (" .. OK\n\n");
+        
+    return (* idp);    
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// lo_LoadShaders
+////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+UINT_32 lo_LoadShaders	(
+                         
+                 CHARP		shaderv,
+                 CHARP		shaderf,
+                 UINT_32P	idp, 
+                 UINT_32P	idv, 
+                 UINT_32P	idf
+    )
+{
+    
+    lo_LoadShader (shaderv, GL_VERTEX_SHADER,     idv);
+    lo_LoadShader (shaderf, GL_FRAGMENT_SHADER,   idf);
     
     * idp = glCreateProgram ();
     

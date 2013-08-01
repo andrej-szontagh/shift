@@ -3,8 +3,9 @@ build/Debug/Cygwin_4.x-Windows/_ext/1728301206/renderer.o: \
  ../Source/Tools/macro.h ../Source/debug.h ../Source/Tools/sort.h \
  ../Source/skeleton.h ../Source/renderer.h ../Source/rendererGui.h \
  ../Source/rendererClip.h ../Source/rendererInternals.h \
- ../Source/loader.h ../Source/rendererProcess.cpp \
- ../Source/rendererRoutines.cpp ../Source/rendererSpecificGrass.cpp \
+ ../Source/loader.h ../Source/Shader/shaderLoader.h \
+ ../Source/rendererProcess.cpp ../Source/rendererRoutines.cpp \
+ ../Source/rendererSpecificGrass.cpp \
  ../Source/rendererSpecificFoliage.cpp \
  ../Source/rendererSpecificSolid.cpp \
  ../Source/rendererSpecificTerrain.cpp ../Source/rendererGui.cpp \
@@ -33,6 +34,8 @@ build/Debug/Cygwin_4.x-Windows/_ext/1728301206/renderer.o: \
 ../Source/rendererInternals.h:
 
 ../Source/loader.h:
+
+../Source/Shader/shaderLoader.h:
 
 ../Source/rendererProcess.cpp:
 
