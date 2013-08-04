@@ -91,30 +91,27 @@ INT_32 main (INT_32 argc, CHARP argv [])
         MessageBox (NULL, "LOGGING INITIALIZATION FAILED", "Error", MB_OK | MB_ICONERROR | MB_TOPMOST);
         return - 1;
     }
-    
-    //#define M_SHFLAG_DEPTH              0x00000001
-    //#define M_SHFLAG_INSTANCED          0x00000002
-    //#define M_SHFLAG_MULTILAYER         0x00000004
-    //#define M_SHFLAG_DISSOLVE           0x00000008
-    //#define M_SHFLAG_TRANSPARENT        0x00000010
-    //#define M_SHFLAG_TRANSLUCENT        0x00000020
-    //#define M_SHFLAG_MULTILAYER         0x00000040
-    //#define M_SHFLAG_ANIM_WIND1         0x00000080
-    //#define M_SHFLAG_ANIM_WIND2         0x00000100
-    //#define M_SHFLAG_DEFORM_SHRINK      0x00000200
-    //#define M_SHFLAG_DEFORM_GROW        0x00000400
-    //#define M_SHFLAG_DEFORM_MORPH       0x00000800
-    //#define M_SHFLAG_VERTEX_COLORS      0x00001000
-    //#define M_SHFLAG_DOUBLESIDE         0x00002000
-    //#define M_SHFLAG_MAP_NORMAL         0x00004000
-    //#define M_SHFLAG_MAP_GLOSS          0x00008000
-    //#define M_SHFLAG_UV1_PRECISION_HI   0x00010000
-    //#define M_SHFLAG_UV2_PRECISION_HI   0x00020000
-    //#define M_SHFLAG_UV3_PRECISION_HI   0x00040000
-    //#define M_SHFLAG_SINGLE_NORMAL      0x00080000
 
-    //CHARP sh_vertex;
-    //CHARP sh_fragment;
+//    #define M_SHFLAG_DEPTH                  0x00000001
+//    #define M_SHFLAG_INSTANCED              0x00000002
+//    #define M_SHFLAG_DISSOLVE               0x00000008
+//    #define M_SHFLAG_TRANSPARENT            0x00000010
+//    #define M_SHFLAG_TRANSLUCENT            0x00000020
+//    #define M_SHFLAG_MULTILAYER             0x00000040
+//    #define M_SHFLAG_ANIM_WIND1             0x00000080
+//    #define M_SHFLAG_ANIM_WIND2             0x00000100
+//    #define M_SHFLAG_DEFORM_SHRINK          0x00000200
+//    #define M_SHFLAG_DEFORM_GROW            0x00000400
+//    #define M_SHFLAG_DEFORM_MORPH           0x00000800
+//    #define M_SHFLAG_VERTEX_COLORS          0x00001000
+//    #define M_SHFLAG_DOUBLESIDE             0x00002000
+//    #define M_SHFLAG_COMPOSITE              0x00004000
+//    #define M_SHFLAG_UV1_PRECISION_HI       0x00008000
+//    #define M_SHFLAG_UV2_PRECISION_HI       0x00010000
+//    #define M_SHFLAG_SINGLE_NORMAL          0x00020000
+
+    CHARP sh_vertex;
+    CHARP sh_fragment;
     
     // ROCKS
     //dr_GenerateShader (M_SHFLAG_INSTANCED | M_SHFLAG_COMPOSITE | M_SHFLAG_DEFORM_SHRINK | M_SHFLAG_DEPTH, &sh_vertex, &sh_fragment);
@@ -129,8 +126,8 @@ INT_32 main (INT_32 argc, CHARP argv [])
     //dr_GenerateShader (M_SHFLAG_COMPOSITE,                  &sh_vertex, &sh_fragment);
     
     // BUSHES & BRANCHES
-    //dr_GenerateShader (M_SHFLAG_INSTANCED | M_SHFLAG_COMPOSITE | M_SHFLAG_TRANSPARENT | M_SHFLAG_ANIM_WIND1 | M_SHFLAG_TRANSLUCENT | M_SHFLAG_DOUBLESIDE | M_SHFLAG_VERTEX_COLORS | M_SHFLAG_DEPTH, &sh_vertex, &sh_fragment);
-    //dr_GenerateShader (M_SHFLAG_INSTANCED | M_SHFLAG_COMPOSITE | M_SHFLAG_TRANSPARENT | M_SHFLAG_ANIM_WIND1 | M_SHFLAG_TRANSLUCENT | M_SHFLAG_DOUBLESIDE | M_SHFLAG_VERTEX_COLORS,                  &sh_vertex, &sh_fragment);
+    dr_GenerateShader (M_SHFLAG_INSTANCED | M_SHFLAG_COMPOSITE | M_SHFLAG_TRANSPARENT | M_SHFLAG_ANIM_WIND1 | M_SHFLAG_TRANSLUCENT | M_SHFLAG_DOUBLESIDE | M_SHFLAG_VERTEX_COLORS | M_SHFLAG_DEPTH, &sh_vertex, &sh_fragment);
+    dr_GenerateShader (M_SHFLAG_INSTANCED | M_SHFLAG_COMPOSITE | M_SHFLAG_TRANSPARENT | M_SHFLAG_ANIM_WIND1 | M_SHFLAG_TRANSLUCENT | M_SHFLAG_DOUBLESIDE | M_SHFLAG_VERTEX_COLORS,                  &sh_vertex, &sh_fragment);
     
     // GRASS
     //dr_GenerateShader (M_SHFLAG_INSTANCED | M_SHFLAG_TRANSPARENT | M_SHFLAG_DISSOLVE | M_SHFLAG_SINGLE_NORMAL | M_SHFLAG_ANIM_WIND2 | M_SHFLAG_DOUBLESIDE | M_SHFLAG_DEPTH, &sh_vertex, &sh_fragment);
