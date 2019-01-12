@@ -9,38 +9,13 @@ It's an OpenGL base real-time 3D rendering game engine designed for big open spa
 
 ## Motivation
 
-I developed this engine for a personal game project that never become reality. 
-I shared it to show what I love to do and what I have spend quite some time working on.
+I developed this engine for a personal game project that never become reality.
 
-## Installation
-
-Don't try to install this, it's here only for informative purposes.
+I decided to share the project to show what I love to do and what I have spend quite some time working on.
 
 ## Build
 
 Don't try to build this, it's here only for informative purposes.
-
-## Published at
-
-Never published
-
-## Languages / Markups
-
-* [XXX](https://www.google.com) - a placeholder
-* [XXX](https://www.google.com) - a placeholder
-* [XXX](https://www.google.com) - a placeholder
-
-## Frameworks
-
-* [XXX](https://www.google.com) - a placeholder
-* [XXX](https://www.google.com) - a placeholder
-* [XXX](https://www.google.com) - a placeholder
-
-## Libraries
-
-* [XXX](https://www.google.com) - a placeholder
-* [XXX](https://www.google.com) - a placeholder
-* [XXX](https://www.google.com) - a placeholder
 
 ## Author
 
